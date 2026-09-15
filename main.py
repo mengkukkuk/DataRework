@@ -1,5 +1,8 @@
 import sys
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from PySide6.QtWidgets import QApplication
 
 from login_window import LoginWindow

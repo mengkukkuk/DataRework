@@ -4,10 +4,11 @@ import tempfile
 
 import psycopg2
 from psycopg2 import sql
-from PySide6.QtCore import Qt, QPointF
+from PySide6.QtCore import Qt, QPointF, QSettings
 from PySide6.QtGui import QColor, QImage, QPainter, QPolygonF
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QButtonGroup,
     QCheckBox,
     QComboBox,
     QFrame,
@@ -31,18 +32,17 @@ import db
 # --- Schema mapping --------------------------------------------------------
 # public.staging_product_logs is looked up dynamically (columns, primary key)
 # so the table's real shape is never hardcoded. The names below only map the
-# *filter fields* to the columns they query.
-#
-# NOTE: staging_product_logs has both `assignment_no` and `job_no`. The
-# "Assignment job no." filter is wired to `assignment_no` — swap to "job_no"
-# below if that's not the intended field.
-STAGING_TABLE = "staging_product_logs"
-DATE_COLUMN = "create_date"
+# *filter fields* to the columns they query — read from .env (see db.py's
+# load_dotenv() call in main.py) so the mapping can be retuned without
+# touching code, falling back to the values confirmed against the real
+# schema if a var is unset.
+STAGING_TABLE = os.environ.get("STAGING_TABLE", "staging_product_logs")
+DATE_COLUMN = os.environ.get("DATE_COLUMN", "create_date")
 FILTER_COLUMNS = {
-    "line": "vm_line",
-    "assignment_no": "assignment_no",
-    "parent_no": "parent_serial_no",
-    "serial_no": "serial_no",
+    "line": os.environ.get("FILTER_COLUMN_LINE", "vm_line"),
+    "assignment_no": os.environ.get("FILTER_COLUMN_ASSIGNMENT_NO", "assignment_no"),
+    "parent_no": os.environ.get("FILTER_COLUMN_PARENT_NO", "parent_serial_no"),
+    "serial_no": os.environ.get("FILTER_COLUMN_SERIAL_NO", "serial_no"),
 }
 
 # Order the typing-combo filters cascade in: each one's dropdown is scoped to
@@ -55,56 +55,183 @@ MONTH_NAMES = [
     "July", "August", "September", "October", "November", "December",
 ]
 
-
-def _generate_dropdown_arrow_icon():
-    """A small solid down-triangle PNG for QComboBox's drop-down arrow.
-    Qt's QSS doesn't render the usual CSS border-triangle trick as a
-    triangle (it just paints a filled block), so this draws one directly."""
-    path = os.path.join(tempfile.gettempdir(), "datarework_combo_arrow.png")
-    if not os.path.exists(path):
-        image = QImage(20, 20, QImage.Format_ARGB32)
-        image.fill(Qt.transparent)
-        painter = QPainter(image)
-        painter.setRenderHint(QPainter.Antialiasing)
-        painter.setBrush(QColor("#8fa5bf"))
-        painter.setPen(Qt.NoPen)
-        painter.drawPolygon(QPolygonF([QPointF(4, 7), QPointF(16, 7), QPointF(10, 14)]))
-        painter.end()
-        image.save(path)
+def _generate_dropdown_arrow_icon(color, theme_name):
+    """A small solid down-triangle PNG for QComboBox's drop-down arrow, one
+    per theme since the color has to invert for a light background. Qt's QSS
+    doesn't render the usual CSS border-triangle trick as a triangle (it just
+    paints a filled block), so this draws one directly instead."""
+    path = os.path.join(tempfile.gettempdir(), f"datarework_combo_arrow_{theme_name}.png")
+    image = QImage(20, 20, QImage.Format_ARGB32)
+    image.fill(Qt.transparent)
+    painter = QPainter(image)
+    painter.setRenderHint(QPainter.Antialiasing)
+    painter.setBrush(QColor(color))
+    painter.setPen(Qt.NoPen)
+    painter.drawPolygon(QPolygonF([QPointF(4, 7), QPointF(16, 7), QPointF(10, 14)]))
+    painter.end()
+    image.save(path)
     return path.replace("\\", "/")
 
-STYLE_SHEET = """
+
+def _sortable_key(text):
+    try:
+        return (0, float(text))
+    except (TypeError, ValueError):
+        return (1, text.lower())
+
+
+def _get_settings():
+    return QSettings("DataRework", "ProductionRework")
+
+
+# Two color palettes for the same QSS template — everything that's a
+# *surface* (backgrounds, borders, body text) swaps between them; the accent
+# chips (Search/Clear/Save/Cancel, the focus ring, the checked-checkbox
+# fill) stay fixed brand colors baked into the template since they're
+# already tuned to read fine against both.
+THEMES = {
+    "dark": {
+        "bg": "#0a0e14",
+        "text": "#c7d3e0",
+        "title": "#f2f6fb",
+        "subtitle": "#5d7086",
+        "badge_bg": "#101826",
+        "badge_border": "#1f2c3f",
+        "badge_text": "#9fb4cc",
+        "badge_admin_text": "#8fe3ab",
+        "badge_admin_border": "#1f4a33",
+        "panel_bg": "#101722",
+        "panel_border": "#1c2636",
+        "panel_title": "#6f88a6",
+        "input_bg": "#16273d",
+        "input_text": "#eaf1fa",
+        "input_border": "#24405e",
+        "input_hover_border": "#3a6690",
+        "popup_selection_bg": "#274a6e",
+        "arrow_color": "#8fa5bf",
+        "strip_bg": "#0d131d",
+        "strip_border": "#1c2636",
+        "checkbox_text": "#b6c4d6",
+        "checkbox_bg": "#16273d",
+        "checkbox_border": "#3a4d66",
+        "table_bg": "#0d131d",
+        "table_alt_bg": "#111a27",
+        "table_text": "#dde6f0",
+        "table_grid": "#1c2636",
+        "table_border": "#1c2636",
+        "table_sel_bg": "#274a6e",
+        "table_sel_text": "#ffffff",
+        "header_bg": "#141d2c",
+        "header_text": "#8fa5bf",
+        "header_border": "#24405e",
+        "header_hover_bg": "#1b2738",
+        "header_hover_text": "#c7d6e8",
+        "status_error": "#e2879d",
+        "status_ok": "#7fd6a3",
+        "scrollbar_bg": "#0d131d",
+        "scrollbar_handle": "#24405e",
+        "save_disabled_bg": "#223228",
+        "save_disabled_text": "#4c5c52",
+    },
+    "light": {
+        "bg": "#eef1f6",
+        "text": "#3b4757",
+        "title": "#141a22",
+        "subtitle": "#5b6b7d",
+        "badge_bg": "#e4e9ef",
+        "badge_border": "#d0d8e0",
+        "badge_text": "#51606f",
+        "badge_admin_text": "#188a52",
+        "badge_admin_border": "#bfe8d0",
+        "panel_bg": "#ffffff",
+        "panel_border": "#dde3ea",
+        "panel_title": "#4a7096",
+        "input_bg": "#f7f9fb",
+        "input_text": "#1c2733",
+        "input_border": "#c7d2dd",
+        "input_hover_border": "#8fa9c2",
+        "popup_selection_bg": "#cfe3f7",
+        "arrow_color": "#5b6b7d",
+        "strip_bg": "#f7f9fb",
+        "strip_border": "#dde3ea",
+        "checkbox_text": "#3b4757",
+        "checkbox_bg": "#ffffff",
+        "checkbox_border": "#c7d2dd",
+        "table_bg": "#ffffff",
+        "table_alt_bg": "#f4f6f9",
+        "table_text": "#1c2733",
+        "table_grid": "#e3e8ee",
+        "table_border": "#dde3ea",
+        "table_sel_bg": "#cfe3f7",
+        "table_sel_text": "#0d1b2a",
+        "header_bg": "#eef1f5",
+        "header_text": "#4a5b6d",
+        "header_border": "#c7d2dd",
+        "header_hover_bg": "#e2e8ef",
+        "header_hover_text": "#1c2733",
+        "status_error": "#c23a5c",
+        "status_ok": "#178a4c",
+        "scrollbar_bg": "#eef1f5",
+        "scrollbar_handle": "#c7d2dd",
+        "save_disabled_bg": "#e4e9ec",
+        "save_disabled_text": "#a7b0b8",
+    },
+}
+
+STYLE_TEMPLATE = """
 QMainWindow, #central {
-    background-color: #0a0e14;
+    background-color: __bg__;
 }
 QLabel {
-    color: #c7d3e0;
+    color: __text__;
     font-size: 13px;
 }
 #pageTitle {
-    color: #f2f6fb;
+    color: __title__;
     font-size: 21px;
     font-weight: 600;
 }
-#pageSubtitle {
-    color: #5d7086;
+#pageSubtitle, #stripLabel {
+    color: __subtitle__;
     font-size: 12px;
 }
+#stripLabel {
+    font-size: 11px;
+    font-weight: 700;
+}
 #userBadge {
-    color: #9fb4cc;
+    color: __badge_text__;
     font-size: 12px;
-    background-color: #101826;
-    border: 1px solid #1f2c3f;
+    background-color: __badge_bg__;
+    border: 1px solid __badge_border__;
     border-radius: 11px;
     padding: 5px 14px;
 }
 #userBadge[admin="true"] {
-    color: #8fe3ab;
-    border: 1px solid #1f4a33;
+    color: __badge_admin_text__;
+    border: 1px solid __badge_admin_border__;
+}
+#themeToggle {
+    background-color: __badge_bg__;
+    border: 1px solid __badge_border__;
+    border-radius: 11px;
+}
+#themeToggle QPushButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 9px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: __subtitle__;
+}
+#themeToggle QPushButton:checked {
+    background-color: #5b9bd5;
+    color: #06131f;
 }
 QGroupBox {
-    background-color: #101722;
-    border: 1px solid #1c2636;
+    background-color: __panel_bg__;
+    border: 1px solid __panel_border__;
     border-radius: 10px;
     margin-top: 6px;
     padding: 16px 14px 14px 14px;
@@ -113,21 +240,21 @@ QGroupBox::title {
     subcontrol-origin: margin;
     left: 14px;
     padding: 0 6px;
-    color: #6f88a6;
+    color: __panel_title__;
     font-size: 11px;
     font-weight: 700;
 }
 QComboBox {
-    background-color: #16273d;
-    color: #eaf1fa;
-    border: 1px solid #24405e;
+    background-color: __input_bg__;
+    color: __input_text__;
+    border: 1px solid __input_border__;
     border-radius: 6px;
     padding: 7px 10px;
     min-width: 108px;
     font-size: 13px;
 }
 QComboBox:hover {
-    border: 1px solid #3a6690;
+    border: 1px solid __input_hover_border__;
 }
 QComboBox:focus {
     border: 1px solid #5b9bd5;
@@ -137,16 +264,16 @@ QComboBox::drop-down {
     width: 24px;
 }
 QComboBox::down-arrow {
-    image: url(__DROPDOWN_ARROW_ICON__);
+    image: url(__arrow_icon_path__);
     width: 10px;
     height: 10px;
     margin-right: 8px;
 }
 QComboBox QAbstractItemView {
-    background-color: #16273d;
-    color: #eaf1fa;
-    selection-background-color: #274a6e;
-    border: 1px solid #24405e;
+    background-color: __input_bg__;
+    color: __input_text__;
+    selection-background-color: __popup_selection_bg__;
+    border: 1px solid __input_border__;
     outline: none;
 }
 QPushButton {
@@ -163,12 +290,12 @@ QPushButton {
 #clearBtn:hover { background-color: #37516f; }
 #saveBtn { background-color: #3fae72; color: #05170e; }
 #saveBtn:hover { background-color: #57c187; }
-#saveBtn:disabled { background-color: #223228; color: #4c5c52; }
+#saveBtn:disabled { background-color: __save_disabled_bg__; color: __save_disabled_text__; }
 #cancelBtn { background-color: #e2a0b3; color: #2a0d15; }
 #cancelBtn:hover { background-color: #eab2c2; }
 #columnsStrip {
-    background-color: #0d131d;
-    border: 1px solid #1c2636;
+    background-color: __strip_bg__;
+    border: 1px solid __strip_border__;
     border-radius: 8px;
 }
 #columnsStrip QScrollArea, #columnsStrip QScrollArea > QWidget > QWidget, #columnsStrip QWidget#columnsStripInner {
@@ -176,7 +303,7 @@ QPushButton {
     border: none;
 }
 QCheckBox {
-    color: #b6c4d6;
+    color: __checkbox_text__;
     font-size: 12px;
     spacing: 6px;
     padding: 2px 4px;
@@ -185,48 +312,61 @@ QCheckBox::indicator {
     width: 14px;
     height: 14px;
     border-radius: 3px;
-    border: 1px solid #3a4d66;
-    background-color: #16273d;
+    border: 1px solid __checkbox_border__;
+    background-color: __checkbox_bg__;
 }
 QCheckBox::indicator:checked {
     background-color: #5b9bd5;
     border: 1px solid #5b9bd5;
 }
 QTableWidget {
-    background-color: #0d131d;
-    alternate-background-color: #111a27;
-    color: #dde6f0;
-    gridline-color: #1c2636;
-    border: 1px solid #1c2636;
+    background-color: __table_bg__;
+    alternate-background-color: __table_alt_bg__;
+    color: __table_text__;
+    gridline-color: __table_grid__;
+    border: 1px solid __table_border__;
     border-radius: 8px;
-    selection-background-color: #274a6e;
-    selection-color: #ffffff;
+    selection-background-color: __table_sel_bg__;
+    selection-color: __table_sel_text__;
     font-size: 12px;
 }
 QTableWidget::item {
     padding: 4px 6px;
 }
 QHeaderView::section {
-    background-color: #141d2c;
-    color: #8fa5bf;
+    background-color: __header_bg__;
+    color: __header_text__;
     border: none;
-    border-bottom: 2px solid #24405e;
+    border-bottom: 2px solid __header_border__;
     padding: 7px 6px;
     font-size: 11px;
     font-weight: 700;
 }
-#statusLabel[state="error"] { color: #e2879d; }
-#statusLabel[state="ok"] { color: #7fd6a3; }
+QHeaderView::section:hover {
+    background-color: __header_hover_bg__;
+    color: __header_hover_text__;
+}
+#statusLabel[state="error"] { color: __status_error__; }
+#statusLabel[state="ok"] { color: __status_ok__; }
 QScrollBar:vertical, QScrollBar:horizontal {
-    background: #0d131d;
+    background: __scrollbar_bg__;
     width: 10px;
     height: 10px;
 }
 QScrollBar::handle {
-    background: #24405e;
+    background: __scrollbar_handle__;
     border-radius: 5px;
 }
 """
+
+
+def _render_stylesheet(theme_name):
+    theme = THEMES[theme_name]
+    arrow_icon_path = _generate_dropdown_arrow_icon(theme["arrow_color"], theme_name)
+    css = STYLE_TEMPLATE
+    for token, value in theme.items():
+        css = css.replace(f"__{token}__", value)
+    return css.replace("__arrow_icon_path__", arrow_icon_path)
 
 
 class MainWindow(QMainWindow):
@@ -242,11 +382,15 @@ class MainWindow(QMainWindow):
         self._row_originals = []
         self._show_delete_col = False
         self._column_checks = {}
+        self._sort_column = None
+        self._sort_order = Qt.AscendingOrder
+        self._theme = _get_settings().value("theme", "dark", type=str)
+        if self._theme not in THEMES:
+            self._theme = "dark"
 
         self.setWindowTitle("Production Rework")
         self.resize(1300, 700)
-        arrow_icon_path = _generate_dropdown_arrow_icon()
-        self.setStyleSheet(STYLE_SHEET.replace("__DROPDOWN_ARROW_ICON__", arrow_icon_path))
+        self.setStyleSheet(_render_stylesheet(self._theme))
 
         central = QWidget()
         central.setObjectName("central")
@@ -278,11 +422,44 @@ class MainWindow(QMainWindow):
         row.addLayout(title_box)
         row.addStretch(1)
 
+        row.addWidget(self._build_theme_toggle())
+
         badge = QLabel(f"{self.username}  ·  {self.permission}")
         badge.setObjectName("userBadge")
         badge.setProperty("admin", "true" if self.is_admin else "false")
         row.addWidget(badge, alignment=Qt.AlignVCenter)
         return row
+
+    def _build_theme_toggle(self):
+        frame = QFrame()
+        frame.setObjectName("themeToggle")
+        layout = QHBoxLayout(frame)
+        layout.setContentsMargins(3, 3, 3, 3)
+        layout.setSpacing(2)
+
+        self.dark_theme_btn = QPushButton("Dark")
+        self.light_theme_btn = QPushButton("Light")
+        self._theme_buttons = {"dark": self.dark_theme_btn, "light": self.light_theme_btn}
+
+        self._theme_button_group = QButtonGroup(frame)
+        self._theme_button_group.setExclusive(True)
+        for name, btn in self._theme_buttons.items():
+            btn.setCheckable(True)
+            btn.setCursor(Qt.PointingHandCursor)
+            self._theme_button_group.addButton(btn)
+            btn.clicked.connect(lambda _checked=False, n=name: self._set_theme(n))
+            layout.addWidget(btn)
+
+        self._theme_buttons[self._theme].setChecked(True)
+        return frame
+
+    def _set_theme(self, name):
+        if name not in THEMES:
+            return
+        self._theme = name
+        self.setStyleSheet(_render_stylesheet(name))
+        self._theme_buttons[name].setChecked(True)
+        _get_settings().setValue("theme", name)
 
     def _build_filter_bar(self):
         group = QGroupBox("Filters")
@@ -371,7 +548,7 @@ class MainWindow(QMainWindow):
         outer.setContentsMargins(10, 4, 10, 4)
 
         label = QLabel("Columns")
-        label.setStyleSheet("color:#5d7086; font-size:11px; font-weight:700;")
+        label.setObjectName("stripLabel")
         outer.addWidget(label)
 
         scroll = QScrollArea()
@@ -398,6 +575,8 @@ class MainWindow(QMainWindow):
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.horizontalHeader().setSectionsClickable(True)
+        self.table.horizontalHeader().sectionClicked.connect(self._on_header_clicked)
         self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         return self.table
 
@@ -571,6 +750,10 @@ class MainWindow(QMainWindow):
         self.table.resizeColumnsToContents()
         self._rebuild_columns_strip(columns, offset)
 
+        if self._sort_column is not None and self._sort_column < self.table.columnCount():
+            self._apply_sort()
+        self._update_header_labels()
+
     def _rebuild_columns_strip(self, columns, offset):
         layout = self._columns_strip_layout
         while layout.count():
@@ -588,6 +771,66 @@ class MainWindow(QMainWindow):
             self._column_checks[col] = cb
         layout.addStretch(1)
 
+    def _on_header_clicked(self, logical_index):
+        if self._show_delete_col and logical_index == 0:
+            return  # Del column isn't a data column — nothing sensible to sort by
+
+        if self._sort_column == logical_index:
+            self._sort_order = (
+                Qt.DescendingOrder if self._sort_order == Qt.AscendingOrder else Qt.AscendingOrder
+            )
+        else:
+            self._sort_column = logical_index
+            self._sort_order = Qt.AscendingOrder
+
+        self._apply_sort()
+        self._update_header_labels()
+
+    def _apply_sort(self):
+        offset = 1 if self._show_delete_col else 0
+        sort_data_col = self._sort_column - offset
+        row_count = self.table.rowCount()
+        if row_count == 0:
+            return
+
+        bundles = []
+        for r in range(row_count):
+            cells = [self.table.item(r, c + offset).text() for c in range(len(self._columns))]
+            deleted = False
+            if self._show_delete_col:
+                del_item = self.table.item(r, 0)
+                deleted = bool(del_item and del_item.checkState() == Qt.Checked)
+            bundles.append({
+                "pk": self._row_pks[r],
+                "original": self._row_originals[r],
+                "cells": cells,
+                "deleted": deleted,
+            })
+
+        bundles.sort(
+            key=lambda b: _sortable_key(b["cells"][sort_data_col]),
+            reverse=(self._sort_order == Qt.DescendingOrder),
+        )
+
+        self._row_pks = [b["pk"] for b in bundles]
+        self._row_originals = [b["original"] for b in bundles]
+
+        for r, b in enumerate(bundles):
+            if self._show_delete_col:
+                self.table.item(r, 0).setCheckState(Qt.Checked if b["deleted"] else Qt.Unchecked)
+            for c, text in enumerate(b["cells"]):
+                self.table.item(r, c + offset).setText(text)
+
+    def _update_header_labels(self):
+        offset = 1 if self._show_delete_col else 0
+        headers = (["Del"] if self._show_delete_col else []) + self._columns
+        for i, label in enumerate(headers):
+            if i == self._sort_column:
+                label += " ▲" if self._sort_order == Qt.AscendingOrder else " ▼"
+            header_item = self.table.horizontalHeaderItem(i)
+            if header_item:
+                header_item.setText(label)
+
     def _reset_table(self):
         self.table.setRowCount(0)
         self.table.setColumnCount(0)
@@ -596,6 +839,8 @@ class MainWindow(QMainWindow):
         self._row_pks = []
         self._row_originals = []
         self._show_delete_col = False
+        self._sort_column = None
+        self._sort_order = Qt.AscendingOrder
         self._rebuild_columns_strip([], 0)
 
     # -- actions ------------------------------------------------------------
