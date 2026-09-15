@@ -1,8 +1,11 @@
 import datetime
+import os
+import tempfile
 
 import psycopg2
 from psycopg2 import sql
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QPointF
+from PySide6.QtGui import QColor, QImage, QPainter, QPolygonF
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QCheckBox,
@@ -31,14 +34,13 @@ import db
 # *filter fields* to the columns they query.
 #
 # NOTE: staging_product_logs has both `assignment_no` and `job_no`. The
-# "Assignment job no." filter is wired to `job_no` since it's the identifier
-# scoped per-line (see staging_assignment_job, which pairs vm_line + job_no)
-# — swap to "assignment_no" below if that's not the intended field.
+# "Assignment job no." filter is wired to `assignment_no` — swap to "job_no"
+# below if that's not the intended field.
 STAGING_TABLE = "staging_product_logs"
 DATE_COLUMN = "create_date"
 FILTER_COLUMNS = {
     "line": "vm_line",
-    "job_no": "job_no",
+    "assignment_no": "assignment_no",
     "parent_no": "parent_serial_no",
     "serial_no": "serial_no",
 }
@@ -46,12 +48,30 @@ FILTER_COLUMNS = {
 # Order the typing-combo filters cascade in: each one's dropdown is scoped to
 # values that actually occur given the month/year plus every field before it
 # here, so e.g. picking a job no. narrows what parent/serial no. can be.
-CASCADE_FIELDS = ["line", "job_no", "parent_no", "serial_no"]
+CASCADE_FIELDS = ["line", "assignment_no", "parent_no", "serial_no"]
 
 MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
 ]
+
+
+def _generate_dropdown_arrow_icon():
+    """A small solid down-triangle PNG for QComboBox's drop-down arrow.
+    Qt's QSS doesn't render the usual CSS border-triangle trick as a
+    triangle (it just paints a filled block), so this draws one directly."""
+    path = os.path.join(tempfile.gettempdir(), "datarework_combo_arrow.png")
+    if not os.path.exists(path):
+        image = QImage(20, 20, QImage.Format_ARGB32)
+        image.fill(Qt.transparent)
+        painter = QPainter(image)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(QColor("#8fa5bf"))
+        painter.setPen(Qt.NoPen)
+        painter.drawPolygon(QPolygonF([QPointF(4, 7), QPointF(16, 7), QPointF(10, 14)]))
+        painter.end()
+        image.save(path)
+    return path.replace("\\", "/")
 
 STYLE_SHEET = """
 QMainWindow, #central {
@@ -114,7 +134,13 @@ QComboBox:focus {
 }
 QComboBox::drop-down {
     border: none;
-    width: 22px;
+    width: 24px;
+}
+QComboBox::down-arrow {
+    image: url(__DROPDOWN_ARROW_ICON__);
+    width: 10px;
+    height: 10px;
+    margin-right: 8px;
 }
 QComboBox QAbstractItemView {
     background-color: #16273d;
@@ -217,9 +243,10 @@ class MainWindow(QMainWindow):
         self._show_delete_col = False
         self._column_checks = {}
 
-        self.setWindowTitle("Product Log Search")
+        self.setWindowTitle("Production Rework")
         self.resize(1300, 700)
-        self.setStyleSheet(STYLE_SHEET)
+        arrow_icon_path = _generate_dropdown_arrow_icon()
+        self.setStyleSheet(STYLE_SHEET.replace("__DROPDOWN_ARROW_ICON__", arrow_icon_path))
 
         central = QWidget()
         central.setObjectName("central")
@@ -242,9 +269,9 @@ class MainWindow(QMainWindow):
         row = QHBoxLayout()
         title_box = QVBoxLayout()
         title_box.setSpacing(2)
-        title = QLabel("Product Log Search")
+        title = QLabel("Production Rework")
         title.setObjectName("pageTitle")
-        subtitle = QLabel(f"public.{STAGING_TABLE}")
+        subtitle = QLabel(f"Table = {STAGING_TABLE}")
         subtitle.setObjectName("pageSubtitle")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
@@ -277,13 +304,17 @@ class MainWindow(QMainWindow):
         self.year_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.year_combo.setFixedWidth(100)
 
+        today = datetime.date.today()
+        self.month_combo.setCurrentIndex(self.month_combo.findData(today.month))
+        self.year_combo.setCurrentIndex(self.year_combo.findData(today.year))
+
         self.line_combo = self._make_typing_combo("Line")
         self.job_combo = self._make_typing_combo("Ass. job no.")
         self.parent_combo = self._make_typing_combo("Parent no.")
         self.serial_combo = self._make_typing_combo("Serial no.")
         self._cascade_combos = {
             "line": self.line_combo,
-            "job_no": self.job_combo,
+            "assignment_no": self.job_combo,
             "parent_no": self.parent_combo,
             "serial_no": self.serial_combo,
         }

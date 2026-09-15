@@ -5,7 +5,6 @@ from PySide6.QtWidgets import QApplication
 from login_window import LoginWindow
 from main_window import MainWindow
 
-
 class App:
     def __init__(self):
         self.login_window = LoginWindow()
