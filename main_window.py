@@ -5,6 +5,7 @@ class MainWindow(QMainWindow):
     def __init__(self, username):
         super().__init__()
         self.setWindowTitle("Main App")
+        self.resize(1300, 700)
 
         central = QWidget()
         layout = QVBoxLayout(central)

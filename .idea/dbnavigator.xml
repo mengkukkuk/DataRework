@@ -55,6 +55,11 @@
       </filter>
     </filter-actions>
     <filter-actions connection-id="62c26842-e725-4f24-9a5b-65eb7cc7106c" dataset="public.staging_product_logs" active-filter-id="EMPTY_FILTER" />
+    <filter-actions connection-id="62c26842-e725-4f24-9a5b-65eb7cc7106c" dataset="public.serial_data" active-filter-id="EMPTY_FILTER">
+      <filter id="5606176b-5024-4c3b-8e1e-6875f431dc51" name="Filter" temporary="false" custom-name="false" type="basic" join-type="AND">
+        <condition column="id" operator="=" value="" active="true" />
+      </filter>
+    </filter-actions>
     <filter-actions connection-id="62c26842-e725-4f24-9a5b-65eb7cc7106c" dataset="public.user_access" active-filter-id="EMPTY_FILTER">
       <filter id="e431f46d-6440-41ba-b19b-5250d74ad6ec" name="Filter" temporary="false" custom-name="false" type="basic" join-type="AND">
         <condition column="id" operator="=" value="" active="true" />

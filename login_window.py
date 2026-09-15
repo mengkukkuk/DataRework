@@ -17,13 +17,16 @@ class LoginWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Login")
+        self.resize(360, 220)
 
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Username")
+        self.username_input.setMinimumWidth(280)
 
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Password")
         self.password_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.password_input.setMinimumWidth(280)
 
         self.login_button = QPushButton("Login")
 

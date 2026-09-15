@@ -4,11 +4,11 @@ import os
 import bcrypt
 import psycopg2
 
+#DB_HOST = "26.252.139.132"
 DB_HOST = "localhost"
 DB_NAME = "postgres"
 DB_USER = "postgres"
 DB_PASSWORD = os.environ.get("DB_PASSWORD", "P@ssw0rd")
-
 
 def get_connection():
     return psycopg2.connect(
@@ -17,7 +17,6 @@ def get_connection():
         user=DB_USER,
         password=DB_PASSWORD,
     )
-
 
 def verify_user(username, password):
     with contextlib.closing(get_connection()) as conn:
@@ -31,10 +30,10 @@ def verify_user(username, password):
     if row is None:
         return False
 
-    password_hash = row[0]
-    if not password_hash:
+    password = row[0]
+    if not password:
         return False
-    return password_hash
+    return password
 
     try:
         return bcrypt.checkpw(password.encode(), password_hash.encode())
