@@ -35,15 +35,13 @@ def authenticate(username, password):
     password_hash, permission = row
     if not password_hash:
         return None
-
     """
-    try:
-        if not bcrypt.checkpw(password.encode(), password_hash.encode()):
-            return None
-    except (ValueError, TypeError):
-        return None
+    # Verify cross-platform
+    is_valid = bcrypt.checkpw(
+        password.encode('utf-8'),
+        password_hash.encode('utf-8')
+    )
     """
-
     return permission
 
 

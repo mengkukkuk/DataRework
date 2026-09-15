@@ -1,5 +1,6 @@
 import datetime
 import os
+import re
 import tempfile
 
 import psycopg2
@@ -30,12 +31,6 @@ from PySide6.QtWidgets import (
 import db
 
 # --- Schema mapping --------------------------------------------------------
-# public.staging_product_logs is looked up dynamically (columns, primary key)
-# so the table's real shape is never hardcoded. The names below only map the
-# *filter fields* to the columns they query — read from .env (see db.py's
-# load_dotenv() call in main.py) so the mapping can be retuned without
-# touching code, falling back to the values confirmed against the real
-# schema if a var is unset.
 STAGING_TABLE = os.environ.get("STAGING_TABLE", "staging_product_logs")
 DATE_COLUMN = os.environ.get("DATE_COLUMN", "create_date")
 FILTER_COLUMNS = {
@@ -45,9 +40,6 @@ FILTER_COLUMNS = {
     "serial_no": os.environ.get("FILTER_COLUMN_SERIAL_NO", "serial_no"),
 }
 
-# Order the typing-combo filters cascade in: each one's dropdown is scoped to
-# values that actually occur given the month/year plus every field before it
-# here, so e.g. picking a job no. narrows what parent/serial no. can be.
 CASCADE_FIELDS = ["line", "assignment_no", "parent_no", "serial_no"]
 
 MONTH_NAMES = [
@@ -84,280 +76,33 @@ def _get_settings():
     return QSettings("DataRework", "ProductionRework")
 
 
-# Two color palettes for the same QSS template — everything that's a
-# *surface* (backgrounds, borders, body text) swaps between them; the accent
-# chips (Search/Clear/Save/Cancel, the focus ring, the checked-checkbox
-# fill) stay fixed brand colors baked into the template since they're
-# already tuned to read fine against both.
-THEMES = {
-    "dark": {
-        "bg": "#0a0e14",
-        "text": "#c7d3e0",
-        "title": "#f2f6fb",
-        "subtitle": "#5d7086",
-        "badge_bg": "#101826",
-        "badge_border": "#1f2c3f",
-        "badge_text": "#9fb4cc",
-        "badge_admin_text": "#8fe3ab",
-        "badge_admin_border": "#1f4a33",
-        "panel_bg": "#101722",
-        "panel_border": "#1c2636",
-        "panel_title": "#6f88a6",
-        "input_bg": "#16273d",
-        "input_text": "#eaf1fa",
-        "input_border": "#24405e",
-        "input_hover_border": "#3a6690",
-        "popup_selection_bg": "#274a6e",
-        "arrow_color": "#8fa5bf",
-        "strip_bg": "#0d131d",
-        "strip_border": "#1c2636",
-        "checkbox_text": "#b6c4d6",
-        "checkbox_bg": "#16273d",
-        "checkbox_border": "#3a4d66",
-        "table_bg": "#0d131d",
-        "table_alt_bg": "#111a27",
-        "table_text": "#dde6f0",
-        "table_grid": "#1c2636",
-        "table_border": "#1c2636",
-        "table_sel_bg": "#274a6e",
-        "table_sel_text": "#ffffff",
-        "header_bg": "#141d2c",
-        "header_text": "#8fa5bf",
-        "header_border": "#24405e",
-        "header_hover_bg": "#1b2738",
-        "header_hover_text": "#c7d6e8",
-        "status_error": "#e2879d",
-        "status_ok": "#7fd6a3",
-        "scrollbar_bg": "#0d131d",
-        "scrollbar_handle": "#24405e",
-        "save_disabled_bg": "#223228",
-        "save_disabled_text": "#4c5c52",
-    },
-    "light": {
-        "bg": "#eef1f6",
-        "text": "#3b4757",
-        "title": "#141a22",
-        "subtitle": "#5b6b7d",
-        "badge_bg": "#e4e9ef",
-        "badge_border": "#d0d8e0",
-        "badge_text": "#51606f",
-        "badge_admin_text": "#188a52",
-        "badge_admin_border": "#bfe8d0",
-        "panel_bg": "#ffffff",
-        "panel_border": "#dde3ea",
-        "panel_title": "#4a7096",
-        "input_bg": "#f7f9fb",
-        "input_text": "#1c2733",
-        "input_border": "#c7d2dd",
-        "input_hover_border": "#8fa9c2",
-        "popup_selection_bg": "#cfe3f7",
-        "arrow_color": "#5b6b7d",
-        "strip_bg": "#f7f9fb",
-        "strip_border": "#dde3ea",
-        "checkbox_text": "#3b4757",
-        "checkbox_bg": "#ffffff",
-        "checkbox_border": "#c7d2dd",
-        "table_bg": "#ffffff",
-        "table_alt_bg": "#f4f6f9",
-        "table_text": "#1c2733",
-        "table_grid": "#e3e8ee",
-        "table_border": "#dde3ea",
-        "table_sel_bg": "#cfe3f7",
-        "table_sel_text": "#0d1b2a",
-        "header_bg": "#eef1f5",
-        "header_text": "#4a5b6d",
-        "header_border": "#c7d2dd",
-        "header_hover_bg": "#e2e8ef",
-        "header_hover_text": "#1c2733",
-        "status_error": "#c23a5c",
-        "status_ok": "#178a4c",
-        "scrollbar_bg": "#eef1f5",
-        "scrollbar_handle": "#c7d2dd",
-        "save_disabled_bg": "#e4e9ec",
-        "save_disabled_text": "#a7b0b8",
-    },
-}
+# THEMES (the two color palettes) and the QSS template both live in
+# style.css, next to this file — see that file's header comment for why
+# they're written as :root[data-theme="..."] custom-property blocks even
+# though Qt's QSS engine can't use CSS variables natively: this module
+# parses them itself and does the __token__ substitution below, so Qt only
+# ever sees a flat stylesheet with literal values, exactly as before.
+_THEME_BLOCK_RE = re.compile(r':root\[data-theme=["\'](\w+)["\']\]\s*\{([^}]*)\}', re.DOTALL)
+_CSS_VAR_RE = re.compile(r'--([\w-]+)\s*:\s*([^;]+);')
 
-STYLE_TEMPLATE = """
-QMainWindow, #central {
-    background-color: __bg__;
-}
-QLabel {
-    color: __text__;
-    font-size: 13px;
-}
-#pageTitle {
-    color: __title__;
-    font-size: 21px;
-    font-weight: 600;
-}
-#pageSubtitle, #stripLabel {
-    color: __subtitle__;
-    font-size: 12px;
-}
-#stripLabel {
-    font-size: 11px;
-    font-weight: 700;
-}
-#userBadge {
-    color: __badge_text__;
-    font-size: 12px;
-    background-color: __badge_bg__;
-    border: 1px solid __badge_border__;
-    border-radius: 11px;
-    padding: 5px 14px;
-}
-#userBadge[admin="true"] {
-    color: __badge_admin_text__;
-    border: 1px solid __badge_admin_border__;
-}
-#themeToggle {
-    background-color: __badge_bg__;
-    border: 1px solid __badge_border__;
-    border-radius: 11px;
-}
-#themeToggle QPushButton {
-    background-color: transparent;
-    border: none;
-    border-radius: 9px;
-    padding: 4px 12px;
-    font-size: 11px;
-    font-weight: 600;
-    color: __subtitle__;
-}
-#themeToggle QPushButton:checked {
-    background-color: #5b9bd5;
-    color: #06131f;
-}
-QGroupBox {
-    background-color: __panel_bg__;
-    border: 1px solid __panel_border__;
-    border-radius: 10px;
-    margin-top: 6px;
-    padding: 16px 14px 14px 14px;
-}
-QGroupBox::title {
-    subcontrol-origin: margin;
-    left: 14px;
-    padding: 0 6px;
-    color: __panel_title__;
-    font-size: 11px;
-    font-weight: 700;
-}
-QComboBox {
-    background-color: __input_bg__;
-    color: __input_text__;
-    border: 1px solid __input_border__;
-    border-radius: 6px;
-    padding: 7px 10px;
-    min-width: 108px;
-    font-size: 13px;
-}
-QComboBox:hover {
-    border: 1px solid __input_hover_border__;
-}
-QComboBox:focus {
-    border: 1px solid #5b9bd5;
-}
-QComboBox::drop-down {
-    border: none;
-    width: 24px;
-}
-QComboBox::down-arrow {
-    image: url(__arrow_icon_path__);
-    width: 10px;
-    height: 10px;
-    margin-right: 8px;
-}
-QComboBox QAbstractItemView {
-    background-color: __input_bg__;
-    color: __input_text__;
-    selection-background-color: __popup_selection_bg__;
-    border: 1px solid __input_border__;
-    outline: none;
-}
-QPushButton {
-    border: none;
-    border-radius: 6px;
-    padding: 8px 20px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #08111d;
-}
-#searchBtn { background-color: #5b9bd5; color: #06131f; }
-#searchBtn:hover { background-color: #75b0e0; }
-#clearBtn { background-color: #2a3a4f; color: #cddbea; }
-#clearBtn:hover { background-color: #37516f; }
-#saveBtn { background-color: #3fae72; color: #05170e; }
-#saveBtn:hover { background-color: #57c187; }
-#saveBtn:disabled { background-color: __save_disabled_bg__; color: __save_disabled_text__; }
-#cancelBtn { background-color: #e2a0b3; color: #2a0d15; }
-#cancelBtn:hover { background-color: #eab2c2; }
-#columnsStrip {
-    background-color: __strip_bg__;
-    border: 1px solid __strip_border__;
-    border-radius: 8px;
-}
-#columnsStrip QScrollArea, #columnsStrip QScrollArea > QWidget > QWidget, #columnsStrip QWidget#columnsStripInner {
-    background-color: transparent;
-    border: none;
-}
-QCheckBox {
-    color: __checkbox_text__;
-    font-size: 12px;
-    spacing: 6px;
-    padding: 2px 4px;
-}
-QCheckBox::indicator {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1px solid __checkbox_border__;
-    background-color: __checkbox_bg__;
-}
-QCheckBox::indicator:checked {
-    background-color: #5b9bd5;
-    border: 1px solid #5b9bd5;
-}
-QTableWidget {
-    background-color: __table_bg__;
-    alternate-background-color: __table_alt_bg__;
-    color: __table_text__;
-    gridline-color: __table_grid__;
-    border: 1px solid __table_border__;
-    border-radius: 8px;
-    selection-background-color: __table_sel_bg__;
-    selection-color: __table_sel_text__;
-    font-size: 12px;
-}
-QTableWidget::item {
-    padding: 4px 6px;
-}
-QHeaderView::section {
-    background-color: __header_bg__;
-    color: __header_text__;
-    border: none;
-    border-bottom: 2px solid __header_border__;
-    padding: 7px 6px;
-    font-size: 11px;
-    font-weight: 700;
-}
-QHeaderView::section:hover {
-    background-color: __header_hover_bg__;
-    color: __header_hover_text__;
-}
-#statusLabel[state="error"] { color: __status_error__; }
-#statusLabel[state="ok"] { color: __status_ok__; }
-QScrollBar:vertical, QScrollBar:horizontal {
-    background: __scrollbar_bg__;
-    width: 10px;
-    height: 10px;
-}
-QScrollBar::handle {
-    background: __scrollbar_handle__;
-    border-radius: 5px;
-}
-"""
+def _load_style_source():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "style.css")
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    themes = {}
+    for match in _THEME_BLOCK_RE.finditer(content):
+        theme_name, body = match.group(1), match.group(2)
+        themes[theme_name] = {
+            key.replace("-", "_"): value.strip()
+            for key, value in _CSS_VAR_RE.findall(body)
+        }
+
+    template = _THEME_BLOCK_RE.sub("", content).strip()
+    return themes, template
+
+
+THEMES, STYLE_TEMPLATE = _load_style_source()
 
 
 def _render_stylesheet(theme_name):
