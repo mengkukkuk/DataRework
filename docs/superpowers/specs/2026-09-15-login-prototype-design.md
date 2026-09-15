@@ -29,8 +29,8 @@ these columns:
 
 This design does not create or seed that table. If a queried
 `password_hash` is not a valid bcrypt digest (or is `NULL`/empty),
-`bcrypt.checkpw` raises `ValueError` — this is treated identically to
-"wrong password" (see Error handling).
+`bcrypt.checkpw` raises `ValueError` or `TypeError` — both are treated
+identically to "wrong password" (see Error handling).
 
 ## Modules
 
@@ -46,7 +46,9 @@ This design does not create or seed that table. If a queried
   as a fallback default, not as the sole source of the credential.
   `verify_user(username, password) -> bool` selects `password_hash`
   from `users` where `username = %s` (parameterized query) and checks
-  it with `bcrypt.checkpw`, catching `ValueError` as a non-match.
+  it with `bcrypt.checkpw`, catching `ValueError`/`TypeError` as a
+  non-match. The connection is closed after each call via
+  `contextlib.closing`.
 - `main_window.py` — `MainWindow(QMainWindow)`: a placeholder window
   with a single `QLabel("Welcome, {username}")` in a central widget.
 
