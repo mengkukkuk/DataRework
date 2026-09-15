@@ -12,7 +12,7 @@ import db
 
 
 class LoginWindow(QWidget):
-    login_succeeded = Signal(str)
+    login_succeeded = Signal(str, str)  # username, permission
 
     def __init__(self):
         super().__init__()
@@ -51,14 +51,14 @@ class LoginWindow(QWidget):
         password = self.password_input.text()
 
         try:
-            valid = db.verify_user(username, password)
+            permission = db.authenticate(username, password)
         except psycopg2.OperationalError as exc:
             print(f"Database connection error: {exc}")
             self._show_error("Unable to reach the database")
             return
 
-        if valid:
-            self.login_succeeded.emit(username)
+        if permission is not None:
+            self.login_succeeded.emit(username, permission)
         else:
             self._show_error("Invalid username or password")
             self.password_input.clear()

@@ -13,8 +13,8 @@ class App:
         self.login_window.login_succeeded.connect(self._on_login_succeeded)
         self.login_window.show()
 
-    def _on_login_succeeded(self, username):
-        self.main_window = MainWindow(username)
+    def _on_login_succeeded(self, username, permission):
+        self.main_window = MainWindow(username, permission)
         self.main_window.show()
         self.login_window.close()
 

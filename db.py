@@ -3,12 +3,13 @@ import os
 
 import bcrypt
 import psycopg2
+from psycopg2 import sql
 
-#DB_HOST = "26.252.139.132"
 DB_HOST = "localhost"
-DB_NAME = "postgres"
+DB_NAME = "rpadata"
 DB_USER = "postgres"
 DB_PASSWORD = os.environ.get("DB_PASSWORD", "P@ssw0rd")
+
 
 def get_connection():
     return psycopg2.connect(
@@ -18,24 +19,157 @@ def get_connection():
         password=DB_PASSWORD,
     )
 
-def verify_user(username, password):
+
+def authenticate(username, password):
     with contextlib.closing(get_connection()) as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT password FROM public.users WHERE username = %s",
+                "SELECT password, permission FROM public.user_access WHERE username = %s",
                 (username,),
             )
             row = cur.fetchone()
 
     if row is None:
-        return False
+        return None
 
-    password = row[0]
-    if not password:
-        return False
-    return password
+    password_hash, permission = row
+    if not password_hash:
+        return None
 
+    """
     try:
-        return bcrypt.checkpw(password.encode(), password_hash.encode())
+        if not bcrypt.checkpw(password.encode(), password_hash.encode()):
+            return None
     except (ValueError, TypeError):
-        return False
+        return None
+    """
+
+    return permission
+
+
+def get_columns(table, schema="public"):
+    """Discover a table's column names, in column order, straight from the
+    catalog instead of hardcoding them."""
+    with contextlib.closing(get_connection()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = %s AND table_name = %s "
+                "ORDER BY ordinal_position",
+                (schema, table),
+            )
+            return [row[0] for row in cur.fetchall()]
+
+
+def get_primary_key_columns(table, schema="public"):
+    """Discover the primary-key column(s) of a table, if any, so individual
+    rows can be targeted safely for UPDATE/DELETE."""
+    with contextlib.closing(get_connection()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT kcu.column_name
+                FROM information_schema.table_constraints tc
+                JOIN information_schema.key_column_usage kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                 AND tc.table_schema = kcu.table_schema
+                WHERE tc.table_schema = %s
+                  AND tc.table_name = %s
+                  AND tc.constraint_type = 'PRIMARY KEY'
+                ORDER BY kcu.ordinal_position
+                """,
+                (schema, table),
+            )
+            return [row[0] for row in cur.fetchall()]
+
+
+def fetch_distinct_values(table, column, conditions=None, limit=300, schema="public"):
+    """Distinct non-null values for `column`, used to seed/refresh a filter
+    dropdown. `conditions` (same (sql.Composable, params) pairs as
+    query_rows) narrows the values to those actually present under filters
+    already chosen, e.g. only job numbers that occur in the selected month.
+    Caller must have already validated `column` against get_columns()."""
+    where_sql = sql.SQL(" AND ").join(cond for cond, _ in conditions) if conditions else sql.SQL("TRUE")
+    params = [p for _, cond_params in conditions for p in cond_params] if conditions else []
+
+    query = sql.SQL(
+        "SELECT DISTINCT {col} FROM {schema}.{table} "
+        "WHERE {col} IS NOT NULL AND {where} ORDER BY {col} DESC LIMIT %s"
+    ).format(
+        col=sql.Identifier(column),
+        schema=sql.Identifier(schema),
+        table=sql.Identifier(table),
+        where=where_sql,
+    )
+    params.append(limit)
+    with contextlib.closing(get_connection()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            return [row[0] for row in cur.fetchall()]
+
+
+def query_rows(table, columns, conditions, schema="public", limit=500):
+    """SELECT the given columns from `table` filtered by `conditions`.
+
+    `conditions` is a list of (sql.Composable, params) pairs, each a
+    self-contained boolean expression (e.g. built with sql.SQL/Identifier),
+    combined with AND. Column names are never interpolated from raw user
+    input; callers must validate them against get_columns() first.
+    Returns (column_names, rows).
+    """
+    select_cols = sql.SQL(", ").join(sql.Identifier(c) for c in columns)
+    where_sql = sql.SQL(" AND ").join(cond for cond, _ in conditions) if conditions else sql.SQL("TRUE")
+    params = [p for _, cond_params in conditions for p in cond_params]
+
+    query = sql.SQL("SELECT {cols} FROM {schema}.{table} WHERE {where} LIMIT %s").format(
+        cols=select_cols,
+        schema=sql.Identifier(schema),
+        table=sql.Identifier(table),
+        where=where_sql,
+    )
+    params.append(limit)
+
+    with contextlib.closing(get_connection()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            rows = cur.fetchall()
+            col_names = [d.name for d in cur.description]
+    return col_names, rows
+
+
+def save_changes(table, pk_columns, updates, deletes, schema="public"):
+    """Apply a batch of row updates and deletes in a single transaction.
+
+    `updates` is a list of (pk_values, {column: new_value}) pairs.
+    `deletes` is a list of pk_values tuples.
+    `pk_values` is always a tuple aligned with `pk_columns`.
+    """
+    with contextlib.closing(get_connection()) as conn:
+        with conn.cursor() as cur:
+            for pk_values, changes in updates:
+                set_sql = sql.SQL(", ").join(
+                    sql.SQL("{} = %s").format(sql.Identifier(col)) for col in changes
+                )
+                where_sql = sql.SQL(" AND ").join(
+                    sql.SQL("{} = %s").format(sql.Identifier(col)) for col in pk_columns
+                )
+                query = sql.SQL("UPDATE {schema}.{table} SET {set_sql} WHERE {where_sql}").format(
+                    schema=sql.Identifier(schema),
+                    table=sql.Identifier(table),
+                    set_sql=set_sql,
+                    where_sql=where_sql,
+                )
+                cur.execute(query, list(changes.values()) + list(pk_values))
+
+            for pk_values in deletes:
+                where_sql = sql.SQL(" AND ").join(
+                    sql.SQL("{} = %s").format(sql.Identifier(col)) for col in pk_columns
+                )
+                query = sql.SQL("DELETE FROM {schema}.{table} WHERE {where_sql}").format(
+                    schema=sql.Identifier(schema),
+                    table=sql.Identifier(table),
+                    where_sql=where_sql,
+                )
+                cur.execute(query, list(pk_values))
+
+        conn.commit()
