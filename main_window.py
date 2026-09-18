@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -34,13 +35,30 @@ import db
 STAGING_TABLE = os.environ.get("STAGING_TABLE", "staging_product_logs")
 DATE_COLUMN = os.environ.get("DATE_COLUMN", "create_date")
 FILTER_COLUMNS = {
-    "line": os.environ.get("FILTER_COLUMN_LINE", "vm_line"),
+    #"line": os.environ.get("FILTER_COLUMN_LINE", "vm_line"),
+    #"parent_no": os.environ.get("FILTER_COLUMN_PARENT_NO", "parent_serial_no"),
+    #"serial_no": os.environ.get("FILTER_COLUMN_SERIAL_NO", "serial_no"),
     "assignment_no": os.environ.get("FILTER_COLUMN_ASSIGNMENT_NO", "assignment_no"),
-    "parent_no": os.environ.get("FILTER_COLUMN_PARENT_NO", "parent_serial_no"),
-    "serial_no": os.environ.get("FILTER_COLUMN_SERIAL_NO", "serial_no"),
+    "product_name": os.environ.get("FILTER_COLUMN_PRODUCT_NAME", "product_name"),
+
 }
 
-CASCADE_FIELDS = ["line", "assignment_no", "parent_no", "serial_no"]
+#CASCADE_FIELDS = ["line", "assignment_no", "parent_no", "serial_no"]
+CASCADE_FIELDS = [ "assignment_no", "product_name"]
+
+# Each region of the product (unit/inner/display/carton) has its own set of
+# id-tracking columns, named "<region>_<tag>" (e.g. "unit_serial_no"). Not
+# every region has every tag (unit has no target_id, carton has no
+# source_id), so the tag dropdown is populated from the table's actual
+# columns rather than this full candidate list.
+REGION_CATEGORIES = ["unit", "inner", "display", "carton"]
+REGION_TAGS = ["serial_no", "roll_no", "source_id", "target_id"]
+REGION_TAG_LABELS = {
+    "serial_no": "Serial No",
+    "roll_no": "Roll No",
+    "source_id": "Source ID",
+    "target_id": "Target ID",
+}
 
 MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
@@ -230,20 +248,36 @@ class MainWindow(QMainWindow):
         self.month_combo.setCurrentIndex(self.month_combo.findData(today.month))
         self.year_combo.setCurrentIndex(self.year_combo.findData(today.year))
 
-        self.line_combo = self._make_typing_combo("Line")
+        self.product_name_combo = self._make_typing_combo("Product name")
         self.job_combo = self._make_typing_combo("Ass. job no.")
-        self.parent_combo = self._make_typing_combo("Parent no.")
-        self.serial_combo = self._make_typing_combo("Serial no.")
         self._cascade_combos = {
-            "line": self.line_combo,
+            "product_name": self.product_name_combo,
             "assignment_no": self.job_combo,
-            "parent_no": self.parent_combo,
-            "serial_no": self.serial_combo,
         }
+
+        self.category_combo = QComboBox()
+        self.category_combo.addItem("Category", None)
+        for category in REGION_CATEGORIES:
+            self.category_combo.addItem(category.capitalize(), category)
+        self.category_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.category_combo.setFixedWidth(110)
+        self.category_combo.currentIndexChanged.connect(lambda _=None: self._on_category_changed())
+
+        self.tag_combo = QComboBox()
+        self.tag_combo.addItem("Tag", None)
+        self.tag_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.tag_combo.setFixedWidth(120)
+        self.tag_combo.setEnabled(False)
+
+        self.tag_value_edit = QLineEdit()
+        self.tag_value_edit.setPlaceholderText("Value")
+        self.tag_value_edit.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.tag_value_edit.setFixedWidth(150)
 
         for w in (
             self.month_combo, self.year_combo,
-            self.line_combo, self.job_combo, self.parent_combo, self.serial_combo,
+             self.product_name_combo,self.job_combo,
+            self.category_combo, self.tag_combo, self.tag_value_edit,
         ):
             layout.addWidget(w)
 
@@ -275,6 +309,28 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.clear_btn)
         layout.addWidget(self.search_btn)
         return group
+
+    def _on_category_changed(self):
+        category = self.category_combo.currentData()
+        self.tag_combo.blockSignals(True)
+        self.tag_combo.clear()
+        self.tag_combo.addItem("Tag", None)
+
+        if category:
+            try:
+                columns = db.get_columns(STAGING_TABLE)
+            except Exception as exc:
+                print(f"Could not load tags for {category}: {exc}")
+                columns = []
+            for tag in REGION_TAGS:
+                if f"{category}_{tag}" in columns:
+                    self.tag_combo.addItem(REGION_TAG_LABELS[tag], tag)
+            self.tag_combo.setEnabled(True)
+        else:
+            self.tag_combo.setEnabled(False)
+
+        self.tag_combo.blockSignals(False)
+        self.tag_value_edit.clear()
 
     def _make_typing_combo(self, placeholder):
         combo = QComboBox()
@@ -378,6 +434,25 @@ class MainWindow(QMainWindow):
                 conditions.append((sql.SQL("{} = %s").format(sql.Identifier(col)), [value]))
         return conditions
 
+    def _category_tag_condition(self, columns):
+        """WHERE condition for the category+tag+value filter, e.g. category
+        "unit" and tag "serial_no" resolve to the unit_serial_no column.
+        Returns [] if the filter isn't fully specified or doesn't resolve to
+        a real column."""
+        category = self.category_combo.currentData()
+        tag = self.tag_combo.currentData()
+        value = self.tag_value_edit.text().strip()
+        if not (category and tag and value):
+            return []
+
+        column = f"{category}_{tag}"
+        if column not in columns:
+            return []
+
+        # source_id/target_id are integer columns; cast to text so ILIKE
+        # (which only operates on text) can pattern-match them too.
+        return [(sql.SQL("{}::text ILIKE %s").format(sql.Identifier(column)), [f"%{value}%"])]
+
     def _refresh_dependent_combos(self, from_field=None):
         """Repopulate the typing combos after `from_field` in CASCADE_FIELDS
         (all of them if `from_field` is None) with the distinct values that
@@ -435,7 +510,16 @@ class MainWindow(QMainWindow):
             if value and (FILTER_COLUMNS.get(field_key) not in columns):
                 warnings.append(f"{field_key} filter skipped (no such column)")
 
+        category = self.category_combo.currentData()
+        tag = self.tag_combo.currentData()
+        tag_value = self.tag_value_edit.text().strip()
+        if tag_value and not (category and tag):
+            warnings.append("tag value ignored (pick a category and tag first)")
+        elif category and tag and not tag_value:
+            warnings.append("category/tag filter skipped (no value entered)")
+
         conditions = self._current_conditions(columns)
+        conditions += self._category_tag_condition(columns)
 
         try:
             pk_columns = db.get_primary_key_columns(STAGING_TABLE)
@@ -597,8 +681,10 @@ class MainWindow(QMainWindow):
         self.year_combo.setCurrentIndex(0)
         self.month_combo.blockSignals(False)
         self.year_combo.blockSignals(False)
-        for combo in (self.line_combo, self.job_combo, self.parent_combo, self.serial_combo):
+        for combo in (self.job_combo, self.product_name_combo):
             combo.setCurrentText("")
+        self.category_combo.setCurrentIndex(0)
+        self.tag_value_edit.clear()
         self._refresh_dependent_combos()
         self.status_label.clear()
         self.status_label.setProperty("state", "")
