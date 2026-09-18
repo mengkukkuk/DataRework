@@ -32,8 +32,8 @@ from PySide6.QtWidgets import (
 import db
 
 # --- Schema mapping --------------------------------------------------------
-STAGING_TABLE = os.environ.get("STAGING_TABLE", "staging_product_logs")
-DATE_COLUMN = os.environ.get("DATE_COLUMN", "create_date")
+STAGING_TABLE = os.environ.get("STAGING_TABLE", "filling_product_logs")
+DATE_COLUMN = os.environ.get("DATE_COLUMN", "created_at")
 FILTER_COLUMNS = {
     #"line": os.environ.get("FILTER_COLUMN_LINE", "vm_line"),
     #"parent_no": os.environ.get("FILTER_COLUMN_PARENT_NO", "parent_serial_no"),
@@ -226,8 +226,15 @@ class MainWindow(QMainWindow):
 
     def _build_filter_bar(self):
         group = QGroupBox("Filters")
-        layout = QHBoxLayout(group)
-        layout.setSpacing(10)
+        outer = QVBoxLayout(group)
+        outer.setSpacing(8)
+
+        row1 = QHBoxLayout()
+        row1.setSpacing(10)
+        row2 = QHBoxLayout()
+        row2.setSpacing(10)
+        outer.addLayout(row1)
+        outer.addLayout(row2)
 
         self.month_combo = QComboBox()
         self.month_combo.addItem("Month", None)
@@ -273,13 +280,17 @@ class MainWindow(QMainWindow):
         self.tag_value_edit.setPlaceholderText("Value")
         self.tag_value_edit.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.tag_value_edit.setFixedWidth(150)
+        self.tag_value_edit.returnPressed.connect(self._on_value_enter)
 
-        for w in (
-            self.month_combo, self.year_combo,
-             self.product_name_combo,self.job_combo,
-            self.category_combo, self.tag_combo, self.tag_value_edit,
-        ):
-            layout.addWidget(w)
+        # Row 1: date range + product name, which gets the leftover width so
+        # long product names aren't cramped. Row 2: the remaining, narrower
+        # filters plus the action buttons.
+        for w in (self.month_combo, self.year_combo):
+            row1.addWidget(w)
+        row1.addWidget(self.product_name_combo, stretch=1)
+
+        for w in (self.job_combo, self.category_combo, self.tag_combo, self.tag_value_edit):
+            row2.addWidget(w)
 
         # Date changes affect every downstream combo; each typing combo only
         # affects the ones after it in CASCADE_FIELDS. Refresh on
@@ -296,7 +307,7 @@ class MainWindow(QMainWindow):
                 lambda _=None, fk=field_key: self._refresh_dependent_combos(fk)
             )
 
-        layout.addStretch(1)
+        row2.addStretch(1)
 
         self.search_btn = QPushButton("Search")
         self.search_btn.setObjectName("searchBtn")
@@ -306,8 +317,8 @@ class MainWindow(QMainWindow):
         self.clear_btn.setObjectName("clearBtn")
         self.clear_btn.clicked.connect(self._on_clear)
 
-        layout.addWidget(self.clear_btn)
-        layout.addWidget(self.search_btn)
+        row2.addWidget(self.clear_btn)
+        row2.addWidget(self.search_btn)
         return group
 
     def _on_category_changed(self):
@@ -332,14 +343,22 @@ class MainWindow(QMainWindow):
         self.tag_combo.blockSignals(False)
         self.tag_value_edit.clear()
 
+    def _on_value_enter(self):
+        if self.tag_value_edit.text().strip():
+            self._on_search()
+
     def _make_typing_combo(self, placeholder):
         combo = QComboBox()
         combo.setEditable(True)
         combo.setInsertPolicy(QComboBox.NoInsert)
         combo.lineEdit().setPlaceholderText(placeholder)
         combo.setCurrentText("")
-        combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        combo.setFixedWidth(170)
+        if placeholder == "Product name":
+            combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed) # Flexible width for long names.
+            combo.setMinimumWidth(250)
+        else:
+            combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed) # Fixed width for short names.
+            combo.setFixedWidth(170)
         return combo
 
     def _build_columns_strip(self):
@@ -449,9 +468,10 @@ class MainWindow(QMainWindow):
         if column not in columns:
             return []
 
-        # source_id/target_id are integer columns; cast to text so ILIKE
-        # (which only operates on text) can pattern-match them too.
-        return [(sql.SQL("{}::text ILIKE %s").format(sql.Identifier(column)), [f"%{value}%"])]
+        # source_id/target_id are integer columns; cast to text so this
+        # works uniformly across columns. ILIKE with no wildcards is an
+        # exact, case-insensitive match (not a substring search).
+        return [(sql.SQL("{}::text ILIKE %s").format(sql.Identifier(column)), [value])]
 
     def _refresh_dependent_combos(self, from_field=None):
         """Repopulate the typing combos after `from_field` in CASCADE_FIELDS
@@ -727,6 +747,7 @@ class MainWindow(QMainWindow):
             return
 
         try:
+            db.update_staging_serial(updates)
             db.save_changes(STAGING_TABLE, self._pk_columns, updates, deletes)
         except psycopg2.OperationalError:
             self._show_status("Unable to reach the database", error=True)
