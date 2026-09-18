@@ -35,9 +35,6 @@ import db
 STAGING_TABLE = os.environ.get("STAGING_TABLE", "filling_product_logs")
 DATE_COLUMN = os.environ.get("DATE_COLUMN", "created_at")
 FILTER_COLUMNS = {
-    #"line": os.environ.get("FILTER_COLUMN_LINE", "vm_line"),
-    #"parent_no": os.environ.get("FILTER_COLUMN_PARENT_NO", "parent_serial_no"),
-    #"serial_no": os.environ.get("FILTER_COLUMN_SERIAL_NO", "serial_no"),
     "assignment_no": os.environ.get("FILTER_COLUMN_ASSIGNMENT_NO", "assignment_no"),
     "product_name": os.environ.get("FILTER_COLUMN_PRODUCT_NAME", "product_name"),
 
