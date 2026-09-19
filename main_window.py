@@ -159,7 +159,9 @@ class MainWindow(QMainWindow):
         try:
             columns = db.get_columns(STAGING_TABLE)
             conditions = self._current_conditions(columns) + self._category_tag_condition(columns)
-            self.container_panel.set_groups(db.container_groups(STAGING_TABLE, columns, conditions))
+            self.container_panel.set_groups(db.container_groups(
+                STAGING_TABLE, columns, conditions, product_column=FILTER_COLUMNS['product_name']
+            ))
         except Exception as exc:
             print(f"Could not load containers: {exc}")
             self.container_panel.show_error()

@@ -26,7 +26,7 @@ def fetch_distinct_values(table, column, conditions=None, limit=300, schema="pub
             return [row[0] for row in cur.fetchall()]
 
 
-def container_groups(table, columns, conditions=(), schema="public"):
+def container_groups(table, columns, conditions=(), schema="public", product_column="product_name"):
     """Aggregate complete packaging paths, independently of the record-grid limit."""
     names = [f"{level}_serial_no" for level in ("carton", "inner", "display", "unit")]
     present = [name for name in names if name in columns]
@@ -36,10 +36,14 @@ def container_groups(table, columns, conditions=(), schema="public"):
         sql.Identifier(name) if name in columns else sql.SQL("NULL") for name in names
     )
     where = sql.SQL(" AND ").join(cond for cond, _ in conditions) if conditions else sql.SQL("TRUE")
+    products = (
+        sql.SQL("ARRAY_AGG(DISTINCT {0}::text) FILTER (WHERE {0} IS NOT NULL)").format(sql.Identifier(product_column))
+        if product_column in columns else sql.SQL("ARRAY[]::text[]")
+    )
     query = sql.SQL(
-        "SELECT {fields}, COUNT(*) FROM {schema}.{table} WHERE {where} GROUP BY {groups}"
+        "SELECT {fields}, COUNT(*), {products} FROM {schema}.{table} WHERE {where} GROUP BY {groups}"
     ).format(fields=fields, schema=sql.Identifier(schema), table=sql.Identifier(table),
-             where=where, groups=sql.SQL(", ").join(map(sql.Identifier, present)))
+             where=where, products=products, groups=sql.SQL(", ").join(map(sql.Identifier, present)))
     params = [p for _, values in conditions for p in values]
     with contextlib.closing(connection.get_connection()) as conn:
         with conn.cursor() as cur:

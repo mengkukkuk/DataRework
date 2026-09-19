@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QSizePolicy, QVB
 
 from i18n import tr, language
 from i18n_widgets import QLabel, QLineEdit, QPushButton, QWidget
+from product_avatars import AvatarCatalog, avatar_pixmap
 
 LEVELS = ("carton", "inner", "display", "unit")
 PAGE_SIZE = 20
@@ -19,17 +20,22 @@ class ContainerNode:
     path: tuple = ()
     rows: int = 0
     children: dict = field(default_factory=dict)
+    products: set = field(default_factory=set)
 
 
 def build_hierarchy(groups):
     root = ContainerNode()
-    for *serials, count in groups:
+    for group in groups:
+        serials, count = group[:4], group[4]
+        products = {str(name) for name in (group[5] or []) if name} if len(group) > 5 else set()
         node = root
         node.rows += count
+        node.products.update(products)
         for serial in serials:
             serial = None if serial is None or str(serial) == "" else str(serial)
             node = node.children.setdefault(serial, ContainerNode(node.path + (serial,)))
             node.rows += count
+            node.products.update(products)
     return root
 
 
@@ -42,6 +48,7 @@ class ContainerPanel(QWidget):
         super().__init__(parent)
         self.setObjectName("containerManager")
         self.is_admin = is_admin
+        self.avatars = AvatarCatalog()
         self.root = ContainerNode()
         self.path = ()
         self.page = 0
@@ -197,6 +204,22 @@ class ContainerPanel(QWidget):
         heading.addWidget(label)
         heading.addStretch()
         box.addLayout(heading)
+        details = QHBoxLayout()
+        details.setSpacing(8)
+        image_path = self.avatars.resolve(level, node.products)
+        if image_path:
+            pixmap = avatar_pixmap(image_path)
+            if not pixmap.isNull():
+                avatar = QLabel()
+                avatar.setObjectName("productAvatar")
+                avatar.setFixedSize(44, 44)
+                avatar.setAlignment(Qt.AlignCenter)
+                avatar.setPixmap(pixmap)
+                avatar.setToolTip("\n".join(sorted(node.products)))
+                avatar.setAccessibleName("\n".join(sorted(node.products)))
+                details.addWidget(avatar)
+        info = QVBoxLayout()
+        info.setSpacing(2)
         name = QLabel(serial if serial is not None else tr("Unassigned"))
         name.setTextFormat(Qt.PlainText)
         name.setWordWrap(False)
@@ -204,12 +227,14 @@ class ContainerPanel(QWidget):
         name.setToolTip(serial if serial is not None else tr("Unassigned"))
         name.setTextInteractionFlags(Qt.TextSelectableByMouse)
         name.setObjectName("containerSerial")
-        box.addWidget(name)
+        info.addWidget(name)
         count = QLabel(tr("{p0} saved rows", p0=node.rows))
         if level != "unit":
             count.setText(tr("{p0} inside · {p1} saved rows", p0=len(node.children), p1=node.rows))
         count.setObjectName("dialogHint")
-        box.addWidget(count)
+        info.addWidget(count)
+        details.addLayout(info, 1)
+        box.addLayout(details, 1)
         actions = QHBoxLayout()
         open_button = QPushButton(tr("View records") if level == "unit" else tr("Open box"))
         open_button.setObjectName("searchBtn")
