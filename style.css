@@ -218,10 +218,10 @@ QPushButton {
     font-weight: 600;
     color: #08111d;
 }
-#searchBtn { background-color: #5b9bd5; color: #06131f; }
-#searchBtn:hover { background-color: #75b0e0; }
-#clearBtn { background-color: #2a3a4f; color: #cddbea; }
-#clearBtn:hover { background-color: #37516f; }
+#clearBtn { background-color: #5b9bd5; color: #06131f; }
+#clearBtn:hover { background-color: #75b0e0; }
+#searchBtn { background-color: #2a3a4f; color: #cddbea; }
+#searchBtn:hover { background-color: #37516f; }
 #saveBtn { background-color: #3fae72; color: #05170e; }
 #saveBtn:hover { background-color: #57c187; }
 #saveBtn:disabled { background-color: __save_disabled_bg__; color: __save_disabled_text__; }
