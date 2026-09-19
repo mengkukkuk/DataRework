@@ -956,7 +956,8 @@ class MainWindow(QMainWindow):
             )
             return
 
-        dialog = RenameContainerDialog(self, level=level or "carton", serial=old_serial)
+        dialog = RenameContainerDialog(self, level=level or "carton", serial=old_serial,
+                                       scan_ready=not bool(old_serial))
         if dialog.exec() != QDialog.Accepted:
             return
 

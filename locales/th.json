@@ -168,5 +168,7 @@
   "Unassigned groups have no serial to rename.": "กลุ่มที่ยังไม่ระบุไม่มีรหัสให้เปลี่ยน",
   "Image preview — {p0}": "ดูรูปภาพ — {p0}",
   "Unable to open image.": "ไม่สามารถเปิดรูปภาพได้",
-  "Close": "ปิด"
+  "Close": "ปิด",
+  "Scan or type the current serial": "สแกนหรือพิมพ์รหัสซีเรียลปัจจุบัน",
+  "Scan the current serial, then scan or type the new serial. Click Rename when ready.": "สแกนรหัสปัจจุบัน แล้วสแกนหรือพิมพ์รหัสใหม่ เมื่อพร้อมให้คลิกเปลี่ยนรหัส"
 }

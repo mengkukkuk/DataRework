@@ -168,5 +168,7 @@
   "Unassigned groups have no serial to rename.": "Unassigned groups have no serial to rename.",
   "Image preview — {p0}": "Image preview — {p0}",
   "Unable to open image.": "Unable to open image.",
-  "Close": "Close"
+  "Close": "Close",
+  "Scan or type the current serial": "Scan or type the current serial",
+  "Scan the current serial, then scan or type the new serial. Click Rename when ready.": "Scan the current serial, then scan or type the new serial. Click Rename when ready."
 }

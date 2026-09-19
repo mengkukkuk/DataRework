@@ -9,7 +9,7 @@ user must see the blast radius of, and stage 2 only makes sense once that write
 has landed and the children can be listed under the new name.
 """
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QEvent, QTimer
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -68,7 +68,7 @@ def suggest_child_serial(child_serial, old_parent, new_parent):
 class RenameContainerDialog(QDialog):
     """Pick a level, pick a container, give it a new serial."""
 
-    def __init__(self, parent=None, level="carton", serial=""):
+    def __init__(self, parent=None, level="carton", serial="", scan_ready=False):
         super().__init__(parent)
         self.setWindowTitle(tr('Rename serial'))
         self.setMinimumWidth(540)
@@ -76,6 +76,12 @@ class RenameContainerDialog(QDialog):
         self._level = level if level in LEVEL_ORDER else "carton"
         self._previews = {}
         self._last_old = ""
+        self._scan_ready = scan_ready
+        self._prefilled = bool(serial)
+        self._preview_timer = QTimer(self)
+        self._preview_timer.setSingleShot(True)
+        self._preview_timer.setInterval(250)
+        self._preview_timer.timeout.connect(self._update_preview)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 20, 24, 18)
@@ -141,6 +147,11 @@ class RenameContainerDialog(QDialog):
         self.old_combo = QComboBox()
         self.old_combo.setObjectName("serialOld")
         self.old_combo.setEditable(True)
+        self.old_combo.setLineEdit(QLineEdit(self.old_combo))
+        self.old_combo.setInsertPolicy(QComboBox.NoInsert)
+        self.old_combo.setCompleter(None)
+        self.old_combo.lineEdit().setPlaceholderText(tr('Scan or type the current serial'))
+        self.old_combo.lineEdit().installEventFilter(self)
         self.old_combo.setFont(_serial_font())
         self.old_combo.lineEdit().setFont(_serial_font())
         self.old_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -153,6 +164,7 @@ class RenameContainerDialog(QDialog):
         self.new_edit.setObjectName("serialNew")
         self.new_edit.setPlaceholderText(tr('new serial'))
         self.new_edit.setFont(_serial_font())
+        self.new_edit.installEventFilter(self)
         self.new_edit.textChanged.connect(self._refresh_state)
 
         row.addWidget(self.old_combo, 1)
@@ -170,7 +182,8 @@ class RenameContainerDialog(QDialog):
 
         self.confirm_btn = QPushButton(tr('Rename'))
         self.confirm_btn.setObjectName("primaryBtn")
-        self.confirm_btn.setDefault(True)
+        self.confirm_btn.setAutoDefault(False)
+        cancel.setAutoDefault(False)
         self.confirm_btn.clicked.connect(self.accept)
 
         row.addWidget(cancel)
@@ -179,12 +192,42 @@ class RenameContainerDialog(QDialog):
 
     # -- behaviour ---------------------------------------------------------
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        QTimer.singleShot(0, self._focus_scan_input)
+
+    def _focus_scan_input(self):
+        if not self.isVisible():
+            return
+        edit = self.new_edit if self._prefilled else self.old_combo.lineEdit()
+        edit.setFocus(Qt.OtherFocusReason)
+        edit.selectAll()
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.KeyPress and event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            if watched is self.old_combo.lineEdit():
+                self._preview_timer.stop()
+                self._update_preview()
+                if self.old_combo.currentText().strip():
+                    self.new_edit.setFocus(Qt.OtherFocusReason)
+                    self.new_edit.selectAll()
+                return True
+            if watched is self.new_edit:
+                # Keyboard-wedge scanners commonly append CR/LF. Never let
+                # either terminator submit the dialog or a subsequent confirmation.
+                self._preview_timer.stop()
+                self._update_preview()
+                return True
+        return super().eventFilter(watched, event)
+
     def set_level(self, name):
         if name not in LEVEL_ORDER or name == self._level:
             return
         self._level = name
         self._level_buttons[name].setChecked(True)
         self._reload_serials()
+        self._prefilled = False
+        self._focus_scan_input()
 
     def _reload_serials(self, preferred=""):
         error = ""
@@ -200,9 +243,10 @@ class RenameContainerDialog(QDialog):
             if preferred not in serials:
                 self.old_combo.addItem(preferred)
             self.old_combo.setCurrentText(preferred)
-        elif serials:
+        elif serials and not self._scan_ready:
             self.old_combo.setCurrentIndex(0)
         else:
+            self.old_combo.setCurrentIndex(-1)
             self.old_combo.setCurrentText("")
         self.old_combo.blockSignals(False)
 
@@ -232,8 +276,16 @@ class RenameContainerDialog(QDialog):
         old, new = self.values()
         self.confirm_btn.setEnabled(bool(old and new and new != old))
 
+        if self._scan_ready:
+            self._preview_timer.start()
+        else:
+            self._update_preview()
+
+    def _update_preview(self):
+        old, _new = self.values()
+
         if not old:
-            self.hint.setText(tr('No {p0} containers found.', p0=tr(self._level)))
+            self.hint.setText(tr('Scan the current serial, then scan or type the new serial. Click Rename when ready.'))
             return
 
         preview = self._preview(self._level, old)
