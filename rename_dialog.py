@@ -13,21 +13,17 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QButtonGroup,
-    QCheckBox,
-    QComboBox,
-    QDialog,
     QFrame,
     QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
     QScrollArea,
     QSizePolicy,
     QVBoxLayout,
-    QWidget,
 )
 
 import db
+from i18n import tr, column_label, language
+from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
+                          QLineEdit, QWidget, QMainWindow, QDialog, QMessageBox, LanguageToggle)
 
 # Outermost first, so the rail reads as the containment order it is rather than
 # an alphabetical list.
@@ -51,7 +47,7 @@ def _serial_font(point_size=13):
 
 
 def _field_label(text):
-    label = QLabel(text.upper())
+    label = QLabel(text)
     label.setObjectName("fieldLabel")
     return label
 
@@ -74,7 +70,7 @@ class RenameContainerDialog(QDialog):
 
     def __init__(self, parent=None, level="carton", serial=""):
         super().__init__(parent)
-        self.setWindowTitle("Rename container")
+        self.setWindowTitle(tr('Rename container'))
         self.setMinimumWidth(540)
 
         self._level = level if level in LEVEL_ORDER else "carton"
@@ -85,24 +81,23 @@ class RenameContainerDialog(QDialog):
         root.setContentsMargins(24, 20, 24, 18)
         root.setSpacing(6)
 
-        title = QLabel("Rename a container")
+        title = QLabel(tr('Rename a container'))
         title.setObjectName("dialogTitle")
         root.addWidget(title)
 
         blurb = QLabel(
-            "A carton, inner or display serial is one physical label that many "
-            "rows share. Renaming it rewrites every row and link that names it."
+            tr('A carton, inner or display serial is one physical label that many rows share. Renaming it rewrites every row and link that names it.')
         )
         blurb.setObjectName("dialogHint")
         blurb.setWordWrap(True)
         root.addWidget(blurb)
         root.addSpacing(14)
 
-        root.addWidget(_field_label("Level"))
+        root.addWidget(_field_label(tr('Level')))
         root.addWidget(self._build_level_rail(), alignment=Qt.AlignLeft)
         root.addSpacing(14)
 
-        root.addWidget(_field_label("Serial"))
+        root.addWidget(_field_label(tr('Serial')))
         root.addLayout(self._build_slab_pair())
 
         self.hint = QLabel("")
@@ -128,7 +123,7 @@ class RenameContainerDialog(QDialog):
         self._level_group = QButtonGroup(frame)
         self._level_group.setExclusive(True)
         for name in LEVEL_ORDER:
-            btn = QPushButton(name.capitalize())
+            btn = QPushButton(tr(name.capitalize()))
             btn.setCheckable(True)
             btn.setCursor(Qt.PointingHandCursor)
             btn.clicked.connect(lambda _checked=False, n=name: self.set_level(n))
@@ -156,7 +151,7 @@ class RenameContainerDialog(QDialog):
 
         self.new_edit = QLineEdit()
         self.new_edit.setObjectName("serialNew")
-        self.new_edit.setPlaceholderText("new serial")
+        self.new_edit.setPlaceholderText(tr('new serial'))
         self.new_edit.setFont(_serial_font())
         self.new_edit.textChanged.connect(self._refresh_state)
 
@@ -169,11 +164,11 @@ class RenameContainerDialog(QDialog):
         row = QHBoxLayout()
         row.addStretch(1)
 
-        cancel = QPushButton("Cancel")
+        cancel = QPushButton(tr('Cancel'))
         cancel.setObjectName("ghostBtn")
         cancel.clicked.connect(self.reject)
 
-        self.confirm_btn = QPushButton("Rename")
+        self.confirm_btn = QPushButton(tr('Rename'))
         self.confirm_btn.setObjectName("primaryBtn")
         self.confirm_btn.setDefault(True)
         self.confirm_btn.clicked.connect(self.accept)
@@ -236,7 +231,7 @@ class RenameContainerDialog(QDialog):
         self.confirm_btn.setEnabled(bool(old and new and new != old))
 
         if not old:
-            self.hint.setText(f"No {self._level} containers found.")
+            self.hint.setText(tr('No {p0} containers found.', p0=tr(self._level)))
             return
 
         preview = self._preview(self._level, old)
@@ -244,8 +239,7 @@ class RenameContainerDialog(QDialog):
             self.hint.setText("")
         else:
             self.hint.setText(
-                f'{preview["rows"]} row(s) and {preview["edges"]} link(s) name '
-                f'"{old}". All of them will be rewritten.'
+                tr('{p0} row(s) and {p1} link(s) name "{p2}". All of them will be rewritten.', p0=preview["rows"], p1=preview["edges"], p2=old)
             )
 
     def values(self):
@@ -261,7 +255,7 @@ class ChildRelabelDialog(QDialog):
 
     def __init__(self, parent, parent_level, old_parent, new_parent, children):
         super().__init__(parent)
-        self.setWindowTitle("Rename children")
+        self.setWindowTitle(tr('Rename children'))
         self.setMinimumSize(620, 440)
 
         self._rows = []
@@ -270,14 +264,13 @@ class ChildRelabelDialog(QDialog):
         root.setContentsMargins(24, 20, 24, 18)
         root.setSpacing(6)
 
-        title = QLabel(f"Inside {parent_level} {new_parent}")
+        title = QLabel(tr('Inside {p0} {p1}', p0=tr(parent_level), p1=new_parent))
         title.setObjectName("dialogTitle")
         root.addWidget(title)
 
         child_level = children[0]["level"] if children else "child"
         blurb = QLabel(
-            f"{len(children)} {child_level}(s) still carry their old serials. Tick the "
-            "ones that should follow the rename and leave the rest as they are."
+            tr('{p0} {p1}(s) still carry their old serials. Tick the ones that should follow the rename and leave the rest as they are.', p0=len(children), p1=tr(child_level))
         )
         blurb.setObjectName("dialogHint")
         blurb.setWordWrap(True)
@@ -293,7 +286,7 @@ class ChildRelabelDialog(QDialog):
     def _build_select_row(self):
         row = QHBoxLayout()
         for text, checked in (("Select all", True), ("Select none", False)):
-            btn = QPushButton(text)
+            btn = QPushButton(tr(text))
             btn.setObjectName("linkBtn")
             btn.setCursor(Qt.PointingHandCursor)
             btn.clicked.connect(lambda _c=False, v=checked: self._set_all(v))
@@ -340,7 +333,7 @@ class ChildRelabelDialog(QDialog):
         new.setFont(_serial_font(11))
         new.textChanged.connect(self._refresh_state)
 
-        count = QLabel(f'{child["children"]} inside' if child["children"] else "empty")
+        count = QLabel(tr('{p0} inside', p0=child["children"]) if child["children"] else tr('empty'))
         count.setObjectName("childCount")
         count.setMinimumWidth(64)
         count.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -364,11 +357,11 @@ class ChildRelabelDialog(QDialog):
         self.warning.setWordWrap(True)
         row.addWidget(self.warning, 1)
 
-        skip = QPushButton("Skip")
+        skip = QPushButton(tr('Skip'))
         skip.setObjectName("ghostBtn")
         skip.clicked.connect(self.reject)
 
-        self.apply_btn = QPushButton("Apply")
+        self.apply_btn = QPushButton(tr('Apply'))
         self.apply_btn.setObjectName("primaryBtn")
         self.apply_btn.setDefault(True)
         self.apply_btn.clicked.connect(self.accept)
@@ -383,14 +376,14 @@ class ChildRelabelDialog(QDialog):
 
     def _refresh_state(self):
         renames = self.renames()
-        self.apply_btn.setText(f"Apply {len(renames)} change(s)" if renames else "Apply")
+        self.apply_btn.setText(tr('Apply {p0} change(s)', p0=len(renames)) if renames else tr('Apply'))
 
         # Caught here rather than at the database, where the batch is atomic and
         # one clash would discard every other edit the user just made.
         new_names = [new for _level, _old, new in renames]
         clashing = sorted({n for n in new_names if new_names.count(n) > 1})
         self.warning.setText(
-            f"Two children would share {', '.join(clashing)}." if clashing else ""
+            tr('Two children would share {p0}.', p0=', '.join(clashing)) if clashing else ""
         )
         self.apply_btn.setEnabled(bool(renames) and not clashing)
 

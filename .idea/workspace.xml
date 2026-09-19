@@ -4,11 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Implement new build system for DataRework and SerialStoreSync executables&#10;&#10;Add `build.ps1` script for streamlined builds with service management, PyInstaller specification, and asset bundling. Introduce custom service management via NSSM and build-time icon generation. Update `.gitignore` to exclude build outputs and sensitive files. Refactor dotenv loading for better compatibility with frozen applications.">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add comprehensive tests for container rename functionality&#10;&#10;Introduce `tests/_test_container_rename.py` with 49 tests covering edge cases and validation for container renaming logic. Ensure renamed containers propagate changes consistently across database tables and UI.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DataRework.spec" beforeDir="false" afterPath="$PROJECT_DIR$/DataRework.spec" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/login_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/login_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rename_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/rename_dialog.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -239,7 +240,15 @@
       <option name="project" value="LOCAL" />
       <updated>1789806730139</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Add comprehensive tests for container rename functionality&#10;&#10;Introduce `tests/_test_container_rename.py` with 49 tests covering edge cases and validation for container renaming logic. Ensure renamed containers propagate changes consistently across database tables and UI.">
+      <option name="closed" value="true" />
+      <created>1789824492531</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1789824492531</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -265,6 +274,7 @@
     <MESSAGE value="before change" />
     <MESSAGE value="update_staging_serial, set_staging_serial optimization" />
     <MESSAGE value="Implement new build system for DataRework and SerialStoreSync executables&#10;&#10;Add `build.ps1` script for streamlined builds with service management, PyInstaller specification, and asset bundling. Introduce custom service management via NSSM and build-time icon generation. Update `.gitignore` to exclude build outputs and sensitive files. Refactor dotenv loading for better compatibility with frozen applications." />
-    <option name="LAST_COMMIT_MESSAGE" value="Implement new build system for DataRework and SerialStoreSync executables&#10;&#10;Add `build.ps1` script for streamlined builds with service management, PyInstaller specification, and asset bundling. Introduce custom service management via NSSM and build-time icon generation. Update `.gitignore` to exclude build outputs and sensitive files. Refactor dotenv loading for better compatibility with frozen applications." />
+    <MESSAGE value="Add comprehensive tests for container rename functionality&#10;&#10;Introduce `tests/_test_container_rename.py` with 49 tests covering edge cases and validation for container renaming logic. Ensure renamed containers propagate changes consistently across database tables and UI." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add comprehensive tests for container rename functionality&#10;&#10;Introduce `tests/_test_container_rename.py` with 49 tests covering edge cases and validation for container renaming logic. Ensure renamed containers propagate changes consistently across database tables and UI." />
   </component>
 </project>

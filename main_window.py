@@ -10,28 +10,21 @@ from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPolygonF
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QButtonGroup,
-    QCheckBox,
-    QComboBox,
-    QDialog,
     QFrame,
-    QGroupBox,
     QHBoxLayout,
     QHeaderView,
-    QLabel,
-    QLineEdit,
-    QMainWindow,
     QMenu,
-    QMessageBox,
-    QPushButton,
     QScrollArea,
     QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
-    QWidget,
 )
 
 import db
+from i18n import tr, column_label, language
+from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
+                          QLineEdit, QWidget, QMainWindow, QDialog, QMessageBox, LanguageToggle)
 from rename_dialog import ChildRelabelDialog, RenameContainerDialog
 
 # --- Schema mapping --------------------------------------------------------
@@ -173,7 +166,7 @@ class MainWindow(QMainWindow):
         if self._theme not in THEMES:
             self._theme = "dark"
 
-        self.setWindowTitle("Production Rework")
+        self.setWindowTitle(tr('Production Rework'))
         self.resize(1300, 700)
         self.setStyleSheet(_render_stylesheet(self._theme))
 
@@ -191,6 +184,7 @@ class MainWindow(QMainWindow):
         root.addLayout(self._build_footer())
 
         self._refresh_dependent_combos()
+        language.changed.connect(self._retranslate_table)
 
     # -- construction ------------------------------------------------------
 
@@ -198,18 +192,19 @@ class MainWindow(QMainWindow):
         row = QHBoxLayout()
         title_box = QVBoxLayout()
         title_box.setSpacing(2)
-        title = QLabel("Production Rework")
+        title = QLabel(tr('Production Rework'))
         title.setObjectName("pageTitle")
-        subtitle = QLabel(f"Table = {STAGING_TABLE}")
+        subtitle = QLabel(tr('Table = {p0}', p0=STAGING_TABLE))
         subtitle.setObjectName("pageSubtitle")
         title_box.addWidget(title)
         title_box.addWidget(subtitle)
         row.addLayout(title_box)
         row.addStretch(1)
 
+        row.addWidget(LanguageToggle(self))
         row.addWidget(self._build_theme_toggle())
 
-        badge = QLabel(f"{self.username}  ·  {self.permission}")
+        badge = QLabel(tr('{p0}  ·  {p1}', p0=self.username, p1=tr(self.permission)))
         badge.setObjectName("userBadge")
         badge.setProperty("admin", "true" if self.is_admin else "false")
         row.addWidget(badge, alignment=Qt.AlignVCenter)
@@ -222,8 +217,8 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(3, 3, 3, 3)
         layout.setSpacing(2)
 
-        self.dark_theme_btn = QPushButton("Dark")
-        self.light_theme_btn = QPushButton("Light")
+        self.dark_theme_btn = QPushButton(tr('Dark'))
+        self.light_theme_btn = QPushButton(tr('Light'))
         self._theme_buttons = {"dark": self.dark_theme_btn, "light": self.light_theme_btn}
 
         self._theme_button_group = QButtonGroup(frame)
@@ -247,7 +242,7 @@ class MainWindow(QMainWindow):
         _get_settings().setValue("theme", name)
 
     def _build_filter_bar(self):
-        group = QGroupBox("Filters")
+        group = QGroupBox(tr('Filters'))
         outer = QVBoxLayout(group)
         outer.setSpacing(8)
 
@@ -259,14 +254,14 @@ class MainWindow(QMainWindow):
         outer.addLayout(row2)
 
         self.month_combo = QComboBox()
-        self.month_combo.addItem("Month", None)
+        self.month_combo.addItem(tr('Month'), None)
         for i, name in enumerate(MONTH_NAMES, start=1):
-            self.month_combo.addItem(name, i)
+            self.month_combo.addItem(tr(name), i)
         self.month_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.month_combo.setFixedWidth(130)
 
         self.year_combo = QComboBox()
-        self.year_combo.addItem("Year", None)
+        self.year_combo.addItem(tr('Year'), None)
         current_year = datetime.date.today().year
         for y in range(current_year - 5, current_year + 2):
             self.year_combo.addItem(str(y), y)
@@ -277,29 +272,29 @@ class MainWindow(QMainWindow):
         self.month_combo.setCurrentIndex(self.month_combo.findData(today.month))
         self.year_combo.setCurrentIndex(self.year_combo.findData(today.year))
 
-        self.product_name_combo = self._make_typing_combo("Product name")
-        self.job_combo = self._make_typing_combo("Ass. job no.")
+        self.product_name_combo = self._make_typing_combo(tr('Product name'))
+        self.job_combo = self._make_typing_combo(tr('Ass. job no.'))
         self._cascade_combos = {
             "product_name": self.product_name_combo,
             "assignment_no": self.job_combo,
         }
 
         self.category_combo = QComboBox()
-        self.category_combo.addItem("Category", None)
+        self.category_combo.addItem(tr('Category'), None)
         for category in REGION_CATEGORIES:
-            self.category_combo.addItem(category.capitalize(), category)
+            self.category_combo.addItem(tr(category.capitalize()), category)
         self.category_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.category_combo.setFixedWidth(110)
+        self.category_combo.setMinimumWidth(155)
         self.category_combo.currentIndexChanged.connect(lambda _=None: self._on_category_changed())
 
         self.tag_combo = QComboBox()
-        self.tag_combo.addItem("Tag", None)
+        self.tag_combo.addItem(tr('Tag'), None)
         self.tag_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.tag_combo.setFixedWidth(120)
+        self.tag_combo.setMinimumWidth(145)
         self.tag_combo.setEnabled(False)
 
         self.tag_value_edit = QLineEdit()
-        self.tag_value_edit.setPlaceholderText("Value")
+        self.tag_value_edit.setPlaceholderText(tr('Value'))
         self.tag_value_edit.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.tag_value_edit.setFixedWidth(150)
         self.tag_value_edit.returnPressed.connect(self._on_value_enter)
@@ -331,11 +326,11 @@ class MainWindow(QMainWindow):
 
         row2.addStretch(1)
 
-        self.search_btn = QPushButton("Search")
+        self.search_btn = QPushButton(tr('Search'))
         self.search_btn.setObjectName("searchBtn")
         self.search_btn.clicked.connect(self._on_search)
 
-        self.clear_btn = QPushButton("Clear")
+        self.clear_btn = QPushButton(tr('Clear'))
         self.clear_btn.setObjectName("clearBtn")
         self.clear_btn.clicked.connect(self._on_clear)
 
@@ -347,7 +342,7 @@ class MainWindow(QMainWindow):
         category = self.category_combo.currentData()
         self.tag_combo.blockSignals(True)
         self.tag_combo.clear()
-        self.tag_combo.addItem("Tag", None)
+        self.tag_combo.addItem(tr('Tag'), None)
 
         if category:
             try:
@@ -357,7 +352,7 @@ class MainWindow(QMainWindow):
                 columns = []
             for tag in REGION_TAGS:
                 if f"{category}_{tag}" in columns:
-                    self.tag_combo.addItem(REGION_TAG_LABELS[tag], tag)
+                    self.tag_combo.addItem(tr(REGION_TAG_LABELS[tag]), tag)
             self.tag_combo.setEnabled(True)
         else:
             self.tag_combo.setEnabled(False)
@@ -372,10 +367,11 @@ class MainWindow(QMainWindow):
     def _make_typing_combo(self, placeholder):
         combo = QComboBox()
         combo.setEditable(True)
+        combo.setLineEdit(QLineEdit(combo))
         combo.setInsertPolicy(QComboBox.NoInsert)
         combo.lineEdit().setPlaceholderText(placeholder)
         combo.setCurrentText("")
-        if placeholder == "Product name":
+        if placeholder.key == "Product name":
             combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed) # Flexible width for long names.
             combo.setMinimumWidth(250)
         else:
@@ -389,7 +385,7 @@ class MainWindow(QMainWindow):
         outer = QHBoxLayout(frame)
         outer.setContentsMargins(10, 4, 10, 4)
 
-        label = QLabel("Columns")
+        label = QLabel(tr('Columns'))
         label.setObjectName("stripLabel")
         outer.addWidget(label)
 
@@ -435,22 +431,22 @@ class MainWindow(QMainWindow):
         # Sits outside the grid because a rename is not a cell edit: it rewrites
         # one container across every row that names it, so it neither queues up
         # with the pending edits nor waits for Save.
-        self.rename_btn = QPushButton("Rename container\u2026")
+        self.rename_btn = QPushButton(tr('Rename container…'))
         self.rename_btn.setObjectName("ghostBtn")
         self.rename_btn.clicked.connect(lambda: self._rename_container())
         self.rename_btn.setEnabled(self.is_admin)
         if not self.is_admin:
-            self.rename_btn.setToolTip("Only admins can rename containers")
+            self.rename_btn.setToolTip(tr('Only admins can rename containers'))
         row.addWidget(self.rename_btn)
 
-        self.save_btn = QPushButton("Save")
+        self.save_btn = QPushButton(tr('Save'))
         self.save_btn.setObjectName("saveBtn")
         self.save_btn.clicked.connect(self._on_save)
         self.save_btn.setEnabled(self.is_admin)
         if not self.is_admin:
-            self.save_btn.setToolTip("Only admins can save changes")
+            self.save_btn.setToolTip(tr('Only admins can save changes'))
 
-        self.cancel_btn = QPushButton("Cancel")
+        self.cancel_btn = QPushButton(tr('Cancel'))
         self.cancel_btn.setObjectName("cancelBtn")
         self.cancel_btn.clicked.connect(self._on_cancel)
 
@@ -544,14 +540,14 @@ class MainWindow(QMainWindow):
         try:
             columns = db.get_columns(STAGING_TABLE)
         except psycopg2.OperationalError:
-            self._show_status("Unable to reach the database", error=True)
+            self._show_status(tr('Unable to reach the database'), error=True)
             return
         except Exception as exc:
             self._show_status(str(exc), error=True)
             return
 
         if not columns:
-            self._show_status(f'Table "public.{STAGING_TABLE}" was not found.', error=True)
+            self._show_status(tr('Table "public.{p0}" was not found.', p0=STAGING_TABLE), error=True)
             self._reset_table()
             return
 
@@ -559,20 +555,20 @@ class MainWindow(QMainWindow):
         month = self.month_combo.currentData()
         year = self.year_combo.currentData()
         if (month or year) and DATE_COLUMN not in columns:
-            warnings.append("date filter skipped (no date column)")
+            warnings.append(tr('date filter skipped (no date column)'))
 
         for field_key in CASCADE_FIELDS:
             value = self._cascade_combos[field_key].currentText().strip()
             if value and (FILTER_COLUMNS.get(field_key) not in columns):
-                warnings.append(f"{field_key} filter skipped (no such column)")
+                warnings.append(tr('{p0} filter skipped (no such column)', p0=column_label(field_key)))
 
         category = self.category_combo.currentData()
         tag = self.tag_combo.currentData()
         tag_value = self.tag_value_edit.text().strip()
         if tag_value and not (category and tag):
-            warnings.append("tag value ignored (pick a category and tag first)")
+            warnings.append(tr('tag value ignored (pick a category and tag first)'))
         elif category and tag and not tag_value:
-            warnings.append("category/tag filter skipped (no value entered)")
+            warnings.append(tr('category/tag filter skipped (no value entered)'))
 
         conditions = self._current_conditions(columns)
         conditions += self._category_tag_condition(columns)
@@ -581,16 +577,16 @@ class MainWindow(QMainWindow):
             pk_columns = db.get_primary_key_columns(STAGING_TABLE)
             col_names, rows = db.query_rows(STAGING_TABLE, columns, conditions)
         except psycopg2.OperationalError:
-            self._show_status("Unable to reach the database", error=True)
+            self._show_status(tr('Unable to reach the database'), error=True)
             return
         except Exception as exc:
             self._show_status(str(exc), error=True)
             return
 
         self._populate_table(col_names, rows, pk_columns)
-        message = f"{len(rows)} row(s) loaded."
+        message = tr('{p0} row(s) loaded.', p0=len(rows))
         if warnings:
-            message += " " + "; ".join(warnings)
+            message += " " + tr("; ").join(warnings)
             self._show_status(message, error=True)
         else:
             self._show_status(message)
@@ -603,7 +599,7 @@ class MainWindow(QMainWindow):
 
         offset = 1 if self._show_delete_col else 0
         self.table.setColumnCount(len(columns) + offset)
-        headers = (["Del"] if self._show_delete_col else []) + columns
+        headers = ([tr("Del")] if self._show_delete_col else []) + [column_label(c) for c in columns]
         self.table.setHorizontalHeaderLabels(headers)
         self.table.setRowCount(len(rows))
 
@@ -636,11 +632,10 @@ class MainWindow(QMainWindow):
                 item.setFlags(flags)
                 if col in CONTAINER_SERIAL_COLUMNS:
                     item.setToolTip(
-                        f"Shared {CONTAINER_SERIAL_COLUMNS[col]} — right-click to rename it "
-                        "across every row it holds."
+                        tr('Shared {p0} — right-click to rename it across every row it holds.', p0=tr(CONTAINER_SERIAL_COLUMNS[col]))
                     )
                 elif col in READONLY_COLUMNS:
-                    item.setToolTip("Belongs to a shared container — not editable per row.")
+                    item.setToolTip(tr('Belongs to a shared container — not editable per row.'))
                 self.table.setItem(r, c + offset, item)
         self.table.blockSignals(False)
 
@@ -661,7 +656,7 @@ class MainWindow(QMainWindow):
 
         self._column_checks = {}
         for idx, col in enumerate(columns):
-            cb = QCheckBox(col)
+            cb = QCheckBox(column_label(col))
             cb.setChecked(True)
             cb.toggled.connect(lambda checked, i=idx + offset: self.table.setColumnHidden(i, not checked))
             layout.addWidget(cb)
@@ -720,13 +715,33 @@ class MainWindow(QMainWindow):
 
     def _update_header_labels(self):
         offset = 1 if self._show_delete_col else 0
-        headers = (["Del"] if self._show_delete_col else []) + self._columns
+        headers = ([tr("Del")] if self._show_delete_col else []) + [column_label(c) for c in self._columns]
         for i, label in enumerate(headers):
             if i == self._sort_column:
                 label += " ▲" if self._sort_order == Qt.AscendingOrder else " ▼"
             header_item = self.table.horizontalHeaderItem(i)
             if header_item:
                 header_item.setText(label)
+
+    def _retranslate_table(self):
+        self._update_header_labels()
+        offset = int(self._show_delete_col)
+        self.table.blockSignals(True)
+        try:
+            for c, col in enumerate(self._columns):
+                if col not in READONLY_COLUMNS:
+                    continue
+                tooltip = (
+                    tr('Shared {p0} — right-click to rename it across every row it holds.',
+                       p0=tr(CONTAINER_SERIAL_COLUMNS[col]))
+                    if col in CONTAINER_SERIAL_COLUMNS else
+                    tr('Belongs to a shared container — not editable per row.')
+                )
+                for r in range(self.table.rowCount()):
+                    self.table.item(r, c + offset).setToolTip(tooltip)
+        finally:
+            self.table.blockSignals(False)
+        self.table.resizeColumnsToContents()
 
     def _reset_table(self):
         self.table.setRowCount(0)
@@ -762,32 +777,31 @@ class MainWindow(QMainWindow):
     def _on_cancel(self):
         self._on_clear()
         self._reset_table()
-        self._show_status("Cleared.")
+        self._show_status(tr('Cleared.'))
 
     def _on_save(self):
         if not self.is_admin:
-            self._show_status("Only admins can save changes.", error=True)
+            self._show_status(tr('Only admins can save changes.'), error=True)
             return
         if not self._pk_columns:
-            self._show_status("This table has no primary key — nothing can be saved.", error=True)
+            self._show_status(tr('This table has no primary key — nothing can be saved.'), error=True)
             return
 
         updates, deletes = self._collect_changes()
         if not updates and not deletes:
-            self._show_status("No changes to save.")
+            self._show_status(tr('No changes to save.'))
             return
 
         parts = []
         if updates:
-            parts.append(f"update {len(updates)} row(s)")
+            parts.append(tr('update {p0} row(s)', p0=len(updates)))
         if deletes:
-            parts.append(f"delete {len(deletes)} row(s)")
+            parts.append(tr('delete {p0} row(s)', p0=len(deletes)))
 
         reply = QMessageBox.question(
             self,
-            "Confirm changes",
-            f"This will {' and '.join(parts)} in public.{STAGING_TABLE}. "
-            "This cannot be undone. Continue?",
+            tr('Confirm changes'),
+            tr('This will {p0} in public.{p1}. This cannot be undone. Continue?', p0=tr(' and ').join(parts), p1=STAGING_TABLE),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -798,7 +812,7 @@ class MainWindow(QMainWindow):
         # If they haven't, we don't want to save anything, since it would
         # overwrite the existing data.
         if not updates and not deletes:
-            self._show_status("No changes to save.")
+            self._show_status(tr('No changes to save.'))
             return
         try:
             # Mirrors the edit into staging_product_logs first: it refuses the
@@ -806,16 +820,16 @@ class MainWindow(QMainWindow):
             db.update_staging_serial_data(updates, deletes, self._pk_columns)
             db.save_changes(STAGING_TABLE, self._pk_columns, updates, deletes)
         except psycopg2.OperationalError:
-            self._show_status("Unable to reach the database", error=True)
+            self._show_status(tr('Unable to reach the database'), error=True)
             return
         except (db.SharedEdgeError, db.SerialConflictError) as exc:
             self._show_status(str(exc), error=True)
             return
         except Exception as exc:
-            self._show_status(f"Save failed: {exc}", error=True)
+            self._show_status(tr('Save failed: {p0}', p0=exc), error=True)
             return
 
-        self._show_status("Changes saved.")
+        self._show_status(tr('Changes saved.'))
         self._on_search()
 
     def _on_table_context_menu(self, pos):
@@ -837,7 +851,7 @@ class MainWindow(QMainWindow):
             return
 
         menu = QMenu(self)
-        rename_action = menu.addAction(f"Rename this {level}\u2026")
+        rename_action = menu.addAction(tr('Rename this {p0}…', p0=tr(level)))
         if menu.exec(self.table.viewport().mapToGlobal(pos)) is rename_action:
             self._rename_container(level, serial)
 
@@ -852,7 +866,7 @@ class MainWindow(QMainWindow):
         pending_updates, pending_deletes = self._collect_changes()
         if pending_updates or pending_deletes:
             self._show_status(
-                "Save or cancel your pending edits before renaming a container.", error=True
+                tr('Save or cancel your pending edits before renaming a container.'), error=True
             )
             return
 
@@ -868,7 +882,7 @@ class MainWindow(QMainWindow):
         try:
             preview = db.container_rename_preview(level, old_serial)
         except psycopg2.OperationalError:
-            self._show_status("Unable to reach the database", error=True)
+            self._show_status(tr('Unable to reach the database'), error=True)
             return
         except Exception as exc:
             self._show_status(str(exc), error=True)
@@ -876,11 +890,8 @@ class MainWindow(QMainWindow):
 
         reply = QMessageBox.question(
             self,
-            "Confirm rename",
-            f'Rename {level} "{old_serial}" to "{new_serial}".\n\n'
-            f'This updates {preview["rows"]} row(s) in public.{STAGING_TABLE} and '
-            f'{preview["edges"]} link(s) in public.{db.STAGING_EDGE_TABLE}. '
-            "This cannot be undone. Continue?",
+            tr('Confirm rename'),
+            tr('Rename {p0} "{p1}" to "{p2}".\n\nThis updates {p3} row(s) in public.{p4} and {p5} link(s) in public.{p6}. This cannot be undone. Continue?', p0=tr(level), p1=old_serial, p2=new_serial, p3=preview["rows"], p4=STAGING_TABLE, p5=preview["edges"], p6=db.STAGING_EDGE_TABLE),
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -890,18 +901,17 @@ class MainWindow(QMainWindow):
         try:
             result = db.rename_container(level, old_serial, new_serial)
         except psycopg2.OperationalError:
-            self._show_status("Unable to reach the database", error=True)
+            self._show_status(tr('Unable to reach the database'), error=True)
             return
         except db.SerialConflictError as exc:
             self._show_status(str(exc), error=True)
             return
         except Exception as exc:
-            self._show_status(f"Rename failed: {exc}", error=True)
+            self._show_status(tr('Rename failed: {p0}', p0=exc), error=True)
             return
 
         message = (
-            f'Renamed {level} "{old_serial}" to "{new_serial}" — '
-            f'{result["rows"]} row(s), {result["edges"]} link(s).'
+            tr('Renamed {p0} "{p1}" to "{p2}" — {p3} row(s), {p4} link(s).', p0=tr(level), p1=old_serial, p2=new_serial, p3=result["rows"], p4=result["edges"])
         )
         self._show_status(message)
         self._show_status(message + self._relabel_children(level, old_serial, new_serial))
@@ -917,7 +927,7 @@ class MainWindow(QMainWindow):
         try:
             children = db.container_children(level, new_serial)
         except Exception as exc:
-            return f" Could not list its children: {exc}"
+            return tr(' Could not list its children: {p0}', p0=exc)
         if not children:
             return ""
 
@@ -932,13 +942,12 @@ class MainWindow(QMainWindow):
         try:
             child_result = db.rename_children(renames)
         except psycopg2.OperationalError:
-            return " Children unchanged: unable to reach the database."
+            return tr(' Children unchanged: unable to reach the database.')
         except Exception as exc:
-            return f" Children unchanged: {exc}"
+            return tr(' Children unchanged: {p0}', p0=exc)
 
         return (
-            f' Also renamed {child_result["renamed"]} child serial(s), '
-            f'{child_result["rows"]} row(s).'
+            tr(' Also renamed {p0} child serial(s), {p1} row(s).', p0=child_result["renamed"], p1=child_result["rows"])
         )
 
     def _on_item_changed(self, item):
