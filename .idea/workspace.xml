@@ -4,17 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Split `db.py` into a structured `db/` package&#10;&#10;Refactor `db.py` into an organized package with modular submodules: `connection.py`, `auth.py`, `schema.py`, `queries.py`, `hierarchy.py`, `serial_state.py`, `edge_mirror.py`, and `containers.py`. Introduce three new helper functions (`_save_changes`, `_update_staging_serial_data`, `save_grid_changes`) to unify grid-save into a single transaction. Update `db/__init__.py` for proper re-exports while preserving API compatibility.">
-      <change afterPath="$PROJECT_DIR$/images/Matte Poreless รองพื้น _01 Silky Ivory.png" afterDir="false" />
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add product avatar support&#10;&#10;Introduce `AvatarCatalog` for normalized product images based on packaging levels. Add `avatars.json` and `product-avatars.md` for image mappings and documentation. Update `ContainerPanel` to display avatars alongside container info. Enhance database queries to include distinct product data. Add integration tests to validate product avatar functionality.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/containers.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/containers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/queries.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/queries.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/container_panel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rename_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/rename_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_product_avatars.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_product_avatars.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -395,7 +391,23 @@
       <option name="project" value="LOCAL" />
       <updated>1789830798929</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Add `ContainerPanel` UI and bulk delete feature; integrate with database and tests">
+      <option name="closed" value="true" />
+      <created>1789833687676</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1789833687676</updated>
+    </task>
+    <task id="LOCAL-00019" summary="Add product avatar support&#10;&#10;Introduce `AvatarCatalog` for normalized product images based on packaging levels. Add `avatars.json` and `product-avatars.md` for image mappings and documentation. Update `ContainerPanel` to display avatars alongside container info. Enhance database queries to include distinct product data. Add integration tests to validate product avatar functionality.">
+      <option name="closed" value="true" />
+      <created>1789833864880</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1789833864880</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -429,6 +441,8 @@
     <MESSAGE value="minor adjustment" />
     <MESSAGE value="Enhance login UI and streamline theme handling&#10;&#10;Introduce a responsive login window with improved styling via `login.css` and QSS updates. Consolidate theme-related logic into `theme.py`, retiring duplicate code from `main_window.py`. Enable server-side distinct value fetching for enhanced tag filtering and update filters UI behavior accordingly. Add new translations to support login-related text in EN/TH (`locales/en.json`, `locales/th.json`)." />
     <MESSAGE value="Split `db.py` into a structured `db/` package&#10;&#10;Refactor `db.py` into an organized package with modular submodules: `connection.py`, `auth.py`, `schema.py`, `queries.py`, `hierarchy.py`, `serial_state.py`, `edge_mirror.py`, and `containers.py`. Introduce three new helper functions (`_save_changes`, `_update_staging_serial_data`, `save_grid_changes`) to unify grid-save into a single transaction. Update `db/__init__.py` for proper re-exports while preserving API compatibility." />
-    <option name="LAST_COMMIT_MESSAGE" value="Split `db.py` into a structured `db/` package&#10;&#10;Refactor `db.py` into an organized package with modular submodules: `connection.py`, `auth.py`, `schema.py`, `queries.py`, `hierarchy.py`, `serial_state.py`, `edge_mirror.py`, and `containers.py`. Introduce three new helper functions (`_save_changes`, `_update_staging_serial_data`, `save_grid_changes`) to unify grid-save into a single transaction. Update `db/__init__.py` for proper re-exports while preserving API compatibility." />
+    <MESSAGE value="Add `ContainerPanel` UI and bulk delete feature; integrate with database and tests" />
+    <MESSAGE value="Add product avatar support&#10;&#10;Introduce `AvatarCatalog` for normalized product images based on packaging levels. Add `avatars.json` and `product-avatars.md` for image mappings and documentation. Update `ContainerPanel` to display avatars alongside container info. Enhance database queries to include distinct product data. Add integration tests to validate product avatar functionality." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add product avatar support&#10;&#10;Introduce `AvatarCatalog` for normalized product images based on packaging levels. Add `avatars.json` and `product-avatars.md` for image mappings and documentation. Update `ContainerPanel` to display avatars alongside container info. Enhance database queries to include distinct product data. Add integration tests to validate product avatar functionality." />
   </component>
 </project>

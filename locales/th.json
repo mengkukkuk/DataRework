@@ -165,5 +165,8 @@
   "{p0} row(s) marked for deletion. Save to apply, or uncheck Del to undo.": "ทำเครื่องหมายลบ {p0} แถวแล้ว กดบันทึกเพื่อลบ หรือยกเลิกเครื่องหมายในช่องลบเพื่อย้อนกลับ",
   "Rename serial": "เปลี่ยนรหัสซีเรียล",
   "Rename a carton, inner, display or unit serial. Every matching saved row and link will be updated.": "เปลี่ยนรหัสลัง กล่องชั้นใน กล่องแสดงสินค้า หรือหน่วยสินค้า ทุกแถวและการเชื่อมโยงที่อ้างถึงรหัสนี้จะถูกอัปเดต",
-  "Unassigned groups have no serial to rename.": "กลุ่มที่ยังไม่ระบุไม่มีรหัสให้เปลี่ยน"
+  "Unassigned groups have no serial to rename.": "กลุ่มที่ยังไม่ระบุไม่มีรหัสให้เปลี่ยน",
+  "Image preview — {p0}": "ดูรูปภาพ — {p0}",
+  "Unable to open image.": "ไม่สามารถเปิดรูปภาพได้",
+  "Close": "ปิด"
 }

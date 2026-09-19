@@ -6,6 +6,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Qt
+from PySide6.QtTest import QTest
+from image_preview import AvatarLabel, ImagePreview
 
 from container_panel import ContainerPanel, build_hierarchy
 from i18n_widgets import QLabel
@@ -48,6 +51,29 @@ class ProductAvatarTests(unittest.TestCase):
             catalog = AvatarCatalog(root)
             self.assertEqual(catalog.resolve("carton", ["Alias"]), root / filename)
             self.assertIsNone(catalog.resolve("unit", ["Alias"]))
+
+    def test_avatar_opens_full_image_and_preview_survives_card_refresh(self):
+        panel = ContainerPanel(True)
+        panel.set_groups([("C", "I", "D", "U", 1, [PRODUCT])])
+        panel.navigate(("C", "I", "D"))
+        avatar = panel.cards[0].findChild(AvatarLabel, "productAvatar")
+        QTest.mouseClick(avatar, Qt.LeftButton)
+        self.app.processEvents()
+        previews = panel.findChildren(ImagePreview)
+        self.assertEqual(len(previews), 1)
+        preview = previews[0]
+        self.assertTrue(preview.isVisible())
+        self.assertFalse(preview.isModal())
+        self.assertFalse(preview.original.isNull())
+        self.assertGreater(preview.original.height(), 44)
+        self.assertFalse(preview.image.pixmap().isNull())
+        panel.navigate(())
+        self.assertTrue(preview.isVisible())
+        preview.resize(450, 500)
+        self.app.processEvents()
+        self.assertLessEqual(preview.image.pixmap().height(), preview.image.height())
+        preview.close()
+        panel.deleteLater()
 
 
 if __name__ == "__main__":

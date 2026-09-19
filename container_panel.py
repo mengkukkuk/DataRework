@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QSizePolicy, QVB
 from i18n import tr, language
 from i18n_widgets import QLabel, QLineEdit, QPushButton, QWidget
 from product_avatars import AvatarCatalog, avatar_pixmap
+from image_preview import AvatarLabel, ImagePreview
 
 LEVELS = ("carton", "inner", "display", "unit")
 PAGE_SIZE = 20
@@ -210,13 +211,16 @@ class ContainerPanel(QWidget):
         if image_path:
             pixmap = avatar_pixmap(image_path)
             if not pixmap.isNull():
-                avatar = QLabel()
+                avatar = AvatarLabel()
                 avatar.setObjectName("productAvatar")
                 avatar.setFixedSize(44, 44)
                 avatar.setAlignment(Qt.AlignCenter)
                 avatar.setPixmap(pixmap)
                 avatar.setToolTip("\n".join(sorted(node.products)))
                 avatar.setAccessibleName("\n".join(sorted(node.products)))
+                avatar.clicked.connect(
+                    lambda p=image_path, name="\n".join(sorted(node.products)): self._show_image(p, name)
+                )
                 details.addWidget(avatar)
         info = QVBoxLayout()
         info.setSpacing(2)
@@ -259,6 +263,15 @@ class ContainerPanel(QWidget):
         rename.clicked.connect(lambda checked=False, l=level, s=serial: self.rename_requested.emit(l, s))
         heading.addWidget(rename)
         return card
+
+    def _show_image(self, path, product_name):
+        for preview in self.findChildren(ImagePreview):
+            if preview.image_path == path and preview.isVisible():
+                preview.raise_()
+                preview.activateWindow()
+                return
+        preview = ImagePreview(path, product_name, self)
+        preview.show()
 
     def _reflow(self):
         while self.grid.count():

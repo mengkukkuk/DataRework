@@ -839,12 +839,12 @@ class MainWindow(QMainWindow):
     # -- actions ------------------------------------------------------------
 
     def _on_clear(self):
-        self.month_combo.blockSignals(True)
+        """self.month_combo.blockSignals(True)
         self.year_combo.blockSignals(True)
         self.month_combo.setCurrentIndex(0)
         self.year_combo.setCurrentIndex(0)
         self.month_combo.blockSignals(False)
-        self.year_combo.blockSignals(False)
+        self.year_combo.blockSignals(False)"""
         for combo in (self.job_combo, self.product_name_combo):
             combo.setCurrentText("")
         self.category_combo.setCurrentIndex(0)

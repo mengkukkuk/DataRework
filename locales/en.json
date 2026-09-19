@@ -165,5 +165,8 @@
   "{p0} row(s) marked for deletion. Save to apply, or uncheck Del to undo.": "{p0} row(s) marked for deletion. Save to apply, or uncheck Del to undo.",
   "Rename serial": "Rename serial",
   "Rename a carton, inner, display or unit serial. Every matching saved row and link will be updated.": "Rename a carton, inner, display or unit serial. Every matching saved row and link will be updated.",
-  "Unassigned groups have no serial to rename.": "Unassigned groups have no serial to rename."
+  "Unassigned groups have no serial to rename.": "Unassigned groups have no serial to rename.",
+  "Image preview — {p0}": "Image preview — {p0}",
+  "Unable to open image.": "Unable to open image.",
+  "Close": "Close"
 }
