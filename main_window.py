@@ -1,12 +1,10 @@
 import datetime
 import os
-import re
-import tempfile
 
 import psycopg2
 from psycopg2 import sql
-from PySide6.QtCore import Qt, QPointF, QSettings
-from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPolygonF
+from PySide6.QtCore import Qt, QSettings
+from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QButtonGroup,
@@ -22,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 import db
+from theme import THEMES, _render_stylesheet
 from i18n import tr, column_label, language
 from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
                           QLineEdit, QWidget, QMainWindow, QDialog, QMessageBox, LanguageToggle)
@@ -80,24 +79,6 @@ EDITED_CELL_FG = QColor("#06301c")
 DELETED_ROW_BG = QColor("#f28b8b")
 DELETED_ROW_FG = QColor("#3d0606")
 
-def _generate_dropdown_arrow_icon(color, theme_name):
-    """A small solid down-triangle PNG for QComboBox's drop-down arrow, one
-    per theme since the color has to invert for a light background. Qt's QSS
-    doesn't render the usual CSS border-triangle trick as a triangle (it just
-    paints a filled block), so this draws one directly instead."""
-    path = os.path.join(tempfile.gettempdir(), f"datarework_combo_arrow_{theme_name}.png")
-    image = QImage(20, 20, QImage.Format_ARGB32)
-    image.fill(Qt.transparent)
-    painter = QPainter(image)
-    painter.setRenderHint(QPainter.Antialiasing)
-    painter.setBrush(QColor(color))
-    painter.setPen(Qt.NoPen)
-    painter.drawPolygon(QPolygonF([QPointF(4, 7), QPointF(16, 7), QPointF(10, 14)]))
-    painter.end()
-    image.save(path)
-    return path.replace("\\", "/")
-
-
 def _sortable_key(text):
     try:
         return (0, float(text))
@@ -107,44 +88,6 @@ def _sortable_key(text):
 
 def _get_settings():
     return QSettings("DataRework", "ProductionRework")
-
-
-# THEMES (the two color palettes) and the QSS template both live in
-# style.css, next to this file — see that file's header comment for why
-# they're written as :root[data-theme="..."] custom-property blocks even
-# though Qt's QSS engine can't use CSS variables natively: this module
-# parses them itself and does the __token__ substitution below, so Qt only
-# ever sees a flat stylesheet with literal values, exactly as before.
-_THEME_BLOCK_RE = re.compile(r':root\[data-theme=["\'](\w+)["\']\]\s*\{([^}]*)\}', re.DOTALL)
-_CSS_VAR_RE = re.compile(r'--([\w-]+)\s*:\s*([^;]+);')
-
-def _load_style_source():
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "style.css")
-    with open(path, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    themes = {}
-    for match in _THEME_BLOCK_RE.finditer(content):
-        theme_name, body = match.group(1), match.group(2)
-        themes[theme_name] = {
-            key.replace("-", "_"): value.strip()
-            for key, value in _CSS_VAR_RE.findall(body)
-        }
-
-    template = _THEME_BLOCK_RE.sub("", content).strip()
-    return themes, template
-
-
-THEMES, STYLE_TEMPLATE = _load_style_source()
-
-
-def _render_stylesheet(theme_name):
-    theme = THEMES[theme_name]
-    arrow_icon_path = _generate_dropdown_arrow_icon(theme["arrow_color"], theme_name)
-    css = STYLE_TEMPLATE
-    for token, value in theme.items():
-        css = css.replace(f"__{token}__", value)
-    return css.replace("__arrow_icon_path__", arrow_icon_path)
 
 
 class MainWindow(QMainWindow):
@@ -293,11 +236,16 @@ class MainWindow(QMainWindow):
         self.tag_combo.setMinimumWidth(145)
         self.tag_combo.setEnabled(False)
 
-        self.tag_value_edit = QLineEdit()
-        self.tag_value_edit.setPlaceholderText(tr('Value'))
-        self.tag_value_edit.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.tag_value_edit.setFixedWidth(150)
+        self.tag_value_combo = self._make_typing_combo(tr('Value'))
+        self.tag_value_combo.setFixedWidth(230)
+        self.tag_value_combo.setMaxVisibleItems(12)
+        self.tag_value_combo.setEnabled(False)
+        self.tag_value_combo.completer().setCaseSensitivity(Qt.CaseInsensitive)
+        self.tag_value_combo.completer().setFilterMode(Qt.MatchContains)
+        # Keep the line edit as the input used by the existing search logic.
+        self.tag_value_edit = self.tag_value_combo.lineEdit()
         self.tag_value_edit.returnPressed.connect(self._on_value_enter)
+        self.tag_combo.currentIndexChanged.connect(lambda _: self._refresh_tag_values(reset=True))
 
         # Row 1: date range + product name, which gets the leftover width so
         # long product names aren't cramped. Row 2: the remaining, narrower
@@ -306,7 +254,7 @@ class MainWindow(QMainWindow):
             row1.addWidget(w)
         row1.addWidget(self.product_name_combo, stretch=1)
 
-        for w in (self.job_combo, self.category_combo, self.tag_combo, self.tag_value_edit):
+        for w in (self.job_combo, self.category_combo, self.tag_combo, self.tag_value_combo):
             row2.addWidget(w)
 
         # Date changes affect every downstream combo; each typing combo only
@@ -315,7 +263,7 @@ class MainWindow(QMainWindow):
         # doesn't fire a query per character.
         self.month_combo.currentIndexChanged.connect(lambda _=None: self._refresh_dependent_combos())
         self.year_combo.currentIndexChanged.connect(lambda _=None: self._refresh_dependent_combos())
-        for field_key in CASCADE_FIELDS[:-1]:
+        for field_key in CASCADE_FIELDS:
             combo = self._cascade_combos[field_key]
             combo.lineEdit().editingFinished.connect(
                 lambda fk=field_key: self._refresh_dependent_combos(fk)
@@ -357,8 +305,40 @@ class MainWindow(QMainWindow):
         else:
             self.tag_combo.setEnabled(False)
 
+        # Prefer serial numbers so choosing a category immediately offers values.
+        if self.tag_combo.count() > 1:
+            self.tag_combo.setCurrentIndex(1)
         self.tag_combo.blockSignals(False)
-        self.tag_value_edit.clear()
+        self._refresh_tag_values(reset=True)
+
+    def _refresh_tag_values(self, reset=False):
+        """Offer distinct identifiers for this category/tag under the active filters."""
+        kept_text = "" if reset else self.tag_value_edit.text()
+        category = self.category_combo.currentData()
+        tag = self.tag_combo.currentData()
+        self.tag_value_combo.blockSignals(True)
+        try:
+            self.tag_value_combo.clear()
+            self.tag_value_combo.setEnabled(bool(category and tag))
+            if category and tag:
+                columns = db.get_columns(STAGING_TABLE)
+                column = f"{category}_{tag}"
+                if column in columns:
+                    values = db.fetch_distinct_values(
+                        STAGING_TABLE, column,
+                        conditions=self._current_conditions(columns), limit=None,
+                    )
+                    self.tag_value_combo.addItems(
+                        [str(value) for value in values if value is not None and str(value).strip()]
+                    )
+        except Exception as exc:
+            print(f"Could not load identifier values: {exc}")
+            self._show_status(tr('Unable to load values. You can still type a value.'), error=True)
+        finally:
+            # Populating choices must not silently select the first identifier.
+            self.tag_value_combo.setCurrentIndex(-1)
+            self.tag_value_combo.setCurrentText(kept_text)
+            self.tag_value_combo.blockSignals(False)
 
     def _on_value_enter(self):
         if self.tag_value_edit.text().strip():
@@ -513,6 +493,7 @@ class MainWindow(QMainWindow):
             columns = db.get_columns(STAGING_TABLE)
         except Exception as exc:
             print(f"Could not refresh filter choices: {exc}")
+            self._refresh_tag_values()
             return
 
         start = 0 if from_field is None else CASCADE_FIELDS.index(from_field) + 1
@@ -535,6 +516,8 @@ class MainWindow(QMainWindow):
             combo.addItems([str(v) for v in values if v is not None])
             combo.setCurrentText(kept_text)
             combo.blockSignals(False)
+
+        self._refresh_tag_values()
 
     def _on_search(self):
         try:

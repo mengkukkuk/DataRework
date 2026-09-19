@@ -137,5 +137,9 @@
   "carton_serial_no": "carton_serial_no",
   "carton_roll_no": "carton_roll_no",
   "carton_source_id": "carton_source_id",
-  "carton_target_id": "carton_target_id"
+  "carton_target_id": "carton_target_id",
+  "Welcome back": "Welcome back",
+  "Sign in to Production Rework.": "Sign in to Production Rework.",
+  "Show password": "Show password",
+  "Unable to load values. You can still type a value.": "Unable to load values. You can still type a value."
 }

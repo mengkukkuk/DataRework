@@ -137,5 +137,9 @@
   "carton_serial_no": "รหัสซีเรียล (ลัง)",
   "carton_roll_no": "หมายเลขม้วน (ลัง)",
   "carton_source_id": "รหัสต้นทาง (ลัง)",
-  "carton_target_id": "รหัสปลายทาง (ลัง)"
+  "carton_target_id": "รหัสปลายทาง (ลัง)",
+  "Welcome back": "ยินดีต้อนรับกลับ",
+  "Sign in to Production Rework.": "เข้าสู่ระบบเพื่อแก้ไขข้อมูลการผลิต",
+  "Show password": "แสดงรหัสผ่าน",
+  "Unable to load values. You can still type a value.": "ไม่สามารถโหลดรายการค่าได้ คุณยังสามารถพิมพ์ค่าเองได้"
 }

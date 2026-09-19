@@ -76,6 +76,7 @@ def get_primary_key_columns(table, schema="public"):
 
 
 def fetch_distinct_values(table, column, conditions=None, limit=300, schema="public"):
+    """Return ordered distinct values; limit=None uses PostgreSQL LIMIT NULL (all)."""
     where_sql = sql.SQL(" AND ").join(cond for cond, _ in conditions) if conditions else sql.SQL("TRUE")
     params = [p for _, cond_params in conditions for p in cond_params] if conditions else []
 

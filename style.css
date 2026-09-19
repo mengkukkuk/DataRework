@@ -5,7 +5,7 @@
    they're already tuned to read fine against both.
 
    Qt's QSS engine has no notion of CSS custom properties, so these
-   `:root[data-theme="..."]` blocks are never handed to Qt — main_window.py
+   `:root[data-theme="..."]` blocks are never handed to Qt — theme.py
    parses them itself to build the THEMES dict, then substitutes the
    __token__ placeholders in the template further down before the result
    ever reaches setStyleSheet(). Add a variable here and reference it in the

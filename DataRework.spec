@@ -21,7 +21,7 @@ gui_a = Analysis(
     # app_icon.ico is needed twice: bundled here so main.py can load it at
     # runtime (title bar / taskbar), and passed to EXE() below to embed it as
     # the file's Explorer icon.
-    datas=[('style.css', '.'), ('locales/*.json', 'locales'), ('assets/app_icon.ico', 'assets'), ('.env', '.')],
+    datas=[('style.css', '.'), ('login.css', '.'), ('locales/*.json', 'locales'), ('assets/app_icon.ico', 'assets'), ('.env', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
