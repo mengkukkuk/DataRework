@@ -1,9 +1,16 @@
 import asyncio
 import contextlib
 import logging
+from pathlib import Path
 
 from dotenv import load_dotenv
-load_dotenv()
+
+# When run by the Windows Service Control Manager (or as a frozen exe), the
+# working directory is unpredictable, so never rely on cwd. Resolving against
+# __file__ covers both cases: the source tree when running from source, and the
+# _MEIPASS extraction dir when frozen -- where .env is bundled by DataRework.spec
+# so the deployed dist/ folder carries no plaintext credentials.
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from psycopg2 import sql
 from psycopg2.extras import execute_values

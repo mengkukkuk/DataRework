@@ -1,1 +1,9 @@
 .env
+
+# PyInstaller output. Both now carry the bundled .env -- build/ holds a literal
+# copy of it, and the exes in dist/ have it embedded -- so committing either
+# would put the DB password into git history.
+build/
+dist/
+
+__pycache__/
