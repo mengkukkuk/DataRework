@@ -4,8 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add product name filter, region category/tag search, and Python bcrypt hash verification tool">
-      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" afterPath="$PROJECT_DIR$/.env" afterDir="false" />
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="update to pc">
+      <change beforePath="$PROJECT_DIR$/.env" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.py" beforeDir="false" afterPath="$PROJECT_DIR$/db.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,12 +47,12 @@
     &quot;assignee&quot;: &quot;mengkukkuk&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/mengkukkuk/DataRework.git",
-    "accountId": "f331b1d4-f616-4210-930b-7eafd752559a"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mengkukkuk/DataRework.git&quot;,
+    &quot;accountId&quot;: &quot;f331b1d4-f616-4210-930b-7eafd752559a&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/main_window.py" root0="SKIP_HIGHLIGHTING" />
   </component>
@@ -62,6 +66,7 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
     &quot;Python.db.executor&quot;: &quot;Run&quot;,
     &quot;Python.login_window.executor&quot;: &quot;Run&quot;,
@@ -184,7 +189,15 @@
       <option name="project" value="LOCAL" />
       <updated>1789710513732</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="update to pc">
+      <option name="closed" value="true" />
+      <created>1789739475368</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1789739475368</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -206,6 +219,7 @@
     <MESSAGE value="Main window optimizing. Order by desc/asc" />
     <MESSAGE value="style.css added" />
     <MESSAGE value="Add product name filter, region category/tag search, and Python bcrypt hash verification tool" />
-    <option name="LAST_COMMIT_MESSAGE" value="Add product name filter, region category/tag search, and Python bcrypt hash verification tool" />
+    <MESSAGE value="update to pc" />
+    <option name="LAST_COMMIT_MESSAGE" value="update to pc" />
   </component>
 </project>

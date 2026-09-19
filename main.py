@@ -1,3 +1,4 @@
+import os
 import sys
 
 from dotenv import load_dotenv
@@ -8,17 +9,28 @@ from PySide6.QtWidgets import QApplication
 from login_window import LoginWindow
 from main_window import MainWindow
 
+DEV_MODE = os.environ.get("DEV_MODE", "false").strip().lower() in ("1", "true", "yes")
+
+
 class App:
     def __init__(self):
-        self.login_window = LoginWindow()
+        self.login_window = None
         self.main_window = None
-        self.login_window.login_succeeded.connect(self._on_login_succeeded)
-        self.login_window.show()
+
+        if DEV_MODE:
+            # Skip the login screen entirely and open straight into Production
+            # Rework as an admin, for local UI development.
+            self._on_login_succeeded("admin", "admin")
+        else:
+            self.login_window = LoginWindow()
+            self.login_window.login_succeeded.connect(self._on_login_succeeded)
+            self.login_window.show()
 
     def _on_login_succeeded(self, username, permission):
         self.main_window = MainWindow(username, permission)
         self.main_window.show()
-        self.login_window.close()
+        if self.login_window:
+            self.login_window.close()
 
 
 def main():

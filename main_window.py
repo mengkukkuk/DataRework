@@ -6,7 +6,7 @@ import tempfile
 import psycopg2
 from psycopg2 import sql
 from PySide6.QtCore import Qt, QPointF, QSettings
-from PySide6.QtGui import QColor, QImage, QPainter, QPolygonF
+from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPolygonF
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QButtonGroup,
@@ -61,6 +61,17 @@ MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
 ]
+
+# Background/foreground used to highlight a cell whose value has been edited
+# but not yet saved, independent of the light/dark theme so it stays legible
+# against either table background.
+EDITED_CELL_BG = QColor("#7fe0b0")
+EDITED_CELL_FG = QColor("#06301c")
+
+# Background/foreground used to mark every cell in a row whose Del checkbox
+# is ticked, so it's obvious which rows will be removed on Save.
+DELETED_ROW_BG = QColor("#f28b8b")
+DELETED_ROW_FG = QColor("#3d0606")
 
 def _generate_dropdown_arrow_icon(color, theme_name):
     """A small solid down-triangle PNG for QComboBox's drop-down arrow, one
@@ -395,6 +406,7 @@ class MainWindow(QMainWindow):
         self.table.horizontalHeader().setSectionsClickable(True)
         self.table.horizontalHeader().sectionClicked.connect(self._on_header_clicked)
         self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.table.itemChanged.connect(self._on_item_changed)
         return self.table
 
     def _build_footer(self):
@@ -571,6 +583,10 @@ class MainWindow(QMainWindow):
         self._row_pks = []
         self._row_originals = []
 
+        # Loading fresh rows sets every item's text, which would otherwise
+        # fire itemChanged (and thus the edited-cell highlight check) once
+        # per cell for no reason — block it for the duration of the load.
+        self.table.blockSignals(True)
         for r, row_values in enumerate(rows):
             row_dict = dict(zip(columns, row_values))
             pk_values = tuple(row_dict[c] for c in pk_columns) if pk_columns else None
@@ -592,6 +608,7 @@ class MainWindow(QMainWindow):
                     flags |= Qt.ItemIsEditable
                 item.setFlags(flags)
                 self.table.setItem(r, c + offset, item)
+        self.table.blockSignals(False)
 
         self.table.resizeColumnsToContents()
         self._rebuild_columns_strip(columns, offset)
@@ -744,7 +761,7 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            db.update_staging_serial(updates)
+            db.update_staging_serial(updates, deletes)
             db.save_changes(STAGING_TABLE, self._pk_columns, updates, deletes)
         except psycopg2.OperationalError:
             self._show_status("Unable to reach the database", error=True)
@@ -755,6 +772,69 @@ class MainWindow(QMainWindow):
 
         self._show_status("Changes saved.")
         self._on_search()
+
+    def _on_item_changed(self, item):
+        """Glow a cell green while its value differs from what was loaded, or
+        glow the whole row red while its Del checkbox is ticked, so it's
+        obvious what's still pending before Save."""
+        col = item.column()
+        row = item.row()
+        offset = 1 if self._show_delete_col else 0
+
+        if self._show_delete_col and col == 0:
+            self._apply_row_delete_highlight(row, item.checkState() == Qt.Checked)
+            return  # Del checkbox, not an editable data cell
+
+        data_col = col - offset
+        if row >= len(self._row_originals) or not (0 <= data_col < len(self._columns)):
+            return
+
+        if self._is_row_marked_deleted(row):
+            # Row is already slated for deletion — keep it red rather than
+            # flipping it green, since any edit here is moot on Save.
+            item.setBackground(DELETED_ROW_BG)
+            item.setForeground(DELETED_ROW_FG)
+            return
+
+        column_name = self._columns[data_col]
+        original_value = self._row_originals[row].get(column_name)
+        original_text = "" if original_value is None else str(original_value)
+
+        if item.text() != original_text:
+            item.setBackground(EDITED_CELL_BG)
+            item.setForeground(EDITED_CELL_FG)
+        else:
+            item.setBackground(QBrush())
+            item.setForeground(QBrush())
+
+    def _is_row_marked_deleted(self, row):
+        if not self._show_delete_col:
+            return False
+        del_item = self.table.item(row, 0)
+        return bool(del_item and del_item.checkState() == Qt.Checked)
+
+    def _apply_row_delete_highlight(self, row, deleted):
+        """Paint (or unpaint) every data cell in `row` red for the Del
+        checkbox, restoring each cell's edited-green state on uncheck."""
+        offset = 1 if self._show_delete_col else 0
+        original = self._row_originals[row] if row < len(self._row_originals) else {}
+        for c, column_name in enumerate(self._columns):
+            cell = self.table.item(row, c + offset)
+            if not cell:
+                continue
+            if deleted:
+                cell.setBackground(DELETED_ROW_BG)
+                cell.setForeground(DELETED_ROW_FG)
+                continue
+
+            original_value = original.get(column_name)
+            original_text = "" if original_value is None else str(original_value)
+            if cell.text() != original_text:
+                cell.setBackground(EDITED_CELL_BG)
+                cell.setForeground(EDITED_CELL_FG)
+            else:
+                cell.setBackground(QBrush())
+                cell.setForeground(QBrush())
 
     def _collect_changes(self):
         updates = []

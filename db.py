@@ -8,7 +8,7 @@ from psycopg2 import sql
 DB_HOST = os.environ.get("DB_HOST", "localhost")
 DB_NAME = os.environ.get("DB_NAME", "postgres")
 DB_USER = os.environ.get("DB_USER", "postgres")
-DB_PASSWORD = os.environ.get("DB_PASSWORD", "")
+DB_PASSWORD = os.environ.get("DB_PASSWORD", "P@ssw0rd")
 
 
 def get_connection():
@@ -172,19 +172,24 @@ def save_changes(table, pk_columns, updates, deletes, schema="public"):
 
         conn.commit()
 
-def update_staging_serial(updates, schema="public", table = "staging_serial_data"):
+def update_staging_serial(updates, deletes, schema="public", table = "staging_serial_data"):
+    if deletes:
+        del_id = tuple(x[0] for x in deletes)
+        set_staging_serial(del_id, schema, table,'')
+
     if updates:
         sql_payload = {
             item_id[0]: (tuple(data.keys()), tuple(data.values()))
             for item_id, data in updates
         }
 
-        # Keep only items that include 'unit_serial_no'
+        # Keep only 'unit_serial_no'
         filtered_data = {
             item_id: (cols, vals)
             for item_id, (cols, vals) in sql_payload.items()
             if 'unit_serial_no' in cols
         }
+
         if not filtered_data:
             return
 
@@ -192,18 +197,18 @@ def update_staging_serial(updates, schema="public", table = "staging_serial_data
         new_serial = [vals for _, vals in filtered_data.values()]
         new_serial = tuple(item[0] for item in new_serial)
         print(new_serial)
+        set_staging_serial(new_serial, schema, table,'update')
 
         # Select old serial from filling_product_log where id=
         with contextlib.closing(get_connection()) as conn:
             with conn.cursor() as cur:
                 for item_id, (cols, vals) in filtered_data.items():
-                    old_serial_sql = sql.SQL("SELECT unit_serial_no FROM {schema}.filling_product_logs WHERE id = %s").format(
+                    old_serial_sql = sql.SQL(f"SELECT unit_serial_no FROM {schema}.filling_product_logs WHERE id = %s").format(
                         schema=sql.Identifier(schema),
                     )
                     cur.execute(old_serial_sql, (item_id,))
                     old_serial = cur.fetchone()[0]
 
-                    print(f"Old serial for {item_id} is {old_serial}")
                     set_false_sql = sql.SQL(f"UPDATE {schema}.{table} SET activate = False WHERE serial_no = %s::varchar").format(
                         schema=sql.Identifier(schema),
                         table=sql.Identifier(table),
@@ -219,8 +224,27 @@ def update_staging_serial(updates, schema="public", table = "staging_serial_data
                 cur.execute(set_true_sql,(new_serial,))
                 conn.commit()
 
-def delete_staging_serial(updates, deletes, schema="public", table="staging_serial_data"):
-    if not deletes:
-        return
-    else:
-        print(f"deletes={deletes}")
+def set_staging_serial(id_list, schema, table, mode:str):
+    with contextlib.closing(get_connection()) as conn:
+        with conn.cursor() as cur:
+            for item_id in id_list:
+                old_serial_sql = sql.SQL(f"SELECT unit_serial_no FROM {schema}.filling_product_logs WHERE id = %s").format(
+                    schema=sql.Identifier(schema),
+                )
+                cur.execute(old_serial_sql, (item_id,))
+                old_serial = cur.fetchone()[0]
+
+                set_false_sql = sql.SQL(f"UPDATE {schema}.{table} SET activate = False WHERE serial_no = %s::varchar").format(
+                    schema=sql.Identifier(schema),
+                    table=sql.Identifier(table),
+                )
+                cur.execute(set_false_sql, (old_serial,))
+                conn.commit()
+            if mode == 'update':
+                set_true_sql = sql.SQL(
+                    f"UPDATE {schema}.{table} SET activate = True WHERE serial_no IN %s").format(
+                    schema=sql.Identifier(schema),
+                    table=sql.Identifier(table),
+                )
+                cur.execute(set_true_sql,(id_list,))
+                conn.commit()
