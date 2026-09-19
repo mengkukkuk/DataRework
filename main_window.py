@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
 )
 
@@ -25,6 +26,7 @@ from i18n import tr, column_label, language
 from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
                           QLineEdit, QWidget, QMainWindow, QDialog, QMessageBox, LanguageToggle)
 from rename_dialog import ChildRelabelDialog, RenameContainerDialog
+from container_panel import ContainerPanel, LEVELS as CONTAINER_ORDER
 
 # --- Schema mapping --------------------------------------------------------
 STAGING_TABLE = os.environ.get("STAGING_TABLE", "filling_product_logs")
@@ -122,14 +124,60 @@ class MainWindow(QMainWindow):
 
         root.addLayout(self._build_header())
         root.addWidget(self._build_filter_bar())
-        root.addWidget(self._build_columns_strip())
-        root.addWidget(self._build_table(), stretch=1)
+        self.views = QTabWidget()
+        records_page = QWidget()
+        records_layout = QVBoxLayout(records_page)
+        records_layout.setContentsMargins(0, 10, 0, 0)
+        records_layout.addWidget(self._build_columns_strip())
+        records_layout.addWidget(self._build_table(), 1)
+        self.views.addTab(records_page, tr('Records'))
+        self.container_panel = ContainerPanel(self.is_admin)
+        self.views.addTab(self.container_panel, tr('Container manager'))
+        self.container_panel.refresh_requested.connect(self._refresh_containers)
+        self.container_panel.rename_requested.connect(self._rename_from_manager)
+        self.container_panel.records_requested.connect(self._open_container_records)
+        self.views.currentChanged.connect(self._view_changed)
+        language.changed.connect(self._translate_tabs)
+        root.addWidget(self.views, stretch=1)
         root.addLayout(self._build_footer())
 
         self._refresh_dependent_combos()
         language.changed.connect(self._retranslate_table)
 
     # -- construction ------------------------------------------------------
+
+    def _translate_tabs(self):
+        self.views.setTabText(0, tr('Records'))
+        self.views.setTabText(1, tr('Container manager'))
+
+    def _view_changed(self, index):
+        self._update_delete_button()
+        if index == 1:
+            self._refresh_containers()
+
+    def _refresh_containers(self):
+        try:
+            columns = db.get_columns(STAGING_TABLE)
+            conditions = self._current_conditions(columns) + self._category_tag_condition(columns)
+            self.container_panel.set_groups(db.container_groups(STAGING_TABLE, columns, conditions))
+        except Exception as exc:
+            print(f"Could not load containers: {exc}")
+            self.container_panel.show_error()
+
+    def _rename_from_manager(self, level, serial):
+        self._rename_container(level, serial)
+        self._refresh_containers()
+
+    def _open_container_records(self, path):
+        if any(self._collect_changes()):
+            self._show_status(tr('Save or cancel your pending edits before opening container records.'), error=True)
+            return
+        level = CONTAINER_ORDER[len(path) - 1]
+        self.category_combo.setCurrentIndex(self.category_combo.findData(level))
+        self.tag_combo.setCurrentIndex(self.tag_combo.findData('serial_no'))
+        self.tag_value_edit.setText(path[-1] or '')
+        self.views.setCurrentIndex(0)
+        self._on_search(container_path=path)
 
     def _build_header(self):
         row = QHBoxLayout()
@@ -390,6 +438,9 @@ class MainWindow(QMainWindow):
         self.table = QTableWidget(0, 0)
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.table.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
+        self.table.itemSelectionChanged.connect(self._update_delete_button)
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.table.horizontalHeader().setStretchLastSection(True)
@@ -419,6 +470,13 @@ class MainWindow(QMainWindow):
             self.rename_btn.setToolTip(tr('Only admins can rename containers'))
         row.addWidget(self.rename_btn)
 
+        self.delete_btn = QPushButton(tr('Delete'))
+        self.delete_btn.setObjectName("deleteBtn")
+        self.delete_btn.setToolTip(tr('Select rows by dragging, then mark them for deletion. Save applies the changes.'))
+        self.delete_btn.clicked.connect(self._delete_selected_rows)
+        self.delete_btn.setEnabled(False)
+        row.addWidget(self.delete_btn)
+
         self.save_btn = QPushButton(tr('Save'))
         self.save_btn.setObjectName("saveBtn")
         self.save_btn.clicked.connect(self._on_save)
@@ -435,6 +493,28 @@ class MainWindow(QMainWindow):
         return row
 
     # -- data -------------------------------------------------------------
+
+    def _update_delete_button(self):
+        if not hasattr(self, "delete_btn"):
+            return
+        records_visible = self.views.currentIndex() == 0
+        self.delete_btn.setVisible(records_visible)
+        self.delete_btn.setEnabled(
+            records_visible and self.is_admin and self._show_delete_col
+            and bool(self.table.selectionModel().selectedRows())
+        )
+
+    def _delete_selected_rows(self):
+        if not self.is_admin or not self._show_delete_col or self.views.currentIndex() != 0:
+            return
+        rows = [index.row() for index in self.table.selectionModel().selectedRows()]
+        if not rows:
+            return
+        for row in rows:
+            self.table.item(row, 0).setCheckState(Qt.Checked)
+        # Reveal the existing red deletion highlight underneath the selection.
+        self.table.clearSelection()
+        self._show_status(tr('{p0} row(s) marked for deletion. Save to apply, or uncheck Del to undo.', p0=len(rows)))
 
     def _date_conditions(self, columns):
         conditions = []
@@ -519,7 +599,11 @@ class MainWindow(QMainWindow):
 
         self._refresh_tag_values()
 
-    def _on_search(self):
+    def _on_search(self, *, container_path=None):
+        if self.views.currentIndex() == 1 and any(self._collect_changes()):
+            # Browsing saved containers must not discard edits in the Records tab.
+            self._refresh_containers()
+            return
         try:
             columns = db.get_columns(STAGING_TABLE)
         except psycopg2.OperationalError:
@@ -555,6 +639,16 @@ class MainWindow(QMainWindow):
 
         conditions = self._current_conditions(columns)
         conditions += self._category_tag_condition(columns)
+        if container_path is not None:
+            for level, serial in zip(CONTAINER_ORDER, container_path):
+                column = f"{level}_serial_no"
+                if column not in columns:
+                    continue
+                identifier = sql.Identifier(column)
+                if serial is None:
+                    conditions.append((sql.SQL("({0} IS NULL OR {0}::text = '')").format(identifier), []))
+                else:
+                    conditions.append((sql.SQL("{}::text = %s").format(identifier), [serial]))
 
         try:
             pk_columns = db.get_primary_key_columns(STAGING_TABLE)
@@ -567,6 +661,8 @@ class MainWindow(QMainWindow):
             return
 
         self._populate_table(col_names, rows, pk_columns)
+        if self.views.currentIndex() == 1:
+            self._refresh_containers()
         message = tr('{p0} row(s) loaded.', p0=len(rows))
         if warnings:
             message += " " + tr("; ").join(warnings)
@@ -752,6 +848,10 @@ class MainWindow(QMainWindow):
         self.category_combo.setCurrentIndex(0)
         self.tag_value_edit.clear()
         self._refresh_dependent_combos()
+        self.container_panel.navigate(())
+        self.container_panel.set_groups([])
+        if self.views.currentIndex() == 1:
+            self._refresh_containers()
         self.status_label.clear()
         self.status_label.setProperty("state", "")
         self.status_label.style().unpolish(self.status_label)
@@ -844,6 +944,8 @@ class MainWindow(QMainWindow):
         button both are empty and the user picks; from the grid's context menu
         they come from the cell that was right-clicked.
         """
+        if not self.is_admin:
+            return
         # A rename reloads the grid, so anything still pending would be lost.
         pending_updates, pending_deletes = self._collect_changes()
         if pending_updates or pending_deletes:
@@ -896,7 +998,8 @@ class MainWindow(QMainWindow):
             tr('Renamed {p0} "{p1}" to "{p2}" — {p3} row(s), {p4} link(s).', p0=tr(level), p1=old_serial, p2=new_serial, p3=result["rows"], p4=result["edges"])
         )
         self._show_status(message)
-        self._show_status(message + self._relabel_children(level, old_serial, new_serial))
+        if level != "unit":
+            self._show_status(message + self._relabel_children(level, old_serial, new_serial))
         self._on_search()
 
     def _relabel_children(self, level, old_serial, new_serial):

@@ -4,11 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="minor adjustment">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Split `db.py` into a structured `db/` package&#10;&#10;Refactor `db.py` into an organized package with modular submodules: `connection.py`, `auth.py`, `schema.py`, `queries.py`, `hierarchy.py`, `serial_state.py`, `edge_mirror.py`, and `containers.py`. Introduce three new helper functions (`_save_changes`, `_update_staging_serial_data`, `save_grid_changes`) to unify grid-save into a single transaction. Update `db/__init__.py` for proper re-exports while preserving API compatibility.">
+      <change afterPath="$PROJECT_DIR$/images/Matte Poreless รองพื้น _01 Silky Ivory.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/containers.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/containers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/queries.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/queries.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/_test_container_rename.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/_test_container_rename.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rename_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/rename_dialog.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -381,7 +387,15 @@
       <option name="project" value="LOCAL" />
       <updated>1789826827284</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Split `db.py` into a structured `db/` package&#10;&#10;Refactor `db.py` into an organized package with modular submodules: `connection.py`, `auth.py`, `schema.py`, `queries.py`, `hierarchy.py`, `serial_state.py`, `edge_mirror.py`, and `containers.py`. Introduce three new helper functions (`_save_changes`, `_update_staging_serial_data`, `save_grid_changes`) to unify grid-save into a single transaction. Update `db/__init__.py` for proper re-exports while preserving API compatibility.">
+      <option name="closed" value="true" />
+      <created>1789830798929</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1789830798929</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -412,8 +426,9 @@
     <MESSAGE value="Implement new build system for DataRework and SerialStoreSync executables&#10;&#10;Add `build.ps1` script for streamlined builds with service management, PyInstaller specification, and asset bundling. Introduce custom service management via NSSM and build-time icon generation. Update `.gitignore` to exclude build outputs and sensitive files. Refactor dotenv loading for better compatibility with frozen applications." />
     <MESSAGE value="Add comprehensive tests for container rename functionality&#10;&#10;Introduce `tests/_test_container_rename.py` with 49 tests covering edge cases and validation for container renaming logic. Ensure renamed containers propagate changes consistently across database tables and UI." />
     <MESSAGE value="Add i18n support with EN/TH toggle&#10;&#10;Introduce English and Thai translations for the application, including language toggle via `LanguageToggle` widget. Add JSON-based i18n catalogs (`locales/en.json`, `locales/th.json`) and a dynamic translation mechanism (`i18n.py`, `i18n_widgets.py`). Update UI components for language adaptability and include unit tests to validate translation functionality." />
-    <MESSAGE value="Enhance login UI and streamline theme handling&#10;&#10;Introduce a responsive login window with improved styling via `login.css` and QSS updates. Consolidate theme-related logic into `theme.py`, retiring duplicate code from `main_window.py`. Enable server-side distinct value fetching for enhanced tag filtering and update filters UI behavior accordingly. Add new translations to support login-related text in EN/TH (`locales/en.json`, `locales/th.json`)." />
     <MESSAGE value="minor adjustment" />
-    <option name="LAST_COMMIT_MESSAGE" value="minor adjustment" />
+    <MESSAGE value="Enhance login UI and streamline theme handling&#10;&#10;Introduce a responsive login window with improved styling via `login.css` and QSS updates. Consolidate theme-related logic into `theme.py`, retiring duplicate code from `main_window.py`. Enable server-side distinct value fetching for enhanced tag filtering and update filters UI behavior accordingly. Add new translations to support login-related text in EN/TH (`locales/en.json`, `locales/th.json`)." />
+    <MESSAGE value="Split `db.py` into a structured `db/` package&#10;&#10;Refactor `db.py` into an organized package with modular submodules: `connection.py`, `auth.py`, `schema.py`, `queries.py`, `hierarchy.py`, `serial_state.py`, `edge_mirror.py`, and `containers.py`. Introduce three new helper functions (`_save_changes`, `_update_staging_serial_data`, `save_grid_changes`) to unify grid-save into a single transaction. Update `db/__init__.py` for proper re-exports while preserving API compatibility." />
+    <option name="LAST_COMMIT_MESSAGE" value="Split `db.py` into a structured `db/` package&#10;&#10;Refactor `db.py` into an organized package with modular submodules: `connection.py`, `auth.py`, `schema.py`, `queries.py`, `hierarchy.py`, `serial_state.py`, `edge_mirror.py`, and `containers.py`. Introduce three new helper functions (`_save_changes`, `_update_staging_serial_data`, `save_grid_changes`) to unify grid-save into a single transaction. Update `db/__init__.py` for proper re-exports while preserving API compatibility." />
   </component>
 </project>

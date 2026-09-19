@@ -27,7 +27,7 @@ from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
 
 # Outermost first, so the rail reads as the containment order it is rather than
 # an alphabetical list.
-LEVEL_ORDER = ("carton", "inner", "display")
+LEVEL_ORDER = ("carton", "inner", "display", "unit")
 
 ARROW = "\u2500\u2500\u25b6"
 
@@ -70,7 +70,7 @@ class RenameContainerDialog(QDialog):
 
     def __init__(self, parent=None, level="carton", serial=""):
         super().__init__(parent)
-        self.setWindowTitle(tr('Rename container'))
+        self.setWindowTitle(tr('Rename serial'))
         self.setMinimumWidth(540)
 
         self._level = level if level in LEVEL_ORDER else "carton"
@@ -81,12 +81,12 @@ class RenameContainerDialog(QDialog):
         root.setContentsMargins(24, 20, 24, 18)
         root.setSpacing(6)
 
-        title = QLabel(tr('Rename a container'))
+        title = QLabel(tr('Rename serial'))
         title.setObjectName("dialogTitle")
         root.addWidget(title)
 
         blurb = QLabel(
-            tr('A carton, inner or display serial is one physical label that many rows share. Renaming it rewrites every row and link that names it.')
+            tr('Rename a carton, inner, display or unit serial. Every matching saved row and link will be updated.')
         )
         blurb.setObjectName("dialogHint")
         blurb.setWordWrap(True)
@@ -196,7 +196,9 @@ class RenameContainerDialog(QDialog):
         self.old_combo.blockSignals(True)
         self.old_combo.clear()
         self.old_combo.addItems(serials)
-        if preferred and preferred in serials:
+        if preferred:
+            if preferred not in serials:
+                self.old_combo.addItem(preferred)
             self.old_combo.setCurrentText(preferred)
         elif serials:
             self.old_combo.setCurrentIndex(0)

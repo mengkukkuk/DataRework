@@ -227,6 +227,9 @@ QPushButton {
 #saveBtn:disabled { background-color: __save_disabled_bg__; color: __save_disabled_text__; }
 #cancelBtn { background-color: #e2a0b3; color: #2a0d15; }
 #cancelBtn:hover { background-color: #eab2c2; }
+#deleteBtn { background-color: #e2a0b3; color: #2a0d15; }
+#deleteBtn:hover { background-color: #eab2c2; }
+#deleteBtn:disabled { background-color: __badge_bg__; color: __subtitle__; }
 #columnsStrip {
     background-color: __strip_bg__;
     border: 1px solid __strip_border__;
@@ -388,3 +391,21 @@ QDialog {
     font-weight: 600;
 }
 #linkBtn:hover { color: #75b0e0; }
+
+/* Container manager: nested crates use the same surfaces as the records grid. */
+QTabWidget::pane { border: 1px solid __panel_border__; border-radius: 8px; background: __bg__; }
+QTabBar::tab { background: __badge_bg__; color: __text__; padding: 10px 20px; border-bottom: 3px solid transparent; }
+QTabBar::tab:selected { background: __panel_bg__; color: __title__; border-bottom-color: #5b9bd5; }
+QTabBar::tab:hover { background: __row_hover__; }
+#containerGrid { background: transparent; border: none; }
+#containerCard { background: __panel_bg__; border: 1px solid __panel_border__; border-top: 3px solid #5b9bd5; border-radius: 9px; }
+#containerCard:hover { background: __row_hover__; border-color: __input_hover_border__; }
+#containerLevel { color: __panel_title__; font-size: 11px; font-weight: 700; }
+#containerSerial { color: __title__; font-size: 14px; font-weight: 600; }
+#containerSearch { background: __input_bg__; color: __input_text__; border: 1px solid __input_border__; border-radius: 6px; padding: 8px 12px; }
+#containerSearch:focus { border-color: #5b9bd5; }
+#containerCard QPushButton { padding: 3px 8px; font-size: 11px; }
+#containerCard #linkBtn { padding: 0 2px; font-size: 10px; }
+#containerCard QPushButton:focus { border: 1px solid #5b9bd5; }
+#containerManager #ghostBtn:disabled { background: __badge_bg__; color: __subtitle__; }
+#containerManager #linkBtn:disabled { color: __subtitle__; }

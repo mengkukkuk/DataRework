@@ -26,6 +26,27 @@ def fetch_distinct_values(table, column, conditions=None, limit=300, schema="pub
             return [row[0] for row in cur.fetchall()]
 
 
+def container_groups(table, columns, conditions=(), schema="public"):
+    """Aggregate complete packaging paths, independently of the record-grid limit."""
+    names = [f"{level}_serial_no" for level in ("carton", "inner", "display", "unit")]
+    present = [name for name in names if name in columns]
+    if not present:
+        return []
+    fields = sql.SQL(", ").join(
+        sql.Identifier(name) if name in columns else sql.SQL("NULL") for name in names
+    )
+    where = sql.SQL(" AND ").join(cond for cond, _ in conditions) if conditions else sql.SQL("TRUE")
+    query = sql.SQL(
+        "SELECT {fields}, COUNT(*) FROM {schema}.{table} WHERE {where} GROUP BY {groups}"
+    ).format(fields=fields, schema=sql.Identifier(schema), table=sql.Identifier(table),
+             where=where, groups=sql.SQL(", ").join(map(sql.Identifier, present)))
+    params = [p for _, values in conditions for p in values]
+    with contextlib.closing(connection.get_connection()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            return cur.fetchall()
+
+
 def query_rows(table, columns, conditions, schema="public", limit=500):
     select_cols = sql.SQL(", ").join(sql.Identifier(c) for c in columns)
     where_sql = sql.SQL(" AND ").join(cond for cond, _ in conditions) if conditions else sql.SQL("TRUE")

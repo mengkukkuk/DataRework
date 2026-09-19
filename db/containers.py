@@ -94,8 +94,8 @@ def _apply_serial_rename(cur, level, old_serial, new_serial, schema, table):
 
 def container_serials(level, schema="public", limit=1000):
     """Every serial that names a container at `level`, for the picker."""
-    if level not in CONTAINER_LEVELS:
-        raise ValueError(f"{level} is not a container level")
+    if level not in LEVELS:
+        raise ValueError(f"{level} is not a label level")
 
     with contextlib.closing(connection.get_connection()) as conn:
         with conn.cursor() as cur:
@@ -202,8 +202,8 @@ def rename_children(renames, schema="public", table="filling_product_logs"):
 
 def container_rename_preview(level, serial_no, schema="public", table="filling_product_logs"):
     """Blast radius of renaming `serial_no`, so the user is told before agreeing."""
-    if level not in CONTAINER_LEVELS:
-        raise ValueError(f"{level} is not a container level")
+    if level not in LEVELS:
+        raise ValueError(f"{level} is not a label level")
 
     with contextlib.closing(connection.get_connection()) as conn:
         with conn.cursor() as cur:
@@ -229,8 +229,8 @@ def rename_container(level, old_serial, new_serial, schema="public",
     unique constraint on the business key -- the database would otherwise let two
     containers share a name without complaint.
     """
-    if level not in CONTAINER_LEVELS:
-        raise ValueError(f"{level} is not a container level")
+    if level not in LEVELS:
+        raise ValueError(f"{level} is not a label level")
     if not new_serial or new_serial == old_serial:
         raise ValueError("The new serial must be a different, non-empty value")
 
@@ -248,6 +248,9 @@ def rename_container(level, old_serial, new_serial, schema="public",
                 )
 
             rows = _apply_serial_rename(cur, level, old_serial, new_serial, schema, table)
+            if level == "unit":
+                _set_serial_active(cur, schema, old_serial, False)
+                _set_serial_active(cur, schema, new_serial, True)
 
         conn.commit()
 
