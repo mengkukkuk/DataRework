@@ -798,10 +798,9 @@ class MainWindow(QMainWindow):
             self._show_status(tr('No changes to save.'))
             return
         try:
-            # Mirrors the edit into staging_product_logs first: it refuses the
-            # save on a shared container before filling_product_logs is touched.
-            db.update_staging_serial_data(updates, deletes, self._pk_columns)
-            db.save_changes(STAGING_TABLE, self._pk_columns, updates, deletes)
+            # One transaction: the mirror refuses a shared container before
+            # filling_product_logs is touched, and a later failure rolls both back.
+            db.save_grid_changes(STAGING_TABLE, self._pk_columns, updates, deletes)
         except psycopg2.OperationalError:
             self._show_status(tr('Unable to reach the database'), error=True)
             return

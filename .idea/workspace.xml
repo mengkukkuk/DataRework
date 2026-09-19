@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Enhance login UI and streamline theme handling&#10;&#10;Introduce a responsive login window with improved styling via `login.css` and QSS updates. Consolidate theme-related logic into `theme.py`, retiring duplicate code from `main_window.py`. Enable server-side distinct value fetching for enhanced tag filtering and update filters UI behavior accordingly. Add new translations to support login-related text in EN/TH (`locales/en.json`, `locales/th.json`).">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="minor adjustment">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/_test_container_rename.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/_test_container_rename.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,6 +30,10 @@
       </mcp-server-settings>
     </assistant-settings>
   </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="59" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
@@ -47,11 +53,90 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mengkukkuk/DataRework.git&quot;,
-    &quot;accountId&quot;: &quot;f331b1d4-f616-4210-930b-7eafd752559a&quot;
+    &quot;accountId&quot;: &quot;09600478-7dc2-4a06-a7dc-bc2a4a296bd4&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/main_window.py" root0="SKIP_HIGHLIGHTING" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <McpServerCommand sourceId="UserConfigurationSource">
+      <option name="allowedToolsNames" />
+      <option name="enabled" value="true" />
+      <option name="name" value="" />
+      <option name="programPath" value="" />
+      <option name="arguments" value="" />
+      <option name="workingDirectory" value="" />
+      <envs />
+    </McpServerCommand>
+    <McpServerCommand sourceId="UserConfigurationSource">
+      <option name="allowedToolsNames" />
+      <option name="enabled" value="true" />
+      <option name="name" value="" />
+      <option name="programPath" value="" />
+      <option name="arguments" value="" />
+      <option name="workingDirectory" value="" />
+      <envs />
+    </McpServerCommand>
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.121589932843852" />
+      <entry key="MS500" value="1.761648418208941" />
+      <entry key="S2" value="2.9811593018212514" />
+      <entry key="S5" value="3.920169777299154" />
+      <entry key="S10" value="4.398384358481972" />
+      <entry key="S30" value="4.783737795921829" />
+      <entry key="S60" value="4.88976196275819" />
+      <entry key="M2" value="4.944342985839742" />
+      <entry key="M5" value="4.977606605207593" />
+      <entry key="M10" value="4.988781414016433" />
+      <entry key="M15" value="4.992516069337981" />
+      <entry key="M30" value="4.996255595692668" />
+      <entry key="H1" value="4.998127187669389" />
+      <entry key="H2" value="4.999063441236315" />
+      <entry key="H4" value="4.999531682461791" />
+      <entry key="D1" value="4.999921941776895" />
+      <entry key="W1" value="4.999988848695466" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="1.068469241686093" />
+      <entry key="MS500" value="1.7447141367130206" />
+      <entry key="S2" value="2.9734027975019814" />
+      <entry key="S5" value="3.915828747273133" />
+      <entry key="S10" value="4.395888469237504" />
+      <entry key="S30" value="4.782817372149782" />
+      <entry key="S60" value="4.889289512671903" />
+      <entry key="M2" value="4.944103605438021" />
+      <entry key="M5" value="4.977510083173124" />
+      <entry key="M10" value="4.988733023624127" />
+      <entry key="M15" value="4.9924837802472055" />
+      <entry key="M30" value="4.996239436712809" />
+      <entry key="H1" value="4.998119104567114" />
+      <entry key="H2" value="4.9990593987816245" />
+      <entry key="H4" value="4.9995296610085" />
+      <entry key="D1" value="4.999921604836627" />
+      <entry key="W1" value="4.999988800560374" />
+    </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
@@ -73,16 +158,25 @@
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;Python.rcvpass.executor&quot;: &quot;Run&quot;,
     &quot;Python.serial_store_aio.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
     &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/milln/CWN Work/mille/DataRework&quot;,
+    &quot;last_opened_file_path&quot;: &quot;G:/Code/DataRework&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -111,8 +205,6 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="DEBUG_JUST_MY_CODE" value="true" />
-      <option name="RUN_TOOL" value="" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
@@ -132,8 +224,6 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="DEBUG_JUST_MY_CODE" value="true" />
-      <option name="RUN_TOOL" value="" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;$PROJECT_DIR$/tests&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
@@ -150,7 +240,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-07523f343e4f-968fe969f28a-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.28539.27" />
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-WS-261.25134.101" />
       </set>
     </attachedChunks>
   </component>
@@ -161,6 +251,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1789445295054</updated>
+      <workItem from="1789826548119" duration="613000" />
     </task>
     <task id="LOCAL-00001" summary="Initial commit">
       <option name="closed" value="true" />
@@ -282,8 +373,19 @@
       <option name="project" value="LOCAL" />
       <updated>1789826161648</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="minor adjustment">
+      <option name="closed" value="true" />
+      <created>1789826827284</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1789826827284</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
@@ -311,6 +413,7 @@
     <MESSAGE value="Add comprehensive tests for container rename functionality&#10;&#10;Introduce `tests/_test_container_rename.py` with 49 tests covering edge cases and validation for container renaming logic. Ensure renamed containers propagate changes consistently across database tables and UI." />
     <MESSAGE value="Add i18n support with EN/TH toggle&#10;&#10;Introduce English and Thai translations for the application, including language toggle via `LanguageToggle` widget. Add JSON-based i18n catalogs (`locales/en.json`, `locales/th.json`) and a dynamic translation mechanism (`i18n.py`, `i18n_widgets.py`). Update UI components for language adaptability and include unit tests to validate translation functionality." />
     <MESSAGE value="Enhance login UI and streamline theme handling&#10;&#10;Introduce a responsive login window with improved styling via `login.css` and QSS updates. Consolidate theme-related logic into `theme.py`, retiring duplicate code from `main_window.py`. Enable server-side distinct value fetching for enhanced tag filtering and update filters UI behavior accordingly. Add new translations to support login-related text in EN/TH (`locales/en.json`, `locales/th.json`)." />
-    <option name="LAST_COMMIT_MESSAGE" value="Enhance login UI and streamline theme handling&#10;&#10;Introduce a responsive login window with improved styling via `login.css` and QSS updates. Consolidate theme-related logic into `theme.py`, retiring duplicate code from `main_window.py`. Enable server-side distinct value fetching for enhanced tag filtering and update filters UI behavior accordingly. Add new translations to support login-related text in EN/TH (`locales/en.json`, `locales/th.json`)." />
+    <MESSAGE value="minor adjustment" />
+    <option name="LAST_COMMIT_MESSAGE" value="minor adjustment" />
   </component>
 </project>

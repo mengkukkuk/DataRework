@@ -81,7 +81,7 @@ class NoCommit:
         pass
 
 
-db.get_connection = lambda: NoCommit(real)
+db.connection.get_connection = lambda: NoCommit(real)
 cur = real.cursor()
 
 cur.execute(
