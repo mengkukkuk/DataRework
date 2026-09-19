@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
     QComboBox,
+    QDialog,
     QFrame,
     QGroupBox,
     QHBoxLayout,
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -30,6 +32,7 @@ from PySide6.QtWidgets import (
 )
 
 import db
+from rename_dialog import ChildRelabelDialog, RenameContainerDialog
 
 # --- Schema mapping --------------------------------------------------------
 STAGING_TABLE = os.environ.get("STAGING_TABLE", "filling_product_logs")
@@ -48,6 +51,17 @@ CASCADE_FIELDS = [ "assignment_no", "product_name"]
 # every region has every tag (unit has no target_id, carton has no
 # source_id), so the tag dropdown is populated from the table's actual
 # columns rather than this full candidate list.
+# A display/inner/carton serial names a container that many rows share, so it
+# has no meaning as a per-row cell edit: typing over one row's display_serial_no
+# either renames the container for every sibling too, or silently desyncs
+# staging_product_logs. Those cells are read-only and carry a right-click
+# "Rename this <level>..." action instead, which rewrites the whole container.
+# unit_* stays inline-editable — it is genuinely 1:1 with the row.
+CONTAINER_SERIAL_COLUMNS = {f"{lvl}_serial_no": lvl for lvl in db.CONTAINER_LEVELS}
+READONLY_COLUMNS = set(CONTAINER_SERIAL_COLUMNS) | {
+    f"{lvl}_roll_no" for lvl in db.CONTAINER_LEVELS
+}
+
 REGION_CATEGORIES = ["unit", "inner", "display", "carton"]
 REGION_TAGS = ["serial_no", "roll_no", "source_id", "target_id"]
 REGION_TAG_LABELS = {
@@ -407,6 +421,8 @@ class MainWindow(QMainWindow):
         self.table.horizontalHeader().sectionClicked.connect(self._on_header_clicked)
         self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.table.itemChanged.connect(self._on_item_changed)
+        self.table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self._on_table_context_menu)
         return self.table
 
     def _build_footer(self):
@@ -415,6 +431,17 @@ class MainWindow(QMainWindow):
         self.status_label.setObjectName("statusLabel")
         row.addWidget(self.status_label)
         row.addStretch(1)
+
+        # Sits outside the grid because a rename is not a cell edit: it rewrites
+        # one container across every row that names it, so it neither queues up
+        # with the pending edits nor waits for Save.
+        self.rename_btn = QPushButton("Rename container\u2026")
+        self.rename_btn.setObjectName("ghostBtn")
+        self.rename_btn.clicked.connect(lambda: self._rename_container())
+        self.rename_btn.setEnabled(self.is_admin)
+        if not self.is_admin:
+            self.rename_btn.setToolTip("Only admins can rename containers")
+        row.addWidget(self.rename_btn)
 
         self.save_btn = QPushButton("Save")
         self.save_btn.setObjectName("saveBtn")
@@ -604,9 +631,16 @@ class MainWindow(QMainWindow):
                 text = "" if value is None else str(value)
                 item = QTableWidgetItem(text)
                 flags = Qt.ItemIsSelectable | Qt.ItemIsEnabled
-                if editable:
+                if editable and col not in READONLY_COLUMNS:
                     flags |= Qt.ItemIsEditable
                 item.setFlags(flags)
+                if col in CONTAINER_SERIAL_COLUMNS:
+                    item.setToolTip(
+                        f"Shared {CONTAINER_SERIAL_COLUMNS[col]} — right-click to rename it "
+                        "across every row it holds."
+                    )
+                elif col in READONLY_COLUMNS:
+                    item.setToolTip("Belongs to a shared container — not editable per row.")
                 self.table.setItem(r, c + offset, item)
         self.table.blockSignals(False)
 
@@ -760,11 +794,22 @@ class MainWindow(QMainWindow):
         if reply != QMessageBox.Yes:
             return
 
+        # BEFORE we save, check that the user has actually made any changes.
+        # If they haven't, we don't want to save anything, since it would
+        # overwrite the existing data.
+        if not updates and not deletes:
+            self._show_status("No changes to save.")
+            return
         try:
-            db.update_staging_serial(updates, deletes)
+            # Mirrors the edit into staging_product_logs first: it refuses the
+            # save on a shared container before filling_product_logs is touched.
+            db.update_staging_serial_data(updates, deletes, self._pk_columns)
             db.save_changes(STAGING_TABLE, self._pk_columns, updates, deletes)
         except psycopg2.OperationalError:
             self._show_status("Unable to reach the database", error=True)
+            return
+        except (db.SharedEdgeError, db.SerialConflictError) as exc:
+            self._show_status(str(exc), error=True)
             return
         except Exception as exc:
             self._show_status(f"Save failed: {exc}", error=True)
@@ -772,6 +817,129 @@ class MainWindow(QMainWindow):
 
         self._show_status("Changes saved.")
         self._on_search()
+
+    def _on_table_context_menu(self, pos):
+        """Offer "Rename this <level>..." when the click lands on a container serial."""
+        if not self.is_admin:
+            return
+        item = self.table.itemAt(pos)
+        if item is None:
+            return
+
+        offset = 1 if self._show_delete_col else 0
+        data_col = item.column() - offset
+        if not (0 <= data_col < len(self._columns)):
+            return
+
+        level = CONTAINER_SERIAL_COLUMNS.get(self._columns[data_col])
+        serial = item.text().strip()
+        if not level or not serial:
+            return
+
+        menu = QMenu(self)
+        rename_action = menu.addAction(f"Rename this {level}\u2026")
+        if menu.exec(self.table.viewport().mapToGlobal(pos)) is rename_action:
+            self._rename_container(level, serial)
+
+    def _rename_container(self, level=None, old_serial=""):
+        """Rename a container, then offer to carry the change down to its children.
+
+        `level` / `old_serial` only pre-select the dialog — from the footer
+        button both are empty and the user picks; from the grid's context menu
+        they come from the cell that was right-clicked.
+        """
+        # A rename reloads the grid, so anything still pending would be lost.
+        pending_updates, pending_deletes = self._collect_changes()
+        if pending_updates or pending_deletes:
+            self._show_status(
+                "Save or cancel your pending edits before renaming a container.", error=True
+            )
+            return
+
+        dialog = RenameContainerDialog(self, level=level or "carton", serial=old_serial)
+        if dialog.exec() != QDialog.Accepted:
+            return
+
+        level = dialog.level
+        old_serial, new_serial = dialog.values()
+        if not old_serial or not new_serial or new_serial == old_serial:
+            return
+
+        try:
+            preview = db.container_rename_preview(level, old_serial)
+        except psycopg2.OperationalError:
+            self._show_status("Unable to reach the database", error=True)
+            return
+        except Exception as exc:
+            self._show_status(str(exc), error=True)
+            return
+
+        reply = QMessageBox.question(
+            self,
+            "Confirm rename",
+            f'Rename {level} "{old_serial}" to "{new_serial}".\n\n'
+            f'This updates {preview["rows"]} row(s) in public.{STAGING_TABLE} and '
+            f'{preview["edges"]} link(s) in public.{db.STAGING_EDGE_TABLE}. '
+            "This cannot be undone. Continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        try:
+            result = db.rename_container(level, old_serial, new_serial)
+        except psycopg2.OperationalError:
+            self._show_status("Unable to reach the database", error=True)
+            return
+        except db.SerialConflictError as exc:
+            self._show_status(str(exc), error=True)
+            return
+        except Exception as exc:
+            self._show_status(f"Rename failed: {exc}", error=True)
+            return
+
+        message = (
+            f'Renamed {level} "{old_serial}" to "{new_serial}" — '
+            f'{result["rows"]} row(s), {result["edges"]} link(s).'
+        )
+        self._show_status(message)
+        self._show_status(message + self._relabel_children(level, old_serial, new_serial))
+        self._on_search()
+
+    def _relabel_children(self, level, old_serial, new_serial):
+        """Stage 2 — list what the renamed container holds and rename the ticked rows.
+
+        Runs after the container rename has already committed, so the children
+        are looked up under the *new* name. Returns the suffix to append to the
+        status line; declining is a normal outcome, not a failure.
+        """
+        try:
+            children = db.container_children(level, new_serial)
+        except Exception as exc:
+            return f" Could not list its children: {exc}"
+        if not children:
+            return ""
+
+        dialog = ChildRelabelDialog(self, level, old_serial, new_serial, children)
+        if dialog.exec() != QDialog.Accepted:
+            return ""
+
+        renames = dialog.renames()
+        if not renames:
+            return ""
+
+        try:
+            child_result = db.rename_children(renames)
+        except psycopg2.OperationalError:
+            return " Children unchanged: unable to reach the database."
+        except Exception as exc:
+            return f" Children unchanged: {exc}"
+
+        return (
+            f' Also renamed {child_result["renamed"]} child serial(s), '
+            f'{child_result["rows"]} row(s).'
+        )
 
     def _on_item_changed(self, item):
         """Glow a cell green while its value differs from what was loaded, or

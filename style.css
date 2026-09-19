@@ -53,6 +53,12 @@
     --scrollbar-handle: #24405e;
     --save-disabled-bg: #223228;
     --save-disabled-text: #4c5c52;
+    --dialog-bg: #0d131d;
+    --slab-bg: #0a1220;
+    --slab-border: #1c2636;
+    --slab-text: #8fa5bf;
+    --rail: #2b5f8f;
+    --row-hover: #131d2b;
 }
 
 :root[data-theme="light"] {
@@ -97,6 +103,12 @@
     --scrollbar-handle: #c7d2dd;
     --save-disabled-bg: #e4e9ec;
     --save-disabled-text: #a7b0b8;
+    --dialog-bg: #ffffff;
+    --slab-bg: #f0f3f7;
+    --slab-border: #dde3ea;
+    --slab-text: #51606f;
+    --rail: #4a7096;
+    --row-hover: #f4f6f9;
 }
 
 /* --- QSS template ---------------------------------------------------- */
@@ -279,3 +291,100 @@ QScrollBar::handle {
     background: __scrollbar_handle__;
     border-radius: 5px;
 }
+
+/* --- container rename dialogs ----------------------------------------- */
+
+QDialog {
+    background-color: __dialog_bg__;
+}
+#dialogTitle {
+    color: __title__;
+    font-size: 17px;
+    font-weight: 600;
+}
+#dialogHint {
+    color: __subtitle__;
+    font-size: 11px;
+}
+#fieldLabel {
+    color: __panel_title__;
+    font-size: 11px;
+    font-weight: 700;
+}
+/* The level picker is a rail, not a dropdown: display/inner/carton are a
+   containment order, and a segmented control shows that order on screen.
+   Mirrors #themeToggle, which is the same QButtonGroup arrangement. */
+#levelSeg {
+    background-color: __badge_bg__;
+    border: 1px solid __badge_border__;
+    border-radius: 8px;
+}
+#levelSeg QPushButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 18px;
+    font-size: 12px;
+    font-weight: 600;
+    color: __subtitle__;
+}
+#levelSeg QPushButton:checked {
+    background-color: #5b9bd5;
+    color: #06131f;
+}
+#levelSeg QPushButton:disabled {
+    color: __save_disabled_text__;
+}
+/* The slab pair: old and new serial set identically, so the eye reads them as
+   the same physical label before and after. Letter-spacing is applied in
+   Python (QSS has no such property). */
+#serialOld, #serialNew {
+    background-color: __slab_bg__;
+    border: 1px solid __slab_border__;
+    border-radius: 6px;
+    padding: 9px 12px;
+}
+#serialOld {
+    color: __slab_text__;
+}
+#serialNew {
+    color: __input_text__;
+}
+#serialNew:focus {
+    border: 1px solid #5b9bd5;
+}
+#serialNew:disabled {
+    color: __save_disabled_text__;
+    border: 1px solid __slab_border__;
+}
+#serialArrow {
+    color: __rail__;
+    font-size: 15px;
+}
+#childRow {
+    border-radius: 6px;
+}
+#childRow:hover {
+    background-color: __row_hover__;
+}
+#childCount {
+    color: __subtitle__;
+    font-size: 11px;
+}
+#childScroll, #childScroll > QWidget > QWidget, #childScrollInner {
+    background-color: transparent;
+    border: none;
+}
+#primaryBtn { background-color: #3fae72; color: #05170e; }
+#primaryBtn:hover { background-color: #57c187; }
+#primaryBtn:disabled { background-color: __save_disabled_bg__; color: __save_disabled_text__; }
+#ghostBtn { background-color: #2a3a4f; color: #cddbea; }
+#ghostBtn:hover { background-color: #37516f; }
+#linkBtn {
+    background-color: transparent;
+    color: #5b9bd5;
+    padding: 4px 2px;
+    font-size: 11px;
+    font-weight: 600;
+}
+#linkBtn:hover { color: #75b0e0; }
