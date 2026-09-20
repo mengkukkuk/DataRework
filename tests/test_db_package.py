@@ -255,6 +255,7 @@ class TestSaveGridChangesSuccess(unittest.TestCase):
                 pk_columns=("id",),
                 updates=[((1,), {"unit_serial_no": "NEW_SERIAL"})],
                 deletes=[],
+                tag_name="TEST-OPERATOR",
             )
 
         # One connection, one cursor context entered.
@@ -273,6 +274,17 @@ class TestSaveGridChangesSuccess(unittest.TestCase):
 
         # Both _set_serial_active UPDATEs on staging_serial_data must appear.
         serial_data_writes = [s for s in sqls if "staging_serial_data" in s and "UPDATE" in s]
+        serial_params = [
+            call.args[1] for statement, call in zip(sqls, cur.execute.call_args_list)
+            if "staging_serial_data" in statement and "UPDATE" in statement
+        ]
+        self.assertEqual(serial_params, [
+            (False, "TEST-OPERATOR", "OLD_SERIAL"),
+            (True, "TEST-OPERATOR", "NEW_SERIAL"),
+        ])
+        self.assertTrue(all("activate_by" in statement for statement in serial_data_writes))
+        # Matched on the trimmed serial: staging_serial_data stores a trailing space.
+        self.assertTrue(all("btrim" in statement for statement in serial_data_writes))
         self.assertEqual(
             len(serial_data_writes), 2,
             f"Expected exactly 2 UPDATEs on staging_serial_data (old→False, new→True); got: {sqls}"

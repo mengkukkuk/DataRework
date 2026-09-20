@@ -44,7 +44,7 @@ class TranslationTests(unittest.TestCase):
     @patch("db.get_columns", return_value=["id", "unit_serial_no", "product_name"])
     @patch("db.fetch_distinct_values", return_value=[])
     def test_switch_preserves_edits_filters_and_identifiers(self, *mocks):
-        win = MainWindow("tester", "admin")
+        win = MainWindow("tester", "admin", "TEST-OPERATOR")
         self.windows.append(win)
         win._populate_table(["id", "unit_serial_no", "product_name"],
                             [(1, "SERIAL", "Search"), (2, "OTHER", "Save")], ["id"])

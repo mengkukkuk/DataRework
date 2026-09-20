@@ -9,7 +9,7 @@ def authenticate(username, password):
     with contextlib.closing(connection.get_connection()) as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT password, permission FROM public.user_access WHERE username = %s",
+                "SELECT password, permission, tag_name FROM public.user_access WHERE username = %s",
                 (username,),
             )
             row = cur.fetchone()
@@ -17,7 +17,7 @@ def authenticate(username, password):
     if row is None:
         return None
 
-    password_hash, permission = row
+    password_hash, permission, tag_name = row
     if not password_hash:
         return None
     """
@@ -27,4 +27,4 @@ def authenticate(username, password):
         password_hash.encode('utf-8')
     )
     """
-    return permission
+    return permission, tag_name

@@ -9,7 +9,7 @@ from theme import THEMES, _render_stylesheet
 
 
 class LoginWindow(QWidget):
-    login_succeeded = Signal(str, str)
+    login_succeeded = Signal(str, str, str)
 
     def __init__(self):
         super().__init__()
@@ -114,14 +114,15 @@ class LoginWindow(QWidget):
         password = self.password_input.text()
 
         try:
-            permission = db.authenticate(username, password)
+            result = db.authenticate(username, password)
         except psycopg2.OperationalError as exc:
             print(f"Database connection error: {exc}")
             self._show_error(tr('Unable to reach the database'))
             return
 
-        if permission is not None:
-            self.login_succeeded.emit(username, permission)
+        if result is not None:
+            permission, tag_name = result
+            self.login_succeeded.emit(username, permission, tag_name)
         else:
             self._show_error(tr('Invalid username or password'))
             self.password_input.clear()

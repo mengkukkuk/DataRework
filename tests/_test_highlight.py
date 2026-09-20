@@ -8,7 +8,7 @@ import main_window as mw
 
 app = QApplication(sys.argv)
 
-win = mw.MainWindow("tester", "admin")
+win = mw.MainWindow("tester", "admin", "TEST-OPERATOR")
 
 columns = ["id", "unit_serial_no", "product_name"]
 rows = [

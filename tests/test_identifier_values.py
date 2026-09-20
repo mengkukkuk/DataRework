@@ -20,7 +20,7 @@ class IdentifierValuesTests(unittest.TestCase):
     def setUp(self):
         self.columns = patch("db.get_columns", return_value=COLUMNS).start()
         self.values = patch("db.fetch_distinct_values", return_value=[]).start()
-        self.win = MainWindow("tester", "admin")
+        self.win = MainWindow("tester", "admin", "TEST-OPERATOR")
 
     def tearDown(self):
         self.win.close()

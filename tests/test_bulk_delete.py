@@ -18,7 +18,7 @@ class BulkDeleteTests(unittest.TestCase):
         patch("db.get_columns", return_value=[]).start()
         patch("db.fetch_distinct_values", return_value=[]).start()
         self.save = patch("db.save_grid_changes").start()
-        self.win = MainWindow("tester", "admin")
+        self.win = MainWindow("tester", "admin", "TEST-OPERATOR")
         self.win._populate_table(["id", "unit_serial_no"],
                                  [(1, "C"), (2, "A"), (3, "B")], ["id"])
 

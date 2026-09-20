@@ -100,7 +100,7 @@ class ContainerPanelTests(unittest.TestCase):
     @patch("db.fetch_distinct_values", return_value=[])
     @patch("db.container_groups", return_value=GROUPS)
     def test_main_window_preserves_pending_edits_and_routes_full_path(self, *mocks):
-        win = MainWindow("tester", "admin")
+        win = MainWindow("tester", "admin", "TEST-OPERATOR")
         win._populate_table(["id", "unit_serial_no"], [(1, "U1")], ["id"])
         win.table.item(0, 2).setText("EDITED")
         before = win._collect_changes()

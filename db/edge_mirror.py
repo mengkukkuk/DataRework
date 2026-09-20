@@ -91,7 +91,7 @@ def _apply_edge_change(cur, schema, row, level, new):
         )
 
 
-def _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table):
+def _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table,tag_name):
     pk_column = pk_columns[0] if pk_columns else "id"
 
     originals = _fetch_rows_by_pk(
@@ -133,14 +133,14 @@ def _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table
         for level, new in _changed_levels(changes).items():
             _apply_edge_change(cur, schema, row, level, new)
         if "unit_serial_no" in changes:
-            _set_serial_active(cur, schema, row.get("unit_serial_no"), False)
-            _set_serial_active(cur, schema, changes["unit_serial_no"], True)
+            _set_serial_active(cur, schema, row.get("unit_serial_no"), False,tag_name)
+            _set_serial_active(cur, schema, changes["unit_serial_no"], True,tag_name)
 
     for pk_values in deletes:
         row = originals.get(pk_values[0])
         if not row:
             continue
-        _set_serial_active(cur, schema, row.get("unit_serial_no"), False)
+        _set_serial_active(cur, schema, row.get("unit_serial_no"), False,tag_name)
         # Only the unit edge is private to this row; display/carton
         # edges stay, since sibling rows still reference them.
         edge_id = row.get(_edge_id_column("unit"))
@@ -168,7 +168,7 @@ def update_staging_serial_data(updates, deletes, pk_columns=("id",), schema="pub
     with contextlib.closing(connection.get_connection()) as conn:
         with conn.cursor() as cur:
             try:
-                _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table)
+                _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table, tag_name=None)
             except psycopg2.errors.UniqueViolation as exc:
                 conn.rollback()
                 raise SerialConflictError(
@@ -178,7 +178,7 @@ def update_staging_serial_data(updates, deletes, pk_columns=("id",), schema="pub
         conn.commit()
 
 
-def save_grid_changes(table, pk_columns, updates, deletes, schema="public"):
+def save_grid_changes(table, pk_columns, updates, deletes, schema="public",tag_name=None):
     """Atomically mirror edge data and write the grid edit in one transaction.
 
     The mirror phase runs first on purpose: _update_staging_serial_data completes
@@ -210,7 +210,7 @@ def save_grid_changes(table, pk_columns, updates, deletes, schema="public"):
     with contextlib.closing(connection.get_connection()) as conn:
         with conn.cursor() as cur:
             try:
-                _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table)
+                _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table, tag_name)
                 queries._save_changes(cur, table, pk_columns, updates, deletes, schema)
                 conn.commit()
             except psycopg2.errors.UniqueViolation as exc:

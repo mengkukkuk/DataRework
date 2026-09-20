@@ -27,7 +27,7 @@ def check(label, cond):
 # --- the grid refuses to edit a shared container in place --------------------
 
 app = QApplication(sys.argv)
-win = mw.MainWindow("tester", "admin")
+win = mw.MainWindow("tester", "admin", "TEST-OPERATOR")
 
 columns = ["id", "unit_serial_no", "display_serial_no", "display_roll_no", "carton_serial_no"]
 rows = [(1, "260800000005", "D_SYNTH_0001", "R_SYNTH_0001", "C_SYNTH_0001")]

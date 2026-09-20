@@ -93,11 +93,12 @@ def _get_settings():
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, username, permission):
+    def __init__(self, username, permission, tag_name):
         super().__init__()
         self.username = username
         self.permission = permission
         self.is_admin = permission == "admin"
+        self.tag_name = tag_name
 
         self._columns = []
         self._pk_columns = []
@@ -952,7 +953,10 @@ class MainWindow(QMainWindow):
         try:
             # One transaction: the mirror refuses a shared container before
             # filling_product_logs is touched, and a later failure rolls both back.
-            db.save_grid_changes(STAGING_TABLE, self._pk_columns, updates, deletes)
+            db.save_grid_changes(
+                STAGING_TABLE, self._pk_columns, updates, deletes,
+                tag_name=self.tag_name,
+            )
         except psycopg2.OperationalError:
             self._show_status(tr('Unable to reach the database'), error=True)
             return
