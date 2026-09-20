@@ -4,20 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add in-memory error logging and non-modal log viewer&#10;&#10;Introduce `debug_log.py` with an in-memory log for error tracking, featuring a non-modal `LogWindow` for viewing detailed messages and tracebacks. Update `main_window.py` to integrate error logging, replacing `print` statements with structured log entries. Enhance status updates to include traceback logs and improve error visibility. Add minor UI and style updates for the new log functionality.">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Implement shared English/Thai typography and UI font scaling&#10;&#10;Add `typography.py` to resolve a single installed font covering English and Thai text, ensuring consistent font selection across language switches without downloads. Integrate typography with `theme.py` to propagate font families and log pixel sizes into stylesheets. Update UI components and tests to reflect natural Thai shaping, button size stability, and glyph coverage validation. Adjust layouts and styles for improved multilingual text rendering adaptability.">
+      <change afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/container_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/datarework-workflow.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/datarework-workflow.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/i18n.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/i18n.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/i18n.py" beforeDir="false" afterPath="$PROJECT_DIR$/i18n.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/i18n_widgets.py" beforeDir="false" afterPath="$PROJECT_DIR$/i18n_widgets.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/login.css" beforeDir="false" afterPath="$PROJECT_DIR$/login.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rename_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/rename_dialog.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/theme.py" beforeDir="false" afterPath="$PROJECT_DIR$/theme.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -177,7 +167,7 @@
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "master",
     "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "G:/Code/DataRework/.claude",
+    "last_opened_file_path": "G:/Code/DataRework",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -455,7 +445,15 @@
       <option name="project" value="LOCAL" />
       <updated>1789885857729</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="Implement shared English/Thai typography and UI font scaling&#10;&#10;Add `typography.py` to resolve a single installed font covering English and Thai text, ensuring consistent font selection across language switches without downloads. Integrate typography with `theme.py` to propagate font families and log pixel sizes into stylesheets. Update UI components and tests to reflect natural Thai shaping, button size stability, and glyph coverage validation. Adjust layouts and styles for improved multilingual text rendering adaptability.">
+      <option name="closed" value="true" />
+      <created>1789887493369</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1789887493369</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -496,6 +494,7 @@
     <MESSAGE value="Add comprehensive DataRework workflow guide&#10;&#10;Introduce a detailed HTML documentation covering DataRework's architecture, workflows, data contracts, queries, and proposed development extensions. Designed for developers and operators, this guide emphasizes system understanding and scalability paths. Includes responsive design, print-friendly styling, and organized sections for usability." />
     <MESSAGE value="Add user tag propagation and tests&#10;&#10;Extend login and main window logic to include user `tag_name` propagation. Update database changes to include operator tags, ensuring robust data tracking. Add associated tests to validate user tag integration in workflows and save operations." />
     <MESSAGE value="Add in-memory error logging and non-modal log viewer&#10;&#10;Introduce `debug_log.py` with an in-memory log for error tracking, featuring a non-modal `LogWindow` for viewing detailed messages and tracebacks. Update `main_window.py` to integrate error logging, replacing `print` statements with structured log entries. Enhance status updates to include traceback logs and improve error visibility. Add minor UI and style updates for the new log functionality." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add in-memory error logging and non-modal log viewer&#10;&#10;Introduce `debug_log.py` with an in-memory log for error tracking, featuring a non-modal `LogWindow` for viewing detailed messages and tracebacks. Update `main_window.py` to integrate error logging, replacing `print` statements with structured log entries. Enhance status updates to include traceback logs and improve error visibility. Add minor UI and style updates for the new log functionality." />
+    <MESSAGE value="Implement shared English/Thai typography and UI font scaling&#10;&#10;Add `typography.py` to resolve a single installed font covering English and Thai text, ensuring consistent font selection across language switches without downloads. Integrate typography with `theme.py` to propagate font families and log pixel sizes into stylesheets. Update UI components and tests to reflect natural Thai shaping, button size stability, and glyph coverage validation. Adjust layouts and styles for improved multilingual text rendering adaptability." />
+    <option name="LAST_COMMIT_MESSAGE" value="Implement shared English/Thai typography and UI font scaling&#10;&#10;Add `typography.py` to resolve a single installed font covering English and Thai text, ensuring consistent font selection across language switches without downloads. Integrate typography with `theme.py` to propagate font families and log pixel sizes into stylesheets. Update UI components and tests to reflect natural Thai shaping, button size stability, and glyph coverage validation. Adjust layouts and styles for improved multilingual text rendering adaptability." />
   </component>
 </project>
