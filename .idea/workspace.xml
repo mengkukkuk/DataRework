@@ -4,23 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add comprehensive DataRework workflow guide&#10;&#10;Introduce a detailed HTML documentation covering DataRework's architecture, workflows, data contracts, queries, and proposed development extensions. Designed for developers and operators, this guide emphasizes system understanding and scalability paths. Includes responsive design, print-friendly styling, and organized sections for usability.">
-      <change beforePath="$PROJECT_DIR$/.claude/AGENTS.md" beforeDir="false" />
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add user tag propagation and tests&#10;&#10;Extend login and main window logic to include user `tag_name` propagation. Update database changes to include operator tags, ensuring robust data tracking. Add associated tests to validate user tag integration in workflows and save operations.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/auth.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/containers.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/containers.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/edge_mirror.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/edge_mirror.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/hierarchy.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/hierarchy.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/serial_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/serial_state.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/datarework-workflow.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/datarework-workflow.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/login_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/login_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/_test_container_rename.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/_test_container_rename.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/_test_highlight.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/_test_highlight.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_bulk_delete.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_bulk_delete.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_panel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_db_package.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_db_package.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_i18n.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_i18n.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_identifier_values.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_identifier_values.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -442,7 +437,15 @@
       <option name="project" value="LOCAL" />
       <updated>1789879024264</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="Add user tag propagation and tests&#10;&#10;Extend login and main window logic to include user `tag_name` propagation. Update database changes to include operator tags, ensuring robust data tracking. Add associated tests to validate user tag integration in workflows and save operations.">
+      <option name="closed" value="true" />
+      <created>1789884128480</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1789884128480</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -481,6 +484,7 @@
     <MESSAGE value="Add non-modal product image preview&#10;&#10;Introduce `ImagePreview` for viewing product images without blocking the UI. Add `AvatarLabel` to make product avatars interactive. Update `ContainerPanel` to support preview functionality and ensure previews persist during container refresh. Add related tests and new translations for the feature." />
     <MESSAGE value="Add tests and improve UX for barcode rename dialog&#10;&#10;Introduce `test_barcode_rename.py` with new test cases to validate barcode renaming flow, including keyboard scanner behavior and prefill handling. Enhance `RenameContainerDialog` UX with auto-focus logic, event filtering, placeholder texts, and delayed preview updates. Update translations to include additional text for improved guidance." />
     <MESSAGE value="Add comprehensive DataRework workflow guide&#10;&#10;Introduce a detailed HTML documentation covering DataRework's architecture, workflows, data contracts, queries, and proposed development extensions. Designed for developers and operators, this guide emphasizes system understanding and scalability paths. Includes responsive design, print-friendly styling, and organized sections for usability." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add comprehensive DataRework workflow guide&#10;&#10;Introduce a detailed HTML documentation covering DataRework's architecture, workflows, data contracts, queries, and proposed development extensions. Designed for developers and operators, this guide emphasizes system understanding and scalability paths. Includes responsive design, print-friendly styling, and organized sections for usability." />
+    <MESSAGE value="Add user tag propagation and tests&#10;&#10;Extend login and main window logic to include user `tag_name` propagation. Update database changes to include operator tags, ensuring robust data tracking. Add associated tests to validate user tag integration in workflows and save operations." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add user tag propagation and tests&#10;&#10;Extend login and main window logic to include user `tag_name` propagation. Update database changes to include operator tags, ensuring robust data tracking. Add associated tests to validate user tag integration in workflows and save operations." />
   </component>
 </project>

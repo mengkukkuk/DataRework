@@ -36,3 +36,13 @@ class SharedEdgeError(Exception):
 
 class SerialConflictError(Exception):
     """A rename collided with uq_staging_product_logs_business_key."""
+
+
+class SerialInventoryError(Exception):
+    """A serial being activated is absent from (or duplicated in) the pool.
+
+    staging_serial_data is what serial_store_aio counts to derive used_serials,
+    so activating a serial with no inventory row leaves that total short
+    forever -- silently, because the rename itself would still report success.
+    The write is refused instead, rolling the whole transaction back.
+    """

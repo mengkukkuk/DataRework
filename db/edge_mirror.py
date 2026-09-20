@@ -133,8 +133,9 @@ def _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table
         for level, new in _changed_levels(changes).items():
             _apply_edge_change(cur, schema, row, level, new)
         if "unit_serial_no" in changes:
-            _set_serial_active(cur, schema, row.get("unit_serial_no"), False,tag_name)
-            _set_serial_active(cur, schema, changes["unit_serial_no"], True,tag_name)
+            _set_serial_active(cur, schema, row.get("unit_serial_no"), False, tag_name)
+            _set_serial_active(cur, schema, changes["unit_serial_no"], True, tag_name,
+                               required=True)
 
     for pk_values in deletes:
         row = originals.get(pk_values[0])

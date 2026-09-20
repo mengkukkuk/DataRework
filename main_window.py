@@ -28,6 +28,7 @@ from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
                           QLineEdit, QWidget, QMainWindow, QDialog, QMessageBox, LanguageToggle)
 from rename_dialog import ChildRelabelDialog, RenameContainerDialog
 from container_panel import ContainerPanel, LEVELS as CONTAINER_ORDER
+from debug_log import LOG, LogWindow
 
 # --- Schema mapping --------------------------------------------------------
 STAGING_TABLE = os.environ.get("STAGING_TABLE", "filling_product_logs")
@@ -108,6 +109,7 @@ class MainWindow(QMainWindow):
         self._column_checks = {}
         self._sort_column = None
         self._sort_order = Qt.AscendingOrder
+        self._log_window = None
         self._theme = _get_settings().value("theme", "dark", type=str)
         if self._theme not in THEMES:
             self._theme = "dark"
@@ -164,7 +166,7 @@ class MainWindow(QMainWindow):
                 STAGING_TABLE, columns, conditions, product_column=FILTER_COLUMNS['product_name']
             ))
         except Exception as exc:
-            print(f"Could not load containers: {exc}")
+            LOG.add(f"Could not load containers: {exc}", exc)
             self.container_panel.show_error()
 
     def _rename_from_manager(self, level, serial):
@@ -428,8 +430,8 @@ class MainWindow(QMainWindow):
                         [str(value) for value in values if value is not None and str(value).strip()]
                     )
         except Exception as exc:
-            print(f"Could not load identifier values: {exc}")
-            self._show_status(tr('Unable to load values. You can still type a value.'), error=True)
+            self._show_status(tr('Unable to load values. You can still type a value.'),
+                              error=True, exc=exc)
         finally:
             # Populating choices must not silently select the first identifier.
             self.tag_value_combo.setCurrentIndex(-1)
@@ -505,6 +507,16 @@ class MainWindow(QMainWindow):
         self.status_label = QLabel("")
         self.status_label.setObjectName("statusLabel")
         row.addWidget(self.status_label)
+
+        # The status line is one short sentence; this opens the full text and
+        # traceback behind it, so a failure can be diagnosed without a console.
+        self.log_btn = QPushButton(tr('Log'))
+        self.log_btn.setObjectName("logBtn")
+        self.log_btn.setCheckable(True)
+        self.log_btn.setToolTip(tr('Show full error details for debugging'))
+        self.log_btn.clicked.connect(self._toggle_log)
+        row.addWidget(self.log_btn)
+
         row.addStretch(1)
 
         # Sits outside the grid because a rename is not a cell edit: it rewrites
@@ -659,11 +671,11 @@ class MainWindow(QMainWindow):
             return
         try:
             columns = db.get_columns(STAGING_TABLE)
-        except psycopg2.OperationalError:
-            self._show_status(tr('Unable to reach the database'), error=True)
+        except psycopg2.OperationalError as exc:
+            self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
             return
         except Exception as exc:
-            self._show_status(str(exc), error=True)
+            self._show_status(str(exc), error=True, exc=exc)
             return
 
         if not columns:
@@ -706,11 +718,11 @@ class MainWindow(QMainWindow):
         try:
             pk_columns = db.get_primary_key_columns(STAGING_TABLE)
             col_names, rows = db.query_rows(STAGING_TABLE, columns, conditions)
-        except psycopg2.OperationalError:
-            self._show_status(tr('Unable to reach the database'), error=True)
+        except psycopg2.OperationalError as exc:
+            self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
             return
         except Exception as exc:
-            self._show_status(str(exc), error=True)
+            self._show_status(str(exc), error=True, exc=exc)
             return
 
         self._populate_table(col_names, rows, pk_columns)
@@ -957,14 +969,15 @@ class MainWindow(QMainWindow):
                 STAGING_TABLE, self._pk_columns, updates, deletes,
                 tag_name=self.tag_name,
             )
-        except psycopg2.OperationalError:
-            self._show_status(tr('Unable to reach the database'), error=True)
+        except psycopg2.OperationalError as exc:
+            self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
             return
-        except (db.SharedEdgeError, db.SerialConflictError) as exc:
-            self._show_status(str(exc), error=True)
+        except (db.SharedEdgeError, db.SerialConflictError,
+                db.SerialInventoryError) as exc:
+            self._show_status(str(exc), error=True, exc=exc)
             return
         except Exception as exc:
-            self._show_status(tr('Save failed: {p0}', p0=exc), error=True)
+            self._show_status(tr('Save failed: {p0}', p0=exc), error=True, exc=exc)
             return
 
         self._show_status(tr('Changes saved.'))
@@ -1022,11 +1035,11 @@ class MainWindow(QMainWindow):
 
         try:
             preview = db.container_rename_preview(level, old_serial)
-        except psycopg2.OperationalError:
-            self._show_status(tr('Unable to reach the database'), error=True)
+        except psycopg2.OperationalError as exc:
+            self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
             return
         except Exception as exc:
-            self._show_status(str(exc), error=True)
+            self._show_status(str(exc), error=True, exc=exc)
             return
 
         reply = QMessageBox.question(
@@ -1041,14 +1054,14 @@ class MainWindow(QMainWindow):
 
         try:
             result = db.rename_container(level, old_serial, new_serial)
-        except psycopg2.OperationalError:
-            self._show_status(tr('Unable to reach the database'), error=True)
+        except psycopg2.OperationalError as exc:
+            self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
             return
-        except db.SerialConflictError as exc:
-            self._show_status(str(exc), error=True)
+        except (db.SerialConflictError, db.SerialInventoryError) as exc:
+            self._show_status(str(exc), error=True, exc=exc)
             return
         except Exception as exc:
-            self._show_status(tr('Rename failed: {p0}', p0=exc), error=True)
+            self._show_status(tr('Rename failed: {p0}', p0=exc), error=True, exc=exc)
             return
 
         message = (
@@ -1069,6 +1082,7 @@ class MainWindow(QMainWindow):
         try:
             children = db.container_children(level, new_serial)
         except Exception as exc:
+            LOG.add(f"Could not list children of {new_serial}: {exc}", exc)
             return tr(' Could not list its children: {p0}', p0=exc)
         if not children:
             return ""
@@ -1083,9 +1097,11 @@ class MainWindow(QMainWindow):
 
         try:
             child_result = db.rename_children(renames)
-        except psycopg2.OperationalError:
+        except psycopg2.OperationalError as exc:
+            LOG.add("Child rename failed: unable to reach the database", exc)
             return tr(' Children unchanged: unable to reach the database.')
         except Exception as exc:
+            LOG.add(f"Child rename failed: {exc}", exc)
             return tr(' Children unchanged: {p0}', p0=exc)
 
         return (
@@ -1185,8 +1201,27 @@ class MainWindow(QMainWindow):
 
         return updates, deletes
 
-    def _show_status(self, message, error=False):
+    def _show_status(self, message, error=False, exc=None):
+        """Show one short line; `exc` files the full traceback under the Log button."""
         self.status_label.setText(message)
         self.status_label.setProperty("state", "error" if error else "ok")
         self.status_label.style().unpolish(self.status_label)
         self.status_label.style().polish(self.status_label)
+        if error:
+            LOG.add(message, exc)
+
+    def _toggle_log(self, checked):
+        """Open/close the log window. Created lazily; the button tracks its state."""
+        if not checked:
+            if self._log_window is not None:
+                self._log_window.close()
+            return
+        if self._log_window is None:
+            self._log_window = LogWindow(self)
+            # Closing via the window's own X or Close button must untick the toggle.
+            self._log_window.finished.connect(
+                lambda _result: self.log_btn.setChecked(False)
+            )
+        self._log_window.show()
+        self._log_window.raise_()
+        self._log_window.activateWindow()

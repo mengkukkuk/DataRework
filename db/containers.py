@@ -193,7 +193,7 @@ def rename_children(renames, schema="public", table="filling_product_logs"):
                 total_rows += _apply_serial_rename(cur, level, old, new, schema, table)
                 if level == "unit":
                     _set_serial_active(cur, schema, old, False)
-                    _set_serial_active(cur, schema, new, True)
+                    _set_serial_active(cur, schema, new, True, required=True)
 
         conn.commit()
 
@@ -250,7 +250,7 @@ def rename_container(level, old_serial, new_serial, schema="public",
             rows = _apply_serial_rename(cur, level, old_serial, new_serial, schema, table)
             if level == "unit":
                 _set_serial_active(cur, schema, old_serial, False)
-                _set_serial_active(cur, schema, new_serial, True)
+                _set_serial_active(cur, schema, new_serial, True, required=True)
 
         conn.commit()
 

@@ -1,22 +1,21 @@
 from psycopg2 import sql
 
-from .hierarchy import SERIAL_DATA_TABLE
+from .hierarchy import SERIAL_DATA_TABLE, SerialInventoryError
 
 
-def _set_serial_active(cur, schema, serial_no, active, tag_name=None):
+def _set_serial_active(cur, schema, serial_no, active, tag_name=None, required=False):
     """Flip one unit serial's activate flag; the serial_store sync picks this up.
 
-    Matched on the *trimmed* serial. staging_serial_data stores serials with a
-    trailing space ('260800000001 ') while filling_product_logs and the edge
-    table store them clean ('260800000001'). varchar comparison is not
-    blank-padded, so a plain `serial_no = %s` matched nothing: a rename updated
-    the logs correctly and left the serial inventory untouched.
+    Matched on the *trimmed* serial: staging_serial_data stores a trailing space
+    ('260800000001 ') while the logs and edge table store it clean, and varchar
+    comparison is not blank-padded.
 
-    activate_by is coalesced so callers that do not know the operator (the
-    rename paths) can flip the flag without erasing who activated the serial.
+    `required=True` refuses the write when the serial has no inventory row,
+    since used_serials is derived by counting those rows -- activating a serial
+    that is not in the pool would undercount it silently. Deactivations pass
+    required=False: a serial already absent is already not counted.
 
-    Returns the number of inventory rows updated. 0 means the serial is not in
-    the pool, and used_serials will be wrong until it is.
+    Returns the number of inventory rows updated.
     """
     if not serial_no:
         return 0
@@ -31,4 +30,10 @@ def _set_serial_active(cur, schema, serial_no, active, tag_name=None):
         ),
         (active, tag_name, serial_no),
     )
+    if required and cur.rowcount != 1:
+        raise SerialInventoryError(
+            f'Serial "{serial_no}" matches {cur.rowcount} row(s) in '
+            f"{SERIAL_DATA_TABLE}; expected exactly 1. "
+            "Usage totals would be wrong, so nothing was changed."
+        )
     return cur.rowcount

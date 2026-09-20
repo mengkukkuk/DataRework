@@ -171,5 +171,11 @@
   "Unable to open image.": "Unable to open image.",
   "Close": "Close",
   "Scan or type the current serial": "Scan or type the current serial",
-  "Scan the current serial, then scan or type the new serial. Click Rename when ready.": "Scan the current serial, then scan or type the new serial. Click Rename when ready."
+  "Scan the current serial, then scan or type the new serial. Click Rename when ready.": "Scan the current serial, then scan or type the new serial. Click Rename when ready.",
+  "Log": "Log",
+  "Show full error details for debugging": "Show full error details for debugging",
+  "Error log": "Error log",
+  "Full details of the most recent errors. Newest last.": "Full details of the most recent errors. Newest last.",
+  "No errors recorded yet.": "No errors recorded yet.",
+  "Copy": "Copy"
 }

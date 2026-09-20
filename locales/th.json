@@ -171,5 +171,11 @@
   "Unable to open image.": "ไม่สามารถเปิดรูปภาพได้",
   "Close": "ปิด",
   "Scan or type the current serial": "สแกนหรือพิมพ์รหัสซีเรียลปัจจุบัน",
-  "Scan the current serial, then scan or type the new serial. Click Rename when ready.": "สแกนรหัสปัจจุบัน แล้วสแกนหรือพิมพ์รหัสใหม่ เมื่อพร้อมให้คลิกเปลี่ยนรหัส"
+  "Scan the current serial, then scan or type the new serial. Click Rename when ready.": "สแกนรหัสปัจจุบัน แล้วสแกนหรือพิมพ์รหัสใหม่ เมื่อพร้อมให้คลิกเปลี่ยนรหัส",
+  "Log": "ล็อก",
+  "Show full error details for debugging": "แสดงรายละเอียดข้อผิดพลาดทั้งหมดเพื่อการตรวจสอบ",
+  "Error log": "บันทึกข้อผิดพลาด",
+  "Full details of the most recent errors. Newest last.": "รายละเอียดข้อผิดพลาดล่าสุดทั้งหมด รายการใหม่สุดอยู่ท้ายสุด",
+  "No errors recorded yet.": "ยังไม่มีข้อผิดพลาดที่บันทึกไว้",
+  "Copy": "คัดลอก"
 }

@@ -285,6 +285,27 @@ QHeaderView::section:hover {
 }
 #statusLabel[state="error"] { color: __status_error__; }
 #statusLabel[state="ok"] { color: __status_ok__; }
+/* Deliberately small and quiet: a debugging aid, not a primary action. */
+#logBtn {
+    background-color: transparent;
+    color: __subtitle__;
+    border: 1px solid __badge_bg__;
+    border-radius: 4px;
+    padding: 2px 9px;
+    font-size: 11px;
+    font-weight: 600;
+}
+#logBtn:hover { color: __header_text__; border-color: __subtitle__; }
+#logBtn:checked { background-color: __badge_bg__; color: __header_text__; }
+#logView {
+    background-color: __input_bg__;
+    color: __input_text__;
+    border: 1px solid __input_border__;
+    border-radius: 4px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+    padding: 8px;
+}
 QScrollBar:vertical, QScrollBar:horizontal {
     background: __scrollbar_bg__;
     width: 10px;

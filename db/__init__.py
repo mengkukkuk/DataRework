@@ -4,7 +4,8 @@
 from . import connection
 from .connection import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, get_connection
 from .hierarchy import (LEVELS, CONTAINER_LEVELS, STAGING_EDGE_TABLE,
-                        SERIAL_DATA_TABLE, SharedEdgeError, SerialConflictError)
+                        SERIAL_DATA_TABLE, SharedEdgeError, SerialConflictError,
+                        SerialInventoryError)
 from .auth import authenticate
 from .schema import get_columns, get_primary_key_columns
 from .queries import fetch_distinct_values, query_rows, save_changes, container_groups
@@ -25,6 +26,7 @@ __all__ = [
     "SERIAL_DATA_TABLE",
     "SharedEdgeError",
     "SerialConflictError",
+    "SerialInventoryError",
     "authenticate",
     "get_columns",
     "get_primary_key_columns",

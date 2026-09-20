@@ -87,6 +87,10 @@ def _make_realistic_cur():
     # fetchone returns the sibling count; only called once (0 → not shared → no error)
     cur.fetchone.return_value = (0,)
 
+    # A real cursor reports an int here. _set_serial_active(required=True) treats
+    # anything but 1 as a missing inventory row, so the MagicMock default raises.
+    cur.rowcount = 1
+
     return cur
 
 
