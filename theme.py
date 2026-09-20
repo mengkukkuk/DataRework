@@ -5,6 +5,7 @@ import tempfile
 
 from PySide6.QtCore import Qt, QPointF
 from PySide6.QtGui import QColor, QImage, QPainter, QPolygonF
+from typography import TYPE_SIZES, ui_font_family
 
 def _generate_dropdown_arrow_icon(color, theme_name):
     """A small solid down-triangle PNG for QComboBox's drop-down arrow, one
@@ -63,6 +64,9 @@ def _render_stylesheet(theme_name, extra_stylesheet=None):
             css += "\n" + source.read()
     for token, value in theme.items():
         css = css.replace(f"__{token}__", value)
+    css = css.replace("__font_family__", ui_font_family())
+    for role, size in TYPE_SIZES.items():
+        css = css.replace(f"__font_{role}__", str(size))
     return css.replace("__arrow_icon_path__", arrow_icon_path)
 
 

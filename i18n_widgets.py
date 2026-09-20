@@ -2,7 +2,7 @@
 from PySide6 import QtWidgets as QtW
 from PySide6.QtCore import QSignalBlocker
 
-from i18n import Message, language, tr
+from i18n import CATALOGS, Message, language, tr
 
 
 class Localized:
@@ -51,7 +51,18 @@ class QLabel(Localized, QtW.QLabel):
 
 
 class QPushButton(Localized, QtW.QPushButton):
-    pass
+    def sizeHint(self):
+        size = super().sizeHint()
+        message = self._messages.get("text")
+        if message is not None:
+            # Reserve the widest translation without changing the active language.
+            metrics = self.fontMetrics()
+            widest = max(metrics.size(0, message.render(code)).width() for code in CATALOGS)
+            size.setWidth(size.width() + max(0, widest - metrics.size(0, self.text()).width()))
+        return size
+
+    def minimumSizeHint(self):
+        return self.sizeHint()
 
 
 class QCheckBox(Localized, QtW.QCheckBox):

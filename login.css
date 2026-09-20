@@ -2,9 +2,8 @@
    from style.css; buttons, checkbox indicators and EN/TH inherit its rules. */
 #loginWindow {
     background-color: __bg__;
-    font-family: "Segoe UI", "Leelawadee UI", sans-serif;
 }
-#loginBrand { color: __title__; font-size: 16px; font-weight: 700; }
+#loginBrand { color: __title__; font-size: 16px; font-weight: 600; }
 #loginCard {
     background-color: __panel_bg__;
     border: 1px solid __panel_border__;
@@ -17,27 +16,27 @@
     border-left: 3px solid #5b9bd5;
     border-radius: 10px;
     font-size: 26px;
-    font-weight: 700;
+    font-weight: 600;
 }
 #loginTitle { color: __title__; font-size: 28px; font-weight: 600; }
-#loginSubtitle, #loginFooter { color: __checkbox_text__; font-size: 13px; }
-#loginFooter { font-size: 12px; }
-#loginFieldLabel { color: __text__; font-size: 13px; font-weight: 600; }
+#loginSubtitle, #loginFooter { color: __checkbox_text__; font-size: __font_body__px; }
+#loginFooter { font-size: __font_small__px; }
+#loginFieldLabel { color: __text__; font-size: __font_body__px; font-weight: 600; }
 #loginUsername, #loginPassword {
     background-color: __input_bg__;
     color: __input_text__;
     border: 1px solid __input_border__;
     border-radius: 8px;
     padding: 0 14px;
-    font-size: 14px;
+    font-size: __font_body__px;
     selection-background-color: __popup_selection_bg__;
     placeholder-text-color: __checkbox_text__;
 }
 #loginUsername:hover, #loginPassword:hover { border-color: __input_hover_border__; }
 #loginUsername:focus, #loginPassword:focus { border: 1px solid #5b9bd5; }
 #loginShowPassword { padding: 0; spacing: 8px; }
-#loginWindow #searchBtn { border-radius: 8px; padding: 0 20px; font-size: 14px; }
+#loginWindow #searchBtn { border-radius: 8px; padding: 0 20px; min-height: 46px; font-size: __font_body__px; }
 #loginWindow QPushButton:focus { border: 2px solid __title__; }
 #loginShowPassword:focus { color: __title__; }
 #loginWindow #searchBtn:pressed { background-color: #4786bf; }
-#loginError { color: __status_error__; font-size: 12px; padding-top: 14px; }
+#loginError { color: __status_error__; font-size: __font_small__px; padding-top: 14px; }

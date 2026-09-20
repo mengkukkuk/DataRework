@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QApplication
 from login_window import LoginWindow
 from main_window import MainWindow
 import service_manager
+from typography import ui_font
 
 DEV_MODE = os.environ.get("DEV_MODE", "false").strip().lower() in ("1", "true", "yes")
 
@@ -59,6 +60,7 @@ def main():
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("DataRework")
 
     app = QApplication(sys.argv)
+    app.setFont(ui_font())
     # Applies to every top-level window (login + main), for both the title bar
     # and the taskbar button.
     app.setWindowIcon(QIcon(APP_ICON_PATH))

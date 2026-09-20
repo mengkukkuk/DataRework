@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 from PySide6.QtWidgets import QApplication
 from psycopg2 import sql
 import db
-from container_panel import ContainerPanel, build_hierarchy
+from container_panel import ContainerPanel, build_hierarchy, CARD_HEIGHT, GRID_GAP
 from i18n_widgets import QPushButton
 from main_window import MainWindow
 
@@ -121,7 +121,7 @@ class ContainerPanelTests(unittest.TestCase):
 
     def test_page_buttons_and_resize_keep_all_cards_reachable_without_scrolling(self):
         panel = ContainerPanel(True)
-        panel.inner.resize(1800, 480)
+        panel.inner.resize(1800, 4 * CARD_HEIGHT + 3 * GRID_GAP)
         panel._fit_page()
         panel.set_groups([(f"C{i:03}", "I", "D", "U", 1) for i in range(24)])
         self.assertEqual(panel.page_size, 20)
@@ -132,7 +132,7 @@ class ContainerPanelTests(unittest.TestCase):
         self.assertEqual(len(panel.cards), 4)
         self.assertTrue(panel.previous.isEnabled())
         self.assertFalse(panel.next.isEnabled())
-        panel.inner.resize(1050, 240)
+        panel.inner.resize(1050, 2 * CARD_HEIGHT + GRID_GAP)
         panel._fit_page()
         self.assertEqual(panel.page_size, 8)
         self.assertEqual(panel.page, 2)

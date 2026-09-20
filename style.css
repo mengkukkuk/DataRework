@@ -113,29 +113,37 @@
 
 /* --- QSS template ---------------------------------------------------- */
 
+/* A single installed Latin/Thai family, resolved by typography.py. Logical
+   pixel sizes scale with Qt high DPI; no tracking on combining Thai marks. */
+QWidget {
+    font-family: "__font_family__", "Segoe UI Symbol", "DejaVu Sans", sans-serif;
+    font-size: __font_body__px;
+    font-weight: 400;
+}
+
 QMainWindow, #central {
     background-color: __bg__;
 }
 QLabel {
     color: __text__;
-    font-size: 13px;
+    font-size: __font_body__px;
 }
 #pageTitle {
     color: __title__;
-    font-size: 21px;
+    font-size: __font_title__px;
     font-weight: 600;
 }
 #pageSubtitle, #stripLabel {
     color: __subtitle__;
-    font-size: 12px;
+    font-size: __font_small__px;
 }
 #stripLabel {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: __font_caption__px;
+    font-weight: 600;
 }
 #userBadge {
     color: __badge_text__;
-    font-size: 12px;
+    font-size: __font_small__px;
     background-color: __badge_bg__;
     border: 1px solid __badge_border__;
     border-radius: 11px;
@@ -154,8 +162,9 @@ QLabel {
     background-color: transparent;
     border: none;
     border-radius: 9px;
-    padding: 4px 12px;
-    font-size: 11px;
+    padding: 5px 12px;
+    min-height: 20px;
+    font-size: __font_caption__px;
     font-weight: 600;
     color: __subtitle__;
 }
@@ -175,17 +184,17 @@ QGroupBox::title {
     left: 14px;
     padding: 0 6px;
     color: __panel_title__;
-    font-size: 11px;
-    font-weight: 700;
+    font-size: __font_caption__px;
+    font-weight: 600;
 }
 QComboBox {
     background-color: __input_bg__;
     color: __input_text__;
     border: 1px solid __input_border__;
     border-radius: 6px;
-    padding: 7px 10px;
-    min-width: 108px;
-    font-size: 13px;
+    padding: 7px 10px 7px 12px;
+    min-height: 24px;
+    font-size: __font_body__px;
 }
 QComboBox:hover {
     border: 1px solid __input_hover_border__;
@@ -213,8 +222,9 @@ QComboBox QAbstractItemView {
 QPushButton {
     border: none;
     border-radius: 6px;
-    padding: 8px 20px;
-    font-size: 13px;
+    padding: 8px 18px;
+    min-height: 24px;
+    font-size: __font_body__px;
     font-weight: 600;
     color: #08111d;
 }
@@ -241,7 +251,7 @@ QPushButton {
 }
 QCheckBox {
     color: __checkbox_text__;
-    font-size: 12px;
+    font-size: __font_small__px;
     spacing: 6px;
     padding: 2px 4px;
 }
@@ -265,19 +275,19 @@ QTableWidget {
     border-radius: 8px;
     selection-background-color: __table_sel_bg__;
     selection-color: __table_sel_text__;
-    font-size: 12px;
+    font-size: __font_small__px;
 }
 QTableWidget::item {
-    padding: 4px 6px;
+    padding: 6px 8px;
 }
 QHeaderView::section {
     background-color: __header_bg__;
     color: __header_text__;
     border: none;
     border-bottom: 2px solid __header_border__;
-    padding: 7px 6px;
-    font-size: 11px;
-    font-weight: 700;
+    padding: 9px 8px;
+    font-size: __font_caption__px;
+    font-weight: 600;
 }
 QHeaderView::section:hover {
     background-color: __header_hover_bg__;
@@ -292,7 +302,7 @@ QHeaderView::section:hover {
     border: 1px solid __badge_bg__;
     border-radius: 4px;
     padding: 2px 9px;
-    font-size: 11px;
+    font-size: __font_caption__px;
     font-weight: 600;
 }
 #logBtn:hover { color: __header_text__; border-color: __subtitle__; }
@@ -302,8 +312,8 @@ QHeaderView::section:hover {
     color: __input_text__;
     border: 1px solid __input_border__;
     border-radius: 4px;
-    font-family: Consolas, "Courier New", monospace;
-    font-size: 12px;
+    font-family: "__font_family__", "Segoe UI Symbol", "DejaVu Sans", sans-serif;
+    font-size: __font_small__px;
     padding: 8px;
 }
 QScrollBar:vertical, QScrollBar:horizontal {
@@ -323,17 +333,17 @@ QDialog {
 }
 #dialogTitle {
     color: __title__;
-    font-size: 17px;
+    font-size: __font_dialog__px;
     font-weight: 600;
 }
 #dialogHint {
     color: __subtitle__;
-    font-size: 11px;
+    font-size: __font_caption__px;
 }
 #fieldLabel {
     color: __panel_title__;
-    font-size: 11px;
-    font-weight: 700;
+    font-size: __font_caption__px;
+    font-weight: 600;
 }
 /* The level picker is a rail, not a dropdown: display/inner/carton are a
    containment order, and a segmented control shows that order on screen.
@@ -348,7 +358,7 @@ QDialog {
     border: none;
     border-radius: 6px;
     padding: 6px 18px;
-    font-size: 12px;
+    font-size: __font_small__px;
     font-weight: 600;
     color: __subtitle__;
 }
@@ -359,9 +369,7 @@ QDialog {
 #levelSeg QPushButton:disabled {
     color: __save_disabled_text__;
 }
-/* The slab pair: old and new serial set identically, so the eye reads them as
-   the same physical label before and after. Letter-spacing is applied in
-   Python (QSS has no such property). */
+/* Serial fields share the UI family so Thai identifiers keep natural shaping. */
 #serialOld, #serialNew {
     background-color: __slab_bg__;
     border: 1px solid __slab_border__;
@@ -393,7 +401,7 @@ QDialog {
 }
 #childCount {
     color: __subtitle__;
-    font-size: 11px;
+    font-size: __font_caption__px;
 }
 #childScroll, #childScroll > QWidget > QWidget, #childScrollInner {
     background-color: transparent;
@@ -408,7 +416,7 @@ QDialog {
     background-color: transparent;
     color: #5b9bd5;
     padding: 4px 2px;
-    font-size: 11px;
+    font-size: __font_caption__px;
     font-weight: 600;
 }
 #linkBtn:hover { color: #75b0e0; }
@@ -421,12 +429,19 @@ QTabBar::tab:hover { background: __row_hover__; }
 #containerGrid { background: transparent; border: none; }
 #containerCard { background: __panel_bg__; border: 1px solid __panel_border__; border-top: 3px solid #5b9bd5; border-radius: 9px; }
 #containerCard:hover { background: __row_hover__; border-color: __input_hover_border__; }
-#containerLevel { color: __panel_title__; font-size: 11px; font-weight: 700; }
+#containerLevel { color: __panel_title__; font-size: __font_caption__px; font-weight: 600; }
 #containerSerial { color: __title__; font-size: 14px; font-weight: 600; }
 #containerSearch { background: __input_bg__; color: __input_text__; border: 1px solid __input_border__; border-radius: 6px; padding: 8px 12px; }
 #containerSearch:focus { border-color: #5b9bd5; }
-#containerCard QPushButton { padding: 3px 8px; font-size: 11px; }
-#containerCard #linkBtn { padding: 0 2px; font-size: 10px; }
+#containerCard QPushButton { padding: 3px 8px; font-size: __font_caption__px; }
+#containerCard #linkBtn { padding: 0 2px; font-size: __font_caption__px; }
 #containerCard QPushButton:focus { border: 1px solid #5b9bd5; }
 #containerManager #ghostBtn:disabled { background: __badge_bg__; color: __subtitle__; }
 #containerManager #linkBtn:disabled { color: __subtitle__; }
+
+/* A little extra leading for Thai tone marks, including popup choices. */
+QComboBox QAbstractItemView::item { min-height: 28px; padding: 3px 6px; }
+QLineEdit { font-size: __font_body__px; }
+#serialOld, #serialOld QLineEdit, #serialNew { font-size: 15px; min-height: 26px; }
+#containerCard QPushButton { min-height: 22px; }
+#containerCard #linkBtn { min-height: 20px; }

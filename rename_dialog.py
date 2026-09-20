@@ -10,7 +10,6 @@ has landed and the children can be listed under the new name.
 """
 
 from PySide6.QtCore import Qt, QEvent, QTimer
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QButtonGroup,
     QFrame,
@@ -29,21 +28,8 @@ from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
 # an alphabetical list.
 LEVEL_ORDER = ("carton", "inner", "display", "unit")
 
-ARROW = "\u2500\u2500\u25b6"
-
-
-def _serial_font(point_size=13):
-    """The one typeface a serial is ever set in, on both sides of the arrow.
-
-    Widened tracking so a scanned label reads as a sequence of characters to be
-    compared digit by digit, not as a word. Qt's QSS has no letter-spacing
-    property, so this cannot live in style.css.
-    """
-    font = QFont("Consolas")
-    font.setStyleHint(QFont.Monospace)
-    font.setPointSize(point_size)
-    font.setLetterSpacing(QFont.AbsoluteSpacing, 1.4)
-    return font
+# ASCII keeps this separator available even on minimal font installations.
+ARROW = ">"
 
 
 def _field_label(text):
@@ -152,8 +138,6 @@ class RenameContainerDialog(QDialog):
         self.old_combo.setCompleter(None)
         self.old_combo.lineEdit().setPlaceholderText(tr('Scan or type the current serial'))
         self.old_combo.lineEdit().installEventFilter(self)
-        self.old_combo.setFont(_serial_font())
-        self.old_combo.lineEdit().setFont(_serial_font())
         self.old_combo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.old_combo.currentTextChanged.connect(self._on_old_changed)
 
@@ -163,7 +147,6 @@ class RenameContainerDialog(QDialog):
         self.new_edit = QLineEdit()
         self.new_edit.setObjectName("serialNew")
         self.new_edit.setPlaceholderText(tr('new serial'))
-        self.new_edit.setFont(_serial_font())
         self.new_edit.installEventFilter(self)
         self.new_edit.textChanged.connect(self._refresh_state)
 
@@ -377,14 +360,12 @@ class ChildRelabelDialog(QDialog):
 
         old = QLabel(child["serial_no"])
         old.setObjectName("serialOld")
-        old.setFont(_serial_font(11))
 
         arrow = QLabel(ARROW)
         arrow.setObjectName("serialArrow")
 
         new = QLineEdit(suggest_child_serial(child["serial_no"], old_parent, new_parent))
         new.setObjectName("serialNew")
-        new.setFont(_serial_font(11))
         new.textChanged.connect(self._refresh_state)
 
         count = QLabel(tr('{p0} inside', p0=child["children"]) if child["children"] else tr('empty'))

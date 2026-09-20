@@ -254,14 +254,14 @@ class MainWindow(QMainWindow):
         for d in range(1,32):
             self.day_combo.addItem(str(d), d)
         self.day_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.day_combo.setFixedWidth(70)
+        self.day_combo.setFixedWidth(96)
 
         self.month_combo = QComboBox()
         self.month_combo.addItem(tr('Month'), None)
         for i, name in enumerate(MONTH_NAMES, start=1):
             self.month_combo.addItem(tr(name), i)
         self.month_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-        self.month_combo.setFixedWidth(130)
+        self.month_combo.setFixedWidth(156)
 
         self.year_combo = QComboBox()
         self.year_combo.addItem(tr('Year'), None)
@@ -469,7 +469,7 @@ class MainWindow(QMainWindow):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setFixedHeight(40)
+        scroll.setFixedHeight(52)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setFrameShape(QFrame.NoFrame)
@@ -492,6 +492,8 @@ class MainWindow(QMainWindow):
         self.table.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed)
         self.table.itemSelectionChanged.connect(self._update_delete_button)
         self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(38)
+        self.table.verticalHeader().setMinimumSectionSize(34)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.horizontalHeader().setSectionsClickable(True)
@@ -506,6 +508,7 @@ class MainWindow(QMainWindow):
         row = QHBoxLayout()
         self.status_label = QLabel("")
         self.status_label.setObjectName("statusLabel")
+        self.status_label.setWordWrap(True)
         row.addWidget(self.status_label)
 
         # The status line is one short sentence; this opens the full text and

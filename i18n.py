@@ -38,8 +38,12 @@ class Message(str):
         obj.key, obj.params = key, params
         return obj
 
-    def render(self):
-        return str(Message(self.key, **self.params))
+    def render(self, code=None):
+        code = code or language.code
+        value = CATALOGS[code].get(self.key, CATALOGS["en"].get(self.key, self.key))
+        params = {key: val.render(code) if isinstance(val, Message) else val
+                  for key, val in self.params.items()}
+        return value.format(**params) if params else value
 
     def __add__(self, other):
         return Message("{left}{right}", left=self, right=other)

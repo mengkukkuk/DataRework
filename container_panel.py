@@ -11,7 +11,7 @@ from image_preview import AvatarLabel, ImagePreview
 
 LEVELS = ("carton", "inner", "display", "unit")
 PAGE_SIZE = 20
-CARD_HEIGHT = 108
+CARD_HEIGHT = 132
 CARD_WIDTH = 250
 GRID_GAP = 8
 
@@ -61,7 +61,7 @@ class ContainerPanel(QWidget):
         self._resize_timer.timeout.connect(self._fit_page)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 12)
-        layout.setSpacing(12)
+        layout.setSpacing(8)
         top = QHBoxLayout()
         title = QLabel(tr("Container manager"))
         title.setObjectName("dialogTitle")
@@ -90,6 +90,7 @@ class ContainerPanel(QWidget):
         self.inner.setObjectName("containerGrid")
         # Pagination owns overflow; the grid must not grow the window to fit items.
         self.inner.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+        self.inner.setMinimumHeight(CARD_HEIGHT)
         self.inner.installEventFilter(self)
         self.grid = QGridLayout(self.inner)
         self.grid.setContentsMargins(0, 0, 0, 0)
