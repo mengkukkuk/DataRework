@@ -4,12 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add product avatar support&#10;&#10;Introduce `AvatarCatalog` for normalized product images based on packaging levels. Add `avatars.json` and `product-avatars.md` for image mappings and documentation. Update `ContainerPanel` to display avatars alongside container info. Enhance database queries to include distinct product data. Add integration tests to validate product avatar functionality.">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add tests and improve UX for barcode rename dialog&#10;&#10;Introduce `test_barcode_rename.py` with new test cases to validate barcode renaming flow, including keyboard scanner behavior and prefill handling. Enhance `RenameContainerDialog` UX with auto-focus logic, event filtering, placeholder texts, and delayed preview updates. Update translations to include additional text for improved guidance.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/command" beforeDir="false" afterPath="$PROJECT_DIR$/command" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/rename_dialog.py" beforeDir="false" afterPath="$PROJECT_DIR$/rename_dialog.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,15 +54,31 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mengkukkuk/DataRework.git&quot;,
-    &quot;accountId&quot;: &quot;09600478-7dc2-4a06-a7dc-bc2a4a296bd4&quot;
+    &quot;accountId&quot;: &quot;f331b1d4-f616-4210-930b-7eafd752559a&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$PROJECT_DIR$/main_window.py" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/main_window.py" root0="SKIP_INSPECTION" />
   </component>
   <component name="McpProjectServerCommands">
-    <commands />
-    <urls />
+    <McpServerCommand sourceId="UserConfigurationSource">
+      <option name="allowedToolsNames" />
+      <option name="enabled" value="true" />
+      <option name="name" value="" />
+      <option name="programPath" value="" />
+      <option name="arguments" value="" />
+      <option name="workingDirectory" value="" />
+      <envs />
+    </McpServerCommand>
+    <McpServerCommand sourceId="UserConfigurationSource">
+      <option name="allowedToolsNames" />
+      <option name="enabled" value="true" />
+      <option name="name" value="" />
+      <option name="programPath" value="" />
+      <option name="arguments" value="" />
+      <option name="workingDirectory" value="" />
+      <envs />
+    </McpServerCommand>
   </component>
   <component name="NextEditCompletionFeaturesState">
     <decayedCancelled>
@@ -225,7 +241,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-WS-261.25134.101" />
+        <option value="bundled-python-sdk-07523f343e4f-968fe969f28a-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.28539.27" />
       </set>
     </attachedChunks>
   </component>
@@ -398,7 +414,15 @@
       <option name="project" value="LOCAL" />
       <updated>1789834668569</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="Add tests and improve UX for barcode rename dialog&#10;&#10;Introduce `test_barcode_rename.py` with new test cases to validate barcode renaming flow, including keyboard scanner behavior and prefill handling. Enhance `RenameContainerDialog` UX with auto-focus logic, event filtering, placeholder texts, and delayed preview updates. Update translations to include additional text for improved guidance.">
+      <option name="closed" value="true" />
+      <created>1789834933556</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1789834933556</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -435,6 +459,7 @@
     <MESSAGE value="Add `ContainerPanel` UI and bulk delete feature; integrate with database and tests" />
     <MESSAGE value="Add product avatar support&#10;&#10;Introduce `AvatarCatalog` for normalized product images based on packaging levels. Add `avatars.json` and `product-avatars.md` for image mappings and documentation. Update `ContainerPanel` to display avatars alongside container info. Enhance database queries to include distinct product data. Add integration tests to validate product avatar functionality." />
     <MESSAGE value="Add non-modal product image preview&#10;&#10;Introduce `ImagePreview` for viewing product images without blocking the UI. Add `AvatarLabel` to make product avatars interactive. Update `ContainerPanel` to support preview functionality and ensure previews persist during container refresh. Add related tests and new translations for the feature." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add non-modal product image preview&#10;&#10;Introduce `ImagePreview` for viewing product images without blocking the UI. Add `AvatarLabel` to make product avatars interactive. Update `ContainerPanel` to support preview functionality and ensure previews persist during container refresh. Add related tests and new translations for the feature." />
+    <MESSAGE value="Add tests and improve UX for barcode rename dialog&#10;&#10;Introduce `test_barcode_rename.py` with new test cases to validate barcode renaming flow, including keyboard scanner behavior and prefill handling. Enhance `RenameContainerDialog` UX with auto-focus logic, event filtering, placeholder texts, and delayed preview updates. Update translations to include additional text for improved guidance." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add tests and improve UX for barcode rename dialog&#10;&#10;Introduce `test_barcode_rename.py` with new test cases to validate barcode renaming flow, including keyboard scanner behavior and prefill handling. Enhance `RenameContainerDialog` UX with auto-focus logic, event filtering, placeholder texts, and delayed preview updates. Update translations to include additional text for improved guidance." />
   </component>
 </project>

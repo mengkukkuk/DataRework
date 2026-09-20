@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import os
 
@@ -37,7 +38,6 @@ FILTER_COLUMNS = {
 
 }
 
-#CASCADE_FIELDS = ["line", "assignment_no", "parent_no", "serial_no"]
 CASCADE_FIELDS = [ "assignment_no", "product_name"]
 
 # Each region of the product (unit/inner/display/carton) has its own set of
@@ -246,6 +246,13 @@ class MainWindow(QMainWindow):
         outer.addLayout(row1)
         outer.addLayout(row2)
 
+        self.day_combo = QComboBox()
+        self.day_combo.addItem(tr('Day'), None)
+        for d in range(1,32):
+            self.day_combo.addItem(str(d), d)
+        self.day_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.day_combo.setFixedWidth(70)
+
         self.month_combo = QComboBox()
         self.month_combo.addItem(tr('Month'), None)
         for i, name in enumerate(MONTH_NAMES, start=1):
@@ -256,7 +263,7 @@ class MainWindow(QMainWindow):
         self.year_combo = QComboBox()
         self.year_combo.addItem(tr('Year'), None)
         current_year = datetime.date.today().year
-        for y in range(current_year - 5, current_year + 2):
+        for y in range(current_year - 1, current_year + 5):
             self.year_combo.addItem(str(y), y)
         self.year_combo.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.year_combo.setFixedWidth(100)
@@ -300,7 +307,7 @@ class MainWindow(QMainWindow):
         # Row 1: date range + product name, which gets the leftover width so
         # long product names aren't cramped. Row 2: the remaining, narrower
         # filters plus the action buttons.
-        for w in (self.month_combo, self.year_combo):
+        for w in (self.day_combo, self.month_combo, self.year_combo):
             row1.addWidget(w)
         row1.addWidget(self.product_name_combo, stretch=1)
 
@@ -311,8 +318,12 @@ class MainWindow(QMainWindow):
         # affects the ones after it in CASCADE_FIELDS. Refresh on
         # editingFinished/activated rather than every keystroke, so typing
         # doesn't fire a query per character.
-        self.month_combo.currentIndexChanged.connect(lambda _=None: self._refresh_dependent_combos())
-        self.year_combo.currentIndexChanged.connect(lambda _=None: self._refresh_dependent_combos())
+        self.day_combo.currentIndexChanged.connect(lambda _=None: self._refresh_dependent_combos())
+        self.month_combo.currentIndexChanged.connect(lambda _=None: self._on_date_changed())
+        self.year_combo.currentIndexChanged.connect(lambda _=None: self._on_date_changed())
+        # Month/year already carry today's date by now, so trim the day list
+        # before it is ever shown.
+        self._sync_day_range()
         for field_key in CASCADE_FIELDS:
             combo = self._cascade_combos[field_key]
             combo.lineEdit().editingFinished.connect(
@@ -335,6 +346,40 @@ class MainWindow(QMainWindow):
         row2.addWidget(self.clear_btn)
         row2.addWidget(self.search_btn)
         return group
+
+    def _on_date_changed(self):
+        self._sync_day_range()
+        self._refresh_dependent_combos()
+
+    def _sync_day_range(self):
+        """Keep the day list to the days the chosen month really has, so
+        February never offers a 30th.
+
+        With no month picked there is nothing to trim. With a month but no
+        year, the month could belong to any year, so February keeps its 29th
+        rather than assuming a common year.
+        """
+        month = self.month_combo.currentData()
+        year = self.year_combo.currentData()
+        if month is None:
+            days = 31
+        elif year is None:
+            days = 29 if month == 2 else calendar.monthrange(2001, month)[1]
+        else:
+            days = calendar.monthrange(year, month)[1]
+
+        if self.day_combo.count() == days + 1:  # +1 for the "Day" placeholder
+            return
+
+        kept = self.day_combo.currentData()
+        self.day_combo.blockSignals(True)
+        self.day_combo.clear()
+        self.day_combo.addItem(tr('Day'), None)
+        for d in range(1, days + 1):
+            self.day_combo.addItem(str(d), d)
+        # A day the new month doesn't have drops back to no day filter.
+        self.day_combo.setCurrentIndex(max(self.day_combo.findData(kept), 0))
+        self.day_combo.blockSignals(False)
 
     def _on_category_changed(self):
         category = self.category_combo.currentData()
@@ -520,9 +565,14 @@ class MainWindow(QMainWindow):
 
     def _date_conditions(self, columns):
         conditions = []
+        day = self.day_combo.currentData()
         month = self.month_combo.currentData()
         year = self.year_combo.currentData()
-        if (month or year) and DATE_COLUMN in columns:
+        if (day or month or year) and DATE_COLUMN in columns:
+            if day:
+                conditions.append(
+                    (sql.SQL("EXTRACT(DAY FROM {}) = %s").format(sql.Identifier(DATE_COLUMN)), [day])
+                )
             if month:
                 conditions.append(
                     (sql.SQL("EXTRACT(MONTH FROM {}) = %s").format(sql.Identifier(DATE_COLUMN)), [month])
