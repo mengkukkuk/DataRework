@@ -1024,6 +1024,9 @@ class MainWindow(QMainWindow):
         self.category_combo.setCurrentIndex(0)
         self.tag_value_edit.clear()
         self._refresh_dependent_combos()
+        # Folded, the heading is the only record of what the filters say, so it
+        # has to follow them back to empty.
+        self._sync_filter_summary()
         self.container_panel.navigate(())
         self.container_panel.set_groups([])
         if self.views.currentIndex() == 1:

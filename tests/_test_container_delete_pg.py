@@ -290,6 +290,21 @@ check("and the delete goes through, leaving nothing of D1",
 check("the link the row wrongly named is not counted as deleted", result["edges"] == 7)
 back_to_fixture()
 
+# --- a container the link table has forgotten still lists its rows ----------------
+
+raw.execute("DELETE FROM pg_temp.staging_product_logs "
+            "WHERE serial_no = 'D1' OR parent_serial_no = 'D1'")
+forgotten = db.container_delete_preview("display", "D1", **S)
+check("a display with no links left still lists its six saved units",
+      [c["serial_no"] for c in forgotten["children"]] == [f"D1U{n}" for n in range(1, 7)])
+check("and reports six rows, six units and no links",
+      (forgotten["rows"], forgotten["units"], forgotten["edges"]) == (6, 6, 0))
+result = db.delete_container("display", "D1", expected=forgotten, **S)
+check("deleting it removes the rows, releases the serials and touches no link",
+      in_rows("display", "D1") == 0 and result["edges"] == 0
+      and counts()["active"] == BASELINE["active"] - 6)
+back_to_fixture()
+
 # --- refusals leave everything as it was ------------------------------------------
 
 link("D1", "display", "I9", "inner")

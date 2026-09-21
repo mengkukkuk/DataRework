@@ -262,6 +262,14 @@ class ContainerPanelTests(unittest.TestCase):
             win.filter_toggle.click()
             self.assertFalse(win.filter_body.isVisible())
             self.assertIs(settings.store["filters_collapsed_records"], True)
+
+            # Folded, the heading is the only record of what the filters say:
+            # it has to follow a search, and follow Clear back to empty.
+            win.product_name_combo.setCurrentText("Lotion")
+            win._on_search()
+            self.assertIn("Lotion", win.filter_summary.text())
+            win._on_clear()
+            self.assertNotIn("Lotion", win.filter_summary.text())
             win.close()
             win.deleteLater()
 

@@ -4,19 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add container deletion preview, logic, and dialog&#10;&#10;Introduce `delete_dialog.py` for reviewing containers before deletion. Add `_test_container_delete_pg.py` for validating SQL correctness and scenarios in PostgreSQL temporary tables. Implement `db/deletion.py` for logic to clean up containers and their dependencies.">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add level marks for containers and navigation history in `ContainerPanel`&#10;&#10;Introduce visual &quot;level marks&quot; for each packaging level to enhance clarity. Add navigation history with breadcrumbs and Back/Forward controls for improved user navigation. Update styles, translations, and tests to support these enhancements.">
+      <change beforePath="$PROJECT_DIR$/.idea/dbnavigator.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dbnavigator.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/container_panel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/deletion.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/deletion.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/hierarchy.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/hierarchy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/_test_container_delete_pg.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/_test_container_delete_pg.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_container_delete.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_delete.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_i18n.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_i18n.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -145,6 +140,9 @@
       <entry key="D1" value="4.999921604836627" />
       <entry key="W1" value="4.999988800560374" />
     </decayedShown>
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="AISelfReview" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 4
@@ -478,7 +476,23 @@
       <option name="project" value="LOCAL" />
       <updated>1789983803540</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="Add level marks for containers and navigation history in `ContainerPanel`&#10;&#10;Introduce visual &quot;level marks&quot; for each packaging level to enhance clarity. Add navigation history with breadcrumbs and Back/Forward controls for improved user navigation. Update styles, translations, and tests to support these enhancements.">
+      <option name="closed" value="true" />
+      <created>1789998617611</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1789998617611</updated>
+    </task>
+    <task id="LOCAL-00029" summary="Add level marks for containers and navigation history in `ContainerPanel`&#10;&#10;Introduce visual &quot;level marks&quot; for each packaging level to enhance clarity. Add navigation history with breadcrumbs and Back/Forward controls for improved user navigation. Update styles, translations, and tests to support these enhancements.">
+      <option name="closed" value="true" />
+      <created>1789998728062</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1789998728062</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -496,7 +510,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Implement main window functionality and enhance database integration&#10;&#10;Adds product log search, dynamic table population, admin-only save/delete, and cascading filters. Introduces helper database utilities including column discovery, distinct value fetching, and row querying." />
     <MESSAGE value="main window arrow, default month" />
     <MESSAGE value="Main window optimizing. Order by desc/asc" />
     <MESSAGE value="style.css added" />
@@ -521,6 +534,7 @@
     <MESSAGE value="button adjustment" />
     <MESSAGE value="Container deletion method. [Delete container]" />
     <MESSAGE value="Add container deletion preview, logic, and dialog&#10;&#10;Introduce `delete_dialog.py` for reviewing containers before deletion. Add `_test_container_delete_pg.py` for validating SQL correctness and scenarios in PostgreSQL temporary tables. Implement `db/deletion.py` for logic to clean up containers and their dependencies." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add container deletion preview, logic, and dialog&#10;&#10;Introduce `delete_dialog.py` for reviewing containers before deletion. Add `_test_container_delete_pg.py` for validating SQL correctness and scenarios in PostgreSQL temporary tables. Implement `db/deletion.py` for logic to clean up containers and their dependencies." />
+    <MESSAGE value="Add level marks for containers and navigation history in `ContainerPanel`&#10;&#10;Introduce visual &quot;level marks&quot; for each packaging level to enhance clarity. Add navigation history with breadcrumbs and Back/Forward controls for improved user navigation. Update styles, translations, and tests to support these enhancements." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add level marks for containers and navigation history in `ContainerPanel`&#10;&#10;Introduce visual &quot;level marks&quot; for each packaging level to enhance clarity. Add navigation history with breadcrumbs and Back/Forward controls for improved user navigation. Update styles, translations, and tests to support these enhancements." />
   </component>
 </project>

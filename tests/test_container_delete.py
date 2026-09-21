@@ -280,6 +280,41 @@ class PreviewTests(unittest.TestCase):
             self.preview(flat=split)
         self.assertIn("more than one", str(ctx.exception))
 
+    def test_a_container_whose_links_are_gone_still_lists_its_saved_rows(self):
+        # The condition seen in production: filling_product_logs holds the rows,
+        # staging_product_logs has no link of D1's own, nothing under it, and the
+        # ids the rows carry name links that are not there either.
+        result, _ = self.preview(own=[], inside=[], live_links=set())
+        self.assertEqual((result["rows"], result["units"], result["edges"]), (6, 6, 0))
+        self.assertEqual([child["serial_no"] for child in result["children"]],
+                         ["U1", "U2", "U3", "U4", "U5", "U6"])
+        self.assertEqual({child["level"] for child in result["children"]}, {"unit"})
+
+    def test_saved_rows_fill_in_the_levels_between_a_carton_and_its_units(self):
+        flat = [(1, "U1", 11, "D1", 10, "I1", 5, "C1"),
+                (2, "U2", 12, "D1", 10, "I1", 5, "C1"),
+                (3, "U3", 13, "D2", 20, "I1", 5, "C1")]
+        conn = FakeConn(container_route(own=[], inside=[], flat=flat, live_links=set()))
+        with patch("db.connection.get_connection", return_value=conn):
+            result = db.container_delete_preview("carton", "C1")
+        self.assertEqual([(c["serial_no"], c["level"], c["depth"], c["children"])
+                          for c in result["children"]],
+                         [("I1", "inner", 1, 2), ("D1", "display", 2, 2),
+                          ("U1", "unit", 3, 0), ("U2", "unit", 3, 0),
+                          ("D2", "display", 2, 1), ("U3", "unit", 3, 0)])
+
+    def test_a_level_the_rows_leave_empty_is_a_gap_not_a_container(self):
+        # No display on these rows: the units belong to the inner directly, and
+        # nothing called "None" is ever listed.
+        flat = [(1, "U1", 11, None, None, "I1", 5, "C1"),
+                (2, "U2", 12, "", None, "I1", 5, "C1")]
+        conn = FakeConn(container_route(own=[], inside=[], flat=flat, live_links=set()))
+        with patch("db.connection.get_connection", return_value=conn):
+            result = db.container_delete_preview("inner", "I1")
+        self.assertEqual([(c["serial_no"], c["level"], c["depth"])
+                          for c in result["children"]],
+                         [("U1", "unit", 1), ("U2", "unit", 1)])
+
     def test_a_link_a_row_points_at_but_that_is_gone_is_left_out_of_the_count(self):
         # U1's row still names link 99, deleted long ago; planning to delete it
         # would make the plan's own count unreachable and abort the whole delete.

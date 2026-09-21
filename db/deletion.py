@@ -95,6 +95,33 @@ def _children_tree(root_serial, root_level, links):
     return out
 
 
+def _rows_as_links(level, serial_no, saved):
+    """The contents a saved row knows about, shaped like links so they can be listed.
+
+    The link table is not the only record of what is inside a container: a row in
+    filling_product_logs names every level it sits in, and the two can disagree --
+    a container whose links were never written, or were removed while its rows
+    stayed, holds rows that no link points at. Listing only the links would then
+    promise to delete N units and show nothing, which is exactly when a user most
+    needs to see what is going.
+
+    A level with no serial on the row is a gap, not a container: the level below
+    it is listed under the nearest named one instead.
+    """
+    below = LEVELS[:LEVELS.index(level)]
+    out = []
+    for row in saved:
+        parent, parent_level = serial_no, level
+        for lower in reversed(below):  # outermost first, so each is under the last
+            child = row.get(f"{lower}_serial_no")
+            if child in (None, ""):
+                continue
+            child = str(child)
+            out.append((None, child, lower, parent, parent_level))
+            parent, parent_level = child, lower
+    return out
+
+
 def _prune_empty(cur, schema, table, candidates, gone_links, survivors, apply):
     """Find, and with `apply` delete, the link of every container left with nothing in it.
 
@@ -307,7 +334,8 @@ def _plan(cur, schema, table, level, serial_no):
         "units": sorted(units),
         "rows": len(saved),
         "orphans": orphans,
-        "children": _children_tree(serial_no, level, list(inside.values())),
+        "children": _children_tree(serial_no, level,
+                                   list(inside.values()) + _rows_as_links(level, serial_no, saved)),
     }
 
 
