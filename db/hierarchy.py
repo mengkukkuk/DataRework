@@ -52,6 +52,8 @@ class ContainerDeleteError(Exception):
     """A container delete was refused, or backed out, before it could do harm.
 
     Raised when the serial names no container, names more than one (so "which
-    one?" has no safe answer), or when what is inside changed between the
-    preview the user confirmed and the moment of deletion. Nothing is deleted.
+    one?" has no safe answer), when what is inside changed between the preview
+    the user confirmed and the moment of deletion, or when the database refused
+    a statement and the transaction was rolled back. Nothing is deleted, and the
+    message says which of those happened -- it is shown to the user as it is.
     """

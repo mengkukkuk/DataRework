@@ -148,6 +148,7 @@ class MainWindow(QMainWindow):
 
         self._refresh_dependent_combos()
         language.changed.connect(self._retranslate_table)
+        language.changed.connect(self._sync_filter_summary)
 
     # -- construction ------------------------------------------------------
 
@@ -157,6 +158,7 @@ class MainWindow(QMainWindow):
 
     def _view_changed(self, index):
         self._update_delete_button()
+        self._apply_filter_collapse(self._filters_collapsed(index))
         if index == 1:
             self._refresh_containers()
 
@@ -243,16 +245,42 @@ class MainWindow(QMainWindow):
         _get_settings().setValue("theme", name)
 
     def _build_filter_bar(self):
-        group = QGroupBox(tr('Filters'))
+        # No QGroupBox title: the heading row below is the title, and it is what
+        # stays on screen when the inputs are collapsed away.
+        group = QGroupBox()
+        self.filter_card = group
+        group.setObjectName("filterCard")
         outer = QVBoxLayout(group)
+        outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(8)
+
+        heading = QHBoxLayout()
+        heading.setSpacing(10)
+        title = QLabel(tr('Filters'))
+        title.setObjectName("filterHeading")
+        self.filter_summary = QLabel()
+        self.filter_summary.setObjectName("filterSummary")
+        self.filter_toggle = QPushButton(tr('Hide filters'))
+        self.filter_toggle.setObjectName("filterToggle")
+        self.filter_toggle.setCursor(Qt.PointingHandCursor)
+        self.filter_toggle.clicked.connect(self._toggle_filters)
+        heading.addWidget(title)
+        heading.addWidget(self.filter_summary, 1)
+        heading.addWidget(self.filter_toggle)
+        outer.addLayout(heading)
+
+        self.filter_body = QWidget()
+        body = QVBoxLayout(self.filter_body)
+        body.setContentsMargins(0, 0, 0, 0)
+        body.setSpacing(8)
+        outer.addWidget(self.filter_body)
 
         row1 = QHBoxLayout()
         row1.setSpacing(10)
         row2 = QHBoxLayout()
         row2.setSpacing(10)
-        outer.addLayout(row1)
-        outer.addLayout(row2)
+        body.addLayout(row1)
+        body.addLayout(row2)
 
         self.day_combo = QComboBox()
         self.day_combo.addItem(tr('Day'), None)
@@ -353,7 +381,66 @@ class MainWindow(QMainWindow):
 
         row2.addWidget(self.clear_btn)
         row2.addWidget(self.search_btn)
+        self._apply_filter_collapse(self._filters_collapsed(0))
         return group
+
+    # -- the filter card folds away, and both tabs get the height --------------
+
+    def _filters_key(self, index=None):
+        if index is None:
+            # Called once from _build_filter_bar, before the tabs exist.
+            index = self.views.currentIndex() if hasattr(self, "views") else 0
+        return "filters_collapsed_containers" if index == 1 else "filters_collapsed_records"
+
+    def _filters_collapsed(self, index=None):
+        """Folded or not, remembered per tab.
+
+        The container manager opens folded because its cards are what the height
+        is for; the records tab opens with the filters in reach, as it always
+        has. Either choice sticks once the user makes it.
+        """
+        default = self._filters_key(index) == "filters_collapsed_containers"
+        return _get_settings().value(self._filters_key(index), default, type=bool)
+
+    def _apply_filter_collapse(self, collapsed):
+        self.filter_body.setVisible(not collapsed)
+        self.filter_card.setProperty("collapsed", "true" if collapsed else "false")
+        self.filter_card.style().unpolish(self.filter_card)
+        self.filter_card.style().polish(self.filter_card)
+        self.filter_toggle.setText(tr('Show filters') if collapsed else tr('Hide filters'))
+        self._sync_filter_summary()
+
+    def _sync_filter_summary(self):
+        """The summary quotes filter values, so it is rebuilt rather than
+        retranslated: a month name and a column label both change with the
+        language, and the values between them do not."""
+        collapsed = not self.filter_body.isVisible()
+        self.filter_summary.setText(self._filter_summary() if collapsed else "")
+
+    def _toggle_filters(self):
+        collapsed = self.filter_body.isVisible()
+        _get_settings().setValue(self._filters_key(), collapsed)
+        self._apply_filter_collapse(collapsed)
+
+    def _filter_summary(self):
+        """What is still filtering the view while the inputs are out of sight."""
+        parts = []
+        # Day, month name, year, in that order and only the ones that are set.
+        date = [str(self.day_combo.currentData()) if self.day_combo.currentData() else None,
+                self.month_combo.currentText() if self.month_combo.currentData() else None,
+                str(self.year_combo.currentData()) if self.year_combo.currentData() else None]
+        date = [part for part in date if part]
+        if date:
+            parts.append(" ".join(date))
+        for combo in (self.job_combo, self.product_name_combo):
+            if combo.currentText().strip():
+                parts.append(combo.currentText().strip())
+        category, tag = self.category_combo.currentData(), self.tag_combo.currentData()
+        value = self.tag_value_edit.text().strip()
+        if category and tag and value:
+            # column_label already names the level it belongs to.
+            parts.append(f"{column_label(f'{category}_{tag}')} = {value}")
+        return tr('Filtering by {p0}', p0=" · ".join(parts)) if parts else tr('No filters applied')
 
     def _on_date_changed(self):
         self._sync_day_range()
@@ -683,6 +770,9 @@ class MainWindow(QMainWindow):
         self._refresh_tag_values()
 
     def _on_search(self, *, container_path=None):
+        # Folded away, the heading line is the only thing still saying what the
+        # view is filtered by, so keep it current.
+        self._sync_filter_summary()
         if self.views.currentIndex() == 1 and any(self._collect_changes()):
             # Browsing saved containers must not discard edits in the Records tab.
             self._refresh_containers()
@@ -1189,9 +1279,11 @@ class MainWindow(QMainWindow):
             self._show_status(tr('Delete failed: {p0}', p0=exc), error=True, exc=exc)
             return
 
+        note = (f' {result["orphans"]} saved row reference(s) named a link that no longer '
+                "existed and were skipped." if result.get("orphans") else "")
         LOG.add(
             f'Deleted {level} "{serial}": {result["rows"]} row(s), {result["edges"]} link(s), '
-            f'{result["units"]} unit serial(s) released ({self.tag_name}).',
+            f'{result["units"]} unit serial(s) released ({self.tag_name}).{note}',
             level="INFO",
         )
         self._on_search()

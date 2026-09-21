@@ -195,5 +195,13 @@
   " This cannot be undone. Continue?": " This cannot be undone. Continue?",
   "Deleted {p0} \"{p1}\" — {p2} row(s), {p3} link(s), {p4} unit serial(s) released.": "Deleted {p0} \"{p1}\" — {p2} row(s), {p3} link(s), {p4} unit serial(s) released.",
   "Delete failed: {p0}": "Delete failed: {p0}",
-  "Unassigned groups have no serial to delete.": "Unassigned groups have no serial to delete."
+  "Unassigned groups have no serial to delete.": "Unassigned groups have no serial to delete.",
+  "Back to {p0}": "Back to {p0}",
+  "Forward to {p0}": "Forward to {p0}",
+  "Nothing to go back to": "Nothing to go back to",
+  "Nothing to go forward to": "Nothing to go forward to",
+  "Hide filters": "Hide filters",
+  "Show filters": "Show filters",
+  "Filtering by {p0}": "Filtering by {p0}",
+  "No filters applied": "No filters applied"
 }

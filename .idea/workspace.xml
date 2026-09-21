@@ -4,19 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="button adjustment">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add container deletion preview, logic, and dialog&#10;&#10;Introduce `delete_dialog.py` for reviewing containers before deletion. Add `_test_container_delete_pg.py` for validating SQL correctness and scenarios in PostgreSQL temporary tables. Implement `db/deletion.py` for logic to clean up containers and their dependencies.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/container_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/edge_mirror.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/edge_mirror.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/deletion.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/deletion.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/hierarchy.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/hierarchy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/serial_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/serial_state.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/datarework-workflow.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/datarework-workflow.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_db_package.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_db_package.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/_test_container_delete_pg.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/_test_container_delete_pg.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_container_delete.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_delete.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_panel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_i18n.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_i18n.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -58,12 +58,12 @@
     &quot;assignee&quot;: &quot;mengkukkuk&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/mengkukkuk/DataRework",
-    "accountId": "5bcb1a91-1e23-4717-ba68-eef60c59584b"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mengkukkuk/DataRework&quot;,
+    &quot;accountId&quot;: &quot;5bcb1a91-1e23-4717-ba68-eef60c59584b&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/main_window.py" root0="SKIP_INSPECTION" />
   </component>
@@ -470,7 +470,15 @@
       <option name="project" value="LOCAL" />
       <updated>1789979324796</updated>
     </task>
-    <option name="localTasksCounter" value="27" />
+    <task id="LOCAL-00027" summary="Add container deletion preview, logic, and dialog&#10;&#10;Introduce `delete_dialog.py` for reviewing containers before deletion. Add `_test_container_delete_pg.py` for validating SQL correctness and scenarios in PostgreSQL temporary tables. Implement `db/deletion.py` for logic to clean up containers and their dependencies.">
+      <option name="closed" value="true" />
+      <created>1789983803540</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1789983803540</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -488,8 +496,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Initial commit" />
-    <MESSAGE value="Initial commit 1.1" />
     <MESSAGE value="Implement main window functionality and enhance database integration&#10;&#10;Adds product log search, dynamic table population, admin-only save/delete, and cascading filters. Introduces helper database utilities including column discovery, distinct value fetching, and row querying." />
     <MESSAGE value="main window arrow, default month" />
     <MESSAGE value="Main window optimizing. Order by desc/asc" />
@@ -513,6 +519,8 @@
     <MESSAGE value="Add in-memory error logging and non-modal log viewer&#10;&#10;Introduce `debug_log.py` with an in-memory log for error tracking, featuring a non-modal `LogWindow` for viewing detailed messages and tracebacks. Update `main_window.py` to integrate error logging, replacing `print` statements with structured log entries. Enhance status updates to include traceback logs and improve error visibility. Add minor UI and style updates for the new log functionality." />
     <MESSAGE value="Implement shared English/Thai typography and UI font scaling&#10;&#10;Add `typography.py` to resolve a single installed font covering English and Thai text, ensuring consistent font selection across language switches without downloads. Integrate typography with `theme.py` to propagate font families and log pixel sizes into stylesheets. Update UI components and tests to reflect natural Thai shaping, button size stability, and glyph coverage validation. Adjust layouts and styles for improved multilingual text rendering adaptability." />
     <MESSAGE value="button adjustment" />
-    <option name="LAST_COMMIT_MESSAGE" value="button adjustment" />
+    <MESSAGE value="Container deletion method. [Delete container]" />
+    <MESSAGE value="Add container deletion preview, logic, and dialog&#10;&#10;Introduce `delete_dialog.py` for reviewing containers before deletion. Add `_test_container_delete_pg.py` for validating SQL correctness and scenarios in PostgreSQL temporary tables. Implement `db/deletion.py` for logic to clean up containers and their dependencies." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add container deletion preview, logic, and dialog&#10;&#10;Introduce `delete_dialog.py` for reviewing containers before deletion. Add `_test_container_delete_pg.py` for validating SQL correctness and scenarios in PostgreSQL temporary tables. Implement `db/deletion.py` for logic to clean up containers and their dependencies." />
   </component>
 </project>

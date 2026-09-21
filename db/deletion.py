@@ -14,6 +14,7 @@ and inner links are shared by every unit below them.
 import contextlib
 from collections import defaultdict
 
+import psycopg2
 from psycopg2 import sql
 
 from . import connection
@@ -35,14 +36,34 @@ def _flat_table(schema, table):
 
 
 def _delete_links(cur, schema, ids):
-    """Delete links by id. Returns how many rows went."""
+    """Delete links by id. Returns the ids that were actually there and went."""
     if not ids:
-        return 0
+        return []
     cur.execute(
-        sql.SQL("DELETE FROM {edges} WHERE id = ANY(%s)").format(edges=_edge_table(schema)),
+        sql.SQL("DELETE FROM {edges} WHERE id = ANY(%s) RETURNING id").format(
+            edges=_edge_table(schema)),
         (list(ids),),
     )
-    return cur.rowcount
+    return [row[0] for row in cur.fetchall()]
+
+
+def _existing_links(cur, schema, ids):
+    """Which of `ids` are links that really exist right now.
+
+    The ids a saved row carries in its <level>_source_id are the only ones in a
+    plan that were not just read out of the link table, and history leaves rows
+    pointing at links that are already gone. Planning to delete one of those would
+    make the plan's own count unreachable and abort the delete (see
+    delete_container), so they are checked here and left out.
+    """
+    ids = sorted(ids)
+    if not ids:
+        return set()
+    cur.execute(
+        sql.SQL("SELECT id FROM {edges} WHERE id = ANY(%s)").format(edges=_edge_table(schema)),
+        (ids,),
+    )
+    return {row[0] for row in cur.fetchall()}
 
 
 def _children_tree(root_serial, root_level, links):
@@ -244,12 +265,18 @@ def _plan(cur, schema, table, level, serial_no):
         raise ContainerDeleteError(f'No {level} named "{serial_no}" exists.')
 
     # Links to remove: its own, everything below it, and whatever the rows point at.
+    # The first two were just read from the link table; the third is checked,
+    # because a row can still name a link that no longer exists.
     links = {link_id for link_id, _parent, _parent_level in own} | set(inside)
+    named_by_rows = set()
     for row in saved:
         for lower in LEVELS[:LEVELS.index(level) + 1]:
             link = row.get(f"{lower}_source_id")
             if link is not None:
-                links.add(link)
+                named_by_rows.add(link)
+    unchecked = named_by_rows - links
+    orphans = sorted(unchecked - _existing_links(cur, schema, unchecked))
+    links |= unchecked - set(orphans)
 
     units = {str(row["unit_serial_no"]).strip() for row in saved
              if row.get("unit_serial_no") not in (None, "")}
@@ -279,8 +306,33 @@ def _plan(cur, schema, table, level, serial_no):
         "emptied": emptied,
         "units": sorted(units),
         "rows": len(saved),
+        "orphans": orphans,
         "children": _children_tree(serial_no, level, list(inside.values())),
     }
+
+
+def _as_delete_error(exc, level, serial_no):
+    """The exception to raise out of a failed delete.
+
+    Everything the delete itself decided already says what went wrong and that
+    nothing was deleted. What is left -- a constraint the database refused, a
+    column that is not there, no permission to write -- would otherwise reach the
+    user as raw driver text with no mention of the container or of the rollback
+    that just happened, so it is wrapped. A lost connection is left alone: the
+    caller tells the user that separately, and the message here would be a guess
+    about a transaction nobody can see the end of.
+    """
+    if isinstance(exc, (ContainerDeleteError, ValueError)):
+        return exc
+    if isinstance(exc, (psycopg2.OperationalError, psycopg2.InterfaceError)):
+        return exc
+    if isinstance(exc, psycopg2.Error):
+        detail = str(exc).strip().splitlines()[0] if str(exc).strip() else exc.__class__.__name__
+        return ContainerDeleteError(
+            f'The database refused to delete {level} "{serial_no}": {detail} '
+            "Nothing was deleted."
+        )
+    return exc
 
 
 def _summary(plan):
@@ -292,6 +344,7 @@ def _summary(plan):
         "edges": len(plan["links"]) + len(plan["pruned"]),
         "units": len(plan["units"]),
         "emptied": plan["emptied"],
+        "orphans": len(plan["orphans"]),
     }
 
 
@@ -318,7 +371,9 @@ def delete_container(level, serial_no, schema="public", table="filling_product_l
     `expected` is a container_delete_preview() result the user confirmed. If the
     contents no longer match its counts, or the database deletes a different number
     of rows than was planned, nothing is deleted and ContainerDeleteError is raised:
-    a half-deleted container is not recoverable the way a half-renamed one is.
+    a half-deleted container is not recoverable the way a half-renamed one is. Any
+    other failure is rolled back and reported the same way (see _as_delete_error),
+    so the caller never has to show the user raw driver text.
     """
     _require_container_level(level, serial_no)
     with contextlib.closing(connection.get_connection()) as conn:
@@ -337,10 +392,15 @@ def delete_container(level, serial_no, schema="public", table="filling_product_l
 
                 _set_serials_inactive(cur, schema, plan["units"], tag_name)
                 links = sorted(plan["links"] + plan["pruned"])
-                if _delete_links(cur, schema, links) != len(links):
+                lost = sorted(set(links) - set(_delete_links(cur, schema, links)))
+                if lost:
                     raise ContainerDeleteError(
-                        f'The links of {level} "{serial_no}" changed while deleting. '
-                        "Nothing was deleted."
+                        f'The links of {level} "{serial_no}" changed while deleting: '
+                        f'{len(lost)} of {len(links)} link(s) '
+                        f'({", ".join(str(link) for link in lost[:5])}'
+                        f'{", ..." if len(lost) > 5 else ""}) were gone by the time the '
+                        "delete ran. Nothing was deleted; someone else may be working on "
+                        "the same container. Open the delete again to see what is in it now."
                     )
                 cur.execute(
                     sql.SQL("DELETE FROM {flat} WHERE {column}::text = %s").format(
@@ -350,13 +410,19 @@ def delete_container(level, serial_no, schema="public", table="filling_product_l
                 )
                 if cur.rowcount != plan["rows"]:
                     raise ContainerDeleteError(
-                        f'The rows of {level} "{serial_no}" changed while deleting. '
-                        "Nothing was deleted."
+                        f'The rows of {level} "{serial_no}" changed while deleting '
+                        f'({cur.rowcount} row(s) deleted, {plan["rows"]} planned). '
+                        "Nothing was deleted; open the delete again to see what is in "
+                        "it now."
                     )
                 conn.commit()
-            except Exception:
+            except Exception as exc:
                 with contextlib.suppress(Exception):
                     conn.rollback()
-                raise
+                clearer = _as_delete_error(exc, level, serial_no)
+                if clearer is exc:
+                    raise
+                raise clearer from exc
     return {"rows": summary["rows"], "edges": summary["edges"],
-            "units": summary["units"], "emptied": summary["emptied"]}
+            "units": summary["units"], "emptied": summary["emptied"],
+            "orphans": summary["orphans"]}

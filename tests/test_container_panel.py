@@ -8,8 +8,21 @@ from PySide6.QtWidgets import QApplication
 from psycopg2 import sql
 import db
 from container_panel import ContainerPanel, build_hierarchy, CARD_HEIGHT, GRID_GAP
-from i18n_widgets import QPushButton
+from i18n_widgets import QLabel, QPushButton
+from level_marks import LEVEL_COLORS, level_mark
 from main_window import MainWindow
+
+
+class FakeSettings:
+    """QSettings without the registry, so a test never edits the real one."""
+    def __init__(self, store=None):
+        self.store = dict(store or {})
+
+    def value(self, key, default=None, type=None):
+        return self.store.get(key, default)
+
+    def setValue(self, key, value):
+        self.store[key] = value
 
 
 GROUPS = [("C1", "I1", "D1", "U1", 2), ("C1", "I1", "D1", "U2", 1),
@@ -143,6 +156,157 @@ class ContainerPanelTests(unittest.TestCase):
         self.assertEqual(panel.page, 0)
         self.assertFalse(panel.previous.isEnabled())
         panel.deleteLater()
+
+    # -- routing back and forward through the levels ------------------------
+
+    def test_back_and_forward_retrace_the_route_without_rewriting_it(self):
+        panel = ContainerPanel(True)
+        panel.set_groups(GROUPS)
+        self.assertFalse(panel.back_btn.isEnabled())
+        self.assertFalse(panel.forward_btn.isEnabled())
+        panel.navigate(("C1",))
+        panel.navigate(("C1", "I1"))
+        self.assertTrue(panel.back_btn.isEnabled())
+        self.assertFalse(panel.forward_btn.isEnabled())
+
+        panel.back_btn.click()
+        self.assertEqual(panel.path, ("C1",))
+        self.assertTrue(panel.forward_btn.isEnabled())
+        panel.back_btn.click()
+        self.assertEqual(panel.path, ())
+        self.assertFalse(panel.back_btn.isEnabled())
+        panel.forward_btn.click()
+        panel.forward_btn.click()
+        self.assertEqual(panel.path, ("C1", "I1"))
+        # Retracing left the trail itself alone.
+        self.assertEqual(panel.history, [(), ("C1",), ("C1", "I1")])
+
+        # A new move from the middle drops whatever was ahead of it.
+        panel.back_btn.click()
+        panel.navigate(("C2",))
+        self.assertEqual(panel.history, [(), ("C1",), ("C2",)])
+        self.assertFalse(panel.forward_btn.isEnabled())
+        panel.deleteLater()
+
+    def test_the_arrows_say_where_they_lead_and_new_data_clears_a_dead_route(self):
+        panel = ContainerPanel(True)
+        panel.set_groups(GROUPS)
+        panel.navigate(("C1",))
+        self.assertIn("All cartons", panel.back_btn.toolTip())
+        self.assertIn("nothing", panel.forward_btn.toolTip().casefold())
+        panel.back_btn.click()
+        self.assertIn("C1", panel.forward_btn.toolTip())
+        # C1 is not in the next search: the trail that ran through it goes too.
+        panel.navigate(("C1", "I1"))
+        panel.set_groups([("C9", "I9", "D9", "U9", 1)])
+        self.assertEqual((panel.path, panel.history), ((), [()]))
+        self.assertFalse(panel.back_btn.isEnabled())
+        panel.deleteLater()
+
+    # -- the mark that says which level a card is ---------------------------
+
+    def test_every_card_carries_its_level_as_a_mark_and_as_a_property(self):
+        panel = ContainerPanel(True)
+        panel.set_groups(GROUPS)
+        seen = {}
+        for path, level in [((), "carton"), (("C1",), "inner"), (("C1", "I1"), "display"),
+                            (("C1", "I1", "D1"), "unit")]:
+            panel.navigate(path)
+            card = panel.cards[0]
+            self.assertEqual(card.property("level"), level)
+            mark = card.findChild(QLabel, "levelMark")
+            self.assertFalse(mark.pixmap().isNull())
+            # Not a button: the first QPushButton on a card is its open action
+            # and the first #linkBtn is Rename, both relied on elsewhere.
+            self.assertNotIsInstance(mark, QPushButton)
+            seen[level] = mark.pixmap().toImage()
+        self.assertEqual(sorted(seen), sorted(LEVEL_COLORS))
+        images = list(seen.values())
+        for index, image in enumerate(images):
+            for other in images[index + 1:]:
+                self.assertNotEqual(image, other)
+        panel.deleteLater()
+
+    def test_an_unknown_level_gets_a_blank_mark_rather_than_an_error(self):
+        self.assertFalse(level_mark("shelf", 18).isNull())
+        self.assertFalse(level_mark("carton", 14).isNull())
+
+    # -- the filter card folds away so the cards get the height -------------
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    @patch("db.container_groups", return_value=GROUPS)
+    def test_filters_fold_away_per_tab_and_the_choice_is_remembered(self, *mocks):
+        settings = FakeSettings()
+        with patch("main_window._get_settings", return_value=settings):
+            win = MainWindow("tester", "admin", "TEST-OPERATOR")
+            win.show()
+            # Records opens with the filters in reach; the container manager
+            # opens folded, because its cards are what the height is for.
+            self.assertTrue(win.filter_body.isVisible())
+            win.views.setCurrentIndex(1)
+            self.assertFalse(win.filter_body.isVisible())
+            self.assertEqual(win.filter_card.property("collapsed"), "true")
+            self.assertTrue(win.filter_summary.text())
+
+            win.filter_toggle.click()
+            self.assertTrue(win.filter_body.isVisible())
+            self.assertIs(settings.store["filters_collapsed_containers"], False)
+            win.views.setCurrentIndex(0)
+            win.views.setCurrentIndex(1)
+            self.assertTrue(win.filter_body.isVisible())
+
+            win.views.setCurrentIndex(0)
+            win.filter_toggle.click()
+            self.assertFalse(win.filter_body.isVisible())
+            self.assertIs(settings.store["filters_collapsed_records"], True)
+            win.close()
+            win.deleteLater()
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    @patch("db.container_groups", return_value=GROUPS)
+    def test_folding_the_filters_gives_the_grid_more_cards(self, *mocks):
+        settings = FakeSettings({"filters_collapsed_containers": True})
+        with patch("main_window._get_settings", return_value=settings):
+            win = MainWindow("tester", "admin", "TEST-OPERATOR")
+            win.resize(1500, 830)
+            win.show()
+            win.views.setCurrentIndex(1)
+            self.app.processEvents()
+            panel = win.container_panel
+            panel._fit_page()
+            folded = panel.page_size
+            win.filter_toggle.click()  # unfolding takes that height back again
+            self.app.processEvents()
+            panel._fit_page()
+            self.assertGreater(folded, panel.page_size)
+            win.close()
+            win.deleteLater()
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    @patch("db.container_groups",
+           return_value=[(f"C{i:03}", "I", "D", "U", 1) for i in range(120)])
+    def test_switching_tabs_keeps_the_page_the_user_was_on(self, *mocks):
+        settings = FakeSettings()
+        with patch("main_window._get_settings", return_value=settings):
+            win = MainWindow("tester", "admin", "TEST-OPERATOR")
+            win.resize(1500, 830)
+            win.show()
+            win.views.setCurrentIndex(1)
+            self.app.processEvents()
+            panel = win.container_panel
+            panel.next.click()
+            self.assertEqual(panel.page, 1)
+            for _ in range(2):
+                win.views.setCurrentIndex(0)
+                self.app.processEvents()
+                win.views.setCurrentIndex(1)
+                self.app.processEvents()
+            self.assertEqual(panel.page, 1)
+            win.close()
+            win.deleteLater()
 
     def test_database_aggregation_is_parameterized_and_has_no_record_limit(self):
         conn = MagicMock()

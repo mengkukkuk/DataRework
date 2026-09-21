@@ -14,6 +14,15 @@ from main_window import MainWindow
 from rename_dialog import RenameContainerDialog, ChildRelabelDialog
 
 
+class _Settings:
+    """QSettings that remembers nothing and hands back every default."""
+    def value(self, key, default=None, type=None):
+        return default
+
+    def setValue(self, key, value):
+        pass
+
+
 class TranslationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -22,6 +31,9 @@ class TranslationTests(unittest.TestCase):
     def setUp(self):
         self.saved_language = language.code
         self.settings = patch("i18n.QSettings").start()
+        # MainWindow reads remembered theme and filter state; keep this suite off
+        # the real registry, so what the app last saved cannot steer a test.
+        patch("main_window._get_settings", return_value=_Settings()).start()
         language.set("en")
         self.windows = []
 

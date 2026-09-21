@@ -1,11 +1,13 @@
 """Browse packaging as nested crates, using persisted records and full paths."""
 from dataclasses import dataclass, field
 
-from PySide6.QtCore import Qt, Signal, QEvent, QTimer
+from PySide6.QtCore import Qt, Signal, QEvent, QSize, QTimer
+from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QSizePolicy, QVBoxLayout
 
 from i18n import tr, language
 from i18n_widgets import QLabel, QLineEdit, QPushButton, QWidget
+from level_marks import level_icon, level_mark
 from product_avatars import AvatarCatalog, avatar_pixmap
 from image_preview import AvatarLabel, ImagePreview
 
@@ -53,6 +55,11 @@ class ContainerPanel(QWidget):
         self.avatars = AvatarCatalog()
         self.root = ContainerNode()
         self.path = ()
+        # Where the user has been, oldest first, and where in it they are now.
+        # Drilling in from a card and clicking a breadcrumb both land here, so
+        # Back retraces the route rather than only climbing one level.
+        self.history = [()]
+        self.history_at = 0
         self.page = 0
         self.cards = []
         self._grid_columns = 5
@@ -64,10 +71,20 @@ class ContainerPanel(QWidget):
         layout.setContentsMargins(16, 16, 16, 12)
         layout.setSpacing(8)
         top = QHBoxLayout()
+        # Title and hint share one row with the search box: two lines of heading
+        # where there were three, and the difference goes to the cards.
+        heading_box = QVBoxLayout()
+        heading_box.setSpacing(0)
         title = QLabel(tr("Container manager"))
         title.setObjectName("dialogTitle")
-        top.addWidget(title)
-        top.addStretch()
+        heading_box.addWidget(title)
+        hint = QLabel(tr("Browse saved records: carton → inner → display → unit. Counts follow the active filters."))
+        hint.setObjectName("dialogHint")
+        hint.setWordWrap(True)
+        heading_box.addWidget(hint)
+        # The hint takes the width left over by the search box rather than
+        # wrapping into a four-line block.
+        top.addLayout(heading_box, 1)
         self.search = QLineEdit()
         self.search.setPlaceholderText(tr("Find serial in this level"))
         self.search.setObjectName("containerSearch")
@@ -79,14 +96,32 @@ class ContainerPanel(QWidget):
         refresh.clicked.connect(self.refresh_requested.emit)
         top.addWidget(refresh)
         layout.addLayout(top)
-        hint = QLabel(tr("Browse saved records: carton → inner → display → unit. Counts follow the active filters."))
-        hint.setObjectName("dialogHint")
-        hint.setWordWrap(True)
-        layout.addWidget(hint)
+        # One route row: Back/Forward, the trail, and the count of what is in view.
+        route = QHBoxLayout()
+        route.setSpacing(6)
+        self.back_btn = QPushButton("←")
+        self.back_btn.setObjectName("navBtn")
+        self.back_btn.clicked.connect(self.go_back)
+        self.forward_btn = QPushButton("→")
+        self.forward_btn.setObjectName("navBtn")
+        self.forward_btn.clicked.connect(self.go_forward)
+        for button in (self.back_btn, self.forward_btn):
+            button.setFixedWidth(34)
+            button.setCursor(Qt.PointingHandCursor)
+            route.addWidget(button)
         self.breadcrumbs = QHBoxLayout()
-        layout.addLayout(self.breadcrumbs)
+        self.breadcrumbs.setSpacing(4)
+        route.addLayout(self.breadcrumbs, 1)
         self.summary = QLabel()
-        layout.addWidget(self.summary)
+        self.summary.setObjectName("containerSummary")
+        route.addWidget(self.summary, alignment=Qt.AlignRight | Qt.AlignVCenter)
+        layout.addLayout(route)
+        # Scoped to this panel: Alt+Left on the records tab is not a request to
+        # move a container view nobody is looking at.
+        for keys, slot in ((QKeySequence.Back, self.go_back),
+                           (QKeySequence.Forward, self.go_forward)):
+            shortcut = QShortcut(keys, self, activated=slot)
+            shortcut.setContext(Qt.WidgetWithChildrenShortcut)
         self.inner = QWidget()
         self.inner.setObjectName("containerGrid")
         # Pagination owns overflow; the grid must not grow the window to fit items.
@@ -124,20 +159,61 @@ class ContainerPanel(QWidget):
                 break
             node = node.children[serial]
             valid += (serial,)
+        if valid != self.path:
+            self.history, self.history_at = [valid], 0
         self.path = valid
         self.render()
 
     def show_error(self):
         self.set_groups([])
-        self.summary.setText(tr("Unable to load containers. Try Refresh."))
+        self._set_summary(tr("Unable to load containers. Try Refresh."), error=True)
 
-    def navigate(self, path):
+    def _set_summary(self, text, error=False):
+        """The count of what is in view, or why there is nothing in view."""
+        self.summary.setText(text)
+        self.summary.setProperty("state", "error" if error else "")
+        self.summary.style().unpolish(self.summary)
+        self.summary.style().polish(self.summary)
+
+    def navigate(self, path, record=True):
+        """Show `path`. `record` is what separates a move from a retrace: Back
+        and Forward replay the trail without rewriting it."""
+        if record and path != self.path:
+            self.history = self.history[:self.history_at + 1] + [path]
+            self.history_at = len(self.history) - 1
         self.path = path
         self.page = 0
         self.search.blockSignals(True)
         self.search.clear()
         self.search.blockSignals(False)
         self.render()
+
+    def go_back(self):
+        if self.history_at > 0:
+            self.history_at -= 1
+            self.navigate(self.history[self.history_at], record=False)
+
+    def go_forward(self):
+        if self.history_at + 1 < len(self.history):
+            self.history_at += 1
+            self.navigate(self.history[self.history_at], record=False)
+
+    def _route_label(self, path):
+        if not path:
+            return tr("All cartons")
+        return path[-1] if path[-1] is not None else tr("Unassigned")
+
+    def _sync_route_buttons(self):
+        back = self.history_at > 0
+        forward = self.history_at + 1 < len(self.history)
+        self.back_btn.setEnabled(back)
+        self.forward_btn.setEnabled(forward)
+        self.back_btn.setToolTip(
+            tr("Back to {p0}", p0=self._route_label(self.history[self.history_at - 1]))
+            if back else tr("Nothing to go back to"))
+        self.forward_btn.setToolTip(
+            tr("Forward to {p0}", p0=self._route_label(self.history[self.history_at + 1]))
+            if forward else tr("Nothing to go forward to"))
 
     def _filter_changed(self):
         self.page = 0
@@ -160,6 +236,9 @@ class ContainerPanel(QWidget):
             button = QPushButton(label if label is not None else tr("Unassigned"))
             button.setObjectName("ghostBtn")
             button.setToolTip(label if label is not None else tr("Unassigned"))
+            # index 0 is "everything"; crumb n names the level it stands in.
+            button.setIcon(level_icon(LEVELS[index - 1] if index else "carton", 14))
+            button.setIconSize(QSize(14, 14))
             button.clicked.connect(lambda checked=False, p=self.path[:index]: self.navigate(p))
             self.breadcrumbs.addWidget(button)
         self.breadcrumbs.addStretch()
@@ -178,7 +257,7 @@ class ContainerPanel(QWidget):
         children.sort(key=lambda child: (child.path[-1] is None, child.path[-1] or ""))
         pages = max(1, (len(children) + self.page_size - 1) // self.page_size)
         self.page = max(0, min(self.page, pages - 1))
-        self.summary.setText(tr("{p0} items · {p1} saved rows", p0=len(children), p1=node.rows))
+        self._set_summary(tr("{p0} items · {p1} saved rows", p0=len(children), p1=node.rows))
         if not children:
             empty = QLabel(tr("No containers found. Adjust the filters or search."))
             empty.setObjectName("dialogHint")
@@ -190,12 +269,15 @@ class ContainerPanel(QWidget):
         self.page_label.setText(tr("Page {p0} of {p1}", p0=self.page + 1, p1=pages))
         self.previous.setEnabled(self.page > 0)
         self.next.setEnabled(self.page + 1 < pages)
+        self._sync_route_buttons()
 
     def _card(self, node):
         level = LEVELS[len(node.path) - 1]
         serial = node.path[-1]
         card = QFrame()
         card.setObjectName("containerCard")
+        # The stylesheet paints the top rule in this level's colour (style.css).
+        card.setProperty("level", level)
         box = QVBoxLayout(card)
         card.setFixedHeight(CARD_HEIGHT)
         card.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
@@ -203,7 +285,15 @@ class ContainerPanel(QWidget):
         box.setSpacing(2)
         label = QLabel(tr(level.capitalize()))
         label.setObjectName("containerLevel")
+        mark = QLabel()
+        mark.setObjectName("levelMark")
+        mark.setPixmap(level_mark(level, 18))
+        mark.setFixedSize(18, 18)
+        # A QLabel, not a button: the first QPushButton on a card is its Open,
+        # and the first #linkBtn is Rename. Both are relied on elsewhere.
         heading = QHBoxLayout()
+        heading.setSpacing(6)
+        heading.addWidget(mark)
         heading.addWidget(label)
         heading.addStretch()
         box.addLayout(heading)

@@ -179,6 +179,22 @@ QGroupBox {
     margin-top: 6px;
     padding: 16px 14px 14px 14px;
 }
+/* The filter card carries its own heading row (label, summary, collapse
+   toggle) instead of QGroupBox's native title, so that collapsing it can give
+   the whole of its padding back to whichever tab is on screen. */
+#filterCard { margin-top: 0; padding: 10px 14px 12px 14px; }
+#filterCard[collapsed="true"] { padding: 8px 14px 8px 14px; }
+#filterHeading { color: __panel_title__; font-size: __font_caption__px; font-weight: 600; }
+#filterSummary { color: __subtitle__; font-size: __font_caption__px; }
+#filterToggle {
+    background-color: transparent;
+    color: __panel_title__;
+    border: 1px solid __panel_border__;
+    padding: 3px 12px;
+    min-height: 18px;
+    font-size: __font_caption__px;
+}
+#filterToggle:hover { background-color: __row_hover__; border-color: __input_hover_border__; color: __title__; }
 QGroupBox::title {
     subcontrol-origin: margin;
     left: 14px;
@@ -435,7 +451,30 @@ QTabBar::tab:hover { background: __row_hover__; }
 #containerGrid { background: transparent; border: none; }
 #containerCard { background: __panel_bg__; border: 1px solid __panel_border__; border-top: 3px solid #5b9bd5; border-radius: 9px; }
 #containerCard:hover { background: __row_hover__; border-color: __input_hover_border__; }
+/* One accent per packaging level, matching the drawn mark on the card
+   (level_marks.LEVEL_COLORS). Like the other accent chips above, these are
+   fixed brand colours: they read on both the dark and the light panel. */
+#containerCard[level="carton"] { border-top-color: #d1873c; }
+#containerCard[level="inner"] { border-top-color: #8d74d8; }
+#containerCard[level="display"] { border-top-color: #4f9bd9; }
+#containerCard[level="unit"] { border-top-color: #34a06c; }
+#levelMark { background: transparent; border: none; }
+/* The route row's count turns into the panel's error line when a load fails. */
+#containerSummary { color: __subtitle__; font-size: __font_caption__px; }
+#containerSummary[state="error"] { color: __status_error__; font-weight: 600; }
 #containerLevel { color: __panel_title__; font-size: __font_caption__px; font-weight: 600; }
+/* Route arrows: square, quiet, and obviously dead when there is nowhere to go. */
+#navBtn {
+    background-color: __badge_bg__;
+    color: __text__;
+    border: 1px solid __panel_border__;
+    padding: 4px 0;
+    min-height: 22px;
+    font-size: __font_body__px;
+}
+#navBtn:hover { background-color: __row_hover__; border-color: __input_hover_border__; }
+#navBtn:disabled { background-color: transparent; color: __save_disabled_text__; border-color: __panel_border__; }
+#containerManager #ghostBtn { padding: 5px 12px; }
 #containerSerial { color: __title__; font-size: 14px; font-weight: 600; }
 #containerSearch { background: __input_bg__; color: __input_text__; border: 1px solid __input_border__; border-radius: 6px; padding: 8px 12px; }
 #containerSearch:focus { border-color: #5b9bd5; }

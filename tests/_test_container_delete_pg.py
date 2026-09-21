@@ -203,7 +203,7 @@ check("preview wrote nothing", counts() == BASELINE)
 
 result = db.delete_container("display", "D1", tag_name="OP-9", expected=preview, **S)
 check("delete D1 reports what the preview promised",
-      result == {"rows": 6, "edges": 7, "units": 6, "emptied": []})
+      result == {"rows": 6, "edges": 7, "units": 6, "emptied": [], "orphans": 0})
 check("D1 is gone from rows and links", in_rows("display", "D1") == 0 and named("D1", "display") == 0)
 check("sibling D2 keeps its rows and links", in_rows("display", "D2") == 6 and named("D2", "display") == 7)
 check("I1 -> C1 link survives", linked("I1", "inner", "C1"))
@@ -274,6 +274,20 @@ db.save_grid_changes("filling_product_logs", ("id",), [], [(vanished,), (last,)]
 check("the last row of D4 goes, its pk list including one that was already gone, and D4 and I3 "
       "are cleaned up (the survivor check reads the live table)",
       in_rows("display", "D4") == 0 and named("D4", "display") == 0 and named("I3", "inner") == 0)
+back_to_fixture()
+
+# --- a row pointing at a link that is already gone must not block the delete -------
+
+raw.execute("UPDATE pg_temp.filling_product_logs SET unit_source_id = 999999 "
+            "WHERE display_serial_no = 'D1' AND unit_serial_no = 'D1U1'")
+orphaned = db.container_delete_preview("display", "D1", **S)
+check("the preview counts out the link that no longer exists (the six real unit "
+      "links and D1's own are still there)",
+      (orphaned["edges"], orphaned["orphans"]) == (7, 1))
+result = db.delete_container("display", "D1", expected=orphaned, **S)
+check("and the delete goes through, leaving nothing of D1",
+      result["orphans"] == 1 and in_rows("display", "D1") == 0 and named("D1", "display") == 0)
+check("the link the row wrongly named is not counted as deleted", result["edges"] == 7)
 back_to_fixture()
 
 # --- refusals leave everything as it was ------------------------------------------

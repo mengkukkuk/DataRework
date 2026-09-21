@@ -195,5 +195,13 @@
   " This cannot be undone. Continue?": " ไม่สามารถย้อนกลับได้ ต้องการดำเนินการต่อหรือไม่?",
   "Deleted {p0} \"{p1}\" — {p2} row(s), {p3} link(s), {p4} unit serial(s) released.": "ลบ{p0} \"{p1}\" แล้ว — {p2} แถว, {p3} การเชื่อมโยง, คืนรหัสซีเรียลของหน่วยสินค้า {p4} รายการ",
   "Delete failed: {p0}": "ลบไม่สำเร็จ: {p0}",
-  "Unassigned groups have no serial to delete.": "กลุ่มที่ยังไม่ระบุไม่มีรหัสให้ลบ"
+  "Unassigned groups have no serial to delete.": "กลุ่มที่ยังไม่ระบุไม่มีรหัสให้ลบ",
+  "Back to {p0}": "กลับไปที่ {p0}",
+  "Forward to {p0}": "ไปข้างหน้าที่ {p0}",
+  "Nothing to go back to": "ไม่มีหน้าก่อนหน้า",
+  "Nothing to go forward to": "ไม่มีหน้าถัดไป",
+  "Hide filters": "ซ่อนตัวกรอง",
+  "Show filters": "แสดงตัวกรอง",
+  "Filtering by {p0}": "กรองด้วย {p0}",
+  "No filters applied": "ยังไม่ได้ใช้ตัวกรอง"
 }

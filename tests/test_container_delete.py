@@ -134,16 +134,22 @@ FLAT_ROWS = [(n + 1, f"U{n + 1}", 11 + n, "D1", 10, "I1", 5, "C1") for n in rang
 
 
 def container_route(*, own=OWN_LINK, inside=UNIT_LINKS, flat=FLAT_ROWS,
-                    inner_stays=True, carton_stays=True,
+                    inner_stays=True, carton_stays=True, live_links=None,
                     links_deleted=None, rows_deleted=None):
     """Answers the statements emitted for deleting display D1.
 
     inner_stays / carton_stays: whether the parent still holds something else once
-    D1 is gone. links_deleted / rows_deleted override what a DELETE reports back.
+    D1 is gone. live_links: the link ids that still exist, for the check on the ids
+    the saved rows point at (None means all of them do). links_deleted /
+    rows_deleted override what a DELETE reports back.
     """
     parent_link = {"inner": [(5, "C1", "carton")], "carton": []}
 
     def route(text, params):
+        if text.startswith("SELECT id FROM"):
+            asked = params[0]
+            return rows([(link,) for link in asked
+                         if live_links is None or link in live_links])
         if "WITH RECURSIVE" in text:
             return rows(inside)
         if text.startswith("SELECT * FROM"):
@@ -159,7 +165,8 @@ def container_route(*, own=OWN_LINK, inside=UNIT_LINKS, flat=FLAT_ROWS,
         if text.startswith("UPDATE"):
             return count(len(params[1]))
         if text.startswith("DELETE") and "staging_product_logs" in text:
-            return count(len(params[0]) if links_deleted is None else links_deleted)
+            kept = params[0] if links_deleted is None else params[0][:links_deleted]
+            return rows([(link,) for link in kept], ["id"])
         if text.startswith("DELETE"):
             return count(len(flat) if rows_deleted is None else rows_deleted)
         return None
@@ -273,6 +280,21 @@ class PreviewTests(unittest.TestCase):
             self.preview(flat=split)
         self.assertIn("more than one", str(ctx.exception))
 
+    def test_a_link_a_row_points_at_but_that_is_gone_is_left_out_of_the_count(self):
+        # U1's row still names link 99, deleted long ago; planning to delete it
+        # would make the plan's own count unreachable and abort the whole delete.
+        stale = [(1, "U1", 99, "D1", 10, "I1", 5, "C1")] + FLAT_ROWS[1:]
+        result, conn = self.preview(flat=stale, live_links=set())
+        self.assertEqual(result["edges"], 7)  # D1's own link and links 12..16
+        self.assertEqual(result["orphans"], 1)
+        self.assertEqual(conn.asked("SELECT id FROM"), [([99],)])
+
+    def test_links_the_rows_point_at_that_do_exist_are_counted(self):
+        # U1 sits under D1 by link 99, which the recursive read missed.
+        stale = [(1, "U1", 99, "D1", 10, "I1", 5, "C1")] + FLAT_ROWS[1:]
+        result, _ = self.preview(flat=stale, live_links={99})
+        self.assertEqual((result["edges"], result["orphans"]), (8, 0))
+
     def test_a_serial_that_names_nothing_is_refused(self):
         with self.assertRaises(ContainerDeleteError) as ctx:
             self.preview(own=[], inside=[], flat=[])
@@ -301,7 +323,8 @@ class DeleteContainerTests(unittest.TestCase):
         self.assertEqual((conn.commits, conn.rollbacks), (1, 0))
         self.assertEqual(conn.events[-1], ("commit",))
         self.assertTrue(conn.closed)
-        self.assertEqual(result, {"rows": 6, "edges": 7, "units": 6, "emptied": []})
+        self.assertEqual(result, {"rows": 6, "edges": 7, "units": 6, "emptied": [],
+                                  "orphans": 0})
 
     def test_parents_left_empty_are_deleted_too(self):
         result, conn = self.delete(world={"inner_stays": False})
@@ -339,6 +362,13 @@ class DeleteContainerTests(unittest.TestCase):
         self.assertEqual(conn.commits, 1)
         self.assertEqual(result["rows"], 6)
 
+    def test_a_link_a_row_points_at_but_that_is_gone_does_not_block_the_delete(self):
+        stale = [(1, "U1", 99, "D1", 10, "I1", 5, "C1")] + FLAT_ROWS[1:]
+        result, conn = self.delete(world={"flat": stale, "live_links": set()})
+        links = [p for t, p in conn.writes() if target(t) == "staging_product_logs"]
+        self.assertEqual(links, [([10, 11, 12, 13, 14, 15, 16],)])
+        self.assertEqual((conn.commits, result["edges"]), (1, 7))
+
     def test_fewer_links_deleted_than_planned_rolls_everything_back(self):
         # Someone else removed a link between the plan and the DELETE.
         conn = FakeConn(container_route(links_deleted=6))
@@ -369,6 +399,39 @@ class DeleteContainerTests(unittest.TestCase):
         self.assertEqual(conn.commits, 0)
         self.assertGreaterEqual(conn.rollbacks, 1)
         self.assertTrue(conn.closed)
+
+    def test_a_link_lost_between_the_plan_and_the_delete_is_named(self):
+        conn = FakeConn(container_route(links_deleted=6))
+        with patch("db.connection.get_connection", return_value=conn):
+            with self.assertRaises(ContainerDeleteError) as ctx:
+                db.delete_container("display", "D1")
+        message = str(ctx.exception)
+        self.assertIn("16", message)  # the one link the DELETE did not find
+        self.assertIn("Nothing was deleted", message)
+
+    def test_a_row_count_mismatch_says_what_the_two_numbers_were(self):
+        conn = FakeConn(container_route(rows_deleted=7))
+        with patch("db.connection.get_connection", return_value=conn):
+            with self.assertRaises(ContainerDeleteError) as ctx:
+                db.delete_container("display", "D1")
+        self.assertIn("7 row(s) deleted, 6 planned", str(ctx.exception))
+
+    def test_a_database_refusal_is_reported_as_a_delete_error(self):
+        refused = psycopg2.errors.ForeignKeyViolation(
+            'update or delete on table "staging_product_logs" violates foreign key')
+        route = failing(container_route(), lambda text: text.startswith("DELETE")
+                        and "staging_product_logs" in text, refused)
+        conn = FakeConn(route)
+        with patch("db.connection.get_connection", return_value=conn):
+            with self.assertRaises(ContainerDeleteError) as ctx:
+                db.delete_container("display", "D1")
+        message = str(ctx.exception)
+        self.assertIn('display "D1"', message)
+        self.assertIn("violates foreign key", message)
+        self.assertIn("Nothing was deleted", message)
+        self.assertIs(ctx.exception.__cause__, refused)
+        self.assertEqual(conn.commits, 0)
+        self.assertGreaterEqual(conn.rollbacks, 1)
 
     def test_uses_the_configured_table_not_the_default(self):
         conn = FakeConn(container_route())
