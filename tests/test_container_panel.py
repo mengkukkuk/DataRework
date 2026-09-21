@@ -244,6 +244,8 @@ class ContainerPanelTests(unittest.TestCase):
             # Records opens with the filters in reach; the container manager
             # opens folded, because its cards are what the height is for.
             self.assertTrue(win.filter_body.isVisible())
+            # Nothing to summarise while the inputs themselves are on screen.
+            self.assertEqual(win.filter_summary.text(), "")
             win.views.setCurrentIndex(1)
             self.assertFalse(win.filter_body.isVisible())
             self.assertEqual(win.filter_card.property("collapsed"), "true")

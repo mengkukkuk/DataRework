@@ -403,6 +403,10 @@ class MainWindow(QMainWindow):
         return _get_settings().value(self._filters_key(index), default, type=bool)
 
     def _apply_filter_collapse(self, collapsed):
+        # The flag, not isVisible(): during construction the window is not shown
+        # yet, so every child reports itself invisible and the summary would
+        # appear next to filters that are in plain sight.
+        self._filters_folded = collapsed
         self.filter_body.setVisible(not collapsed)
         self.filter_card.setProperty("collapsed", "true" if collapsed else "false")
         self.filter_card.style().unpolish(self.filter_card)
@@ -414,11 +418,10 @@ class MainWindow(QMainWindow):
         """The summary quotes filter values, so it is rebuilt rather than
         retranslated: a month name and a column label both change with the
         language, and the values between them do not."""
-        collapsed = not self.filter_body.isVisible()
-        self.filter_summary.setText(self._filter_summary() if collapsed else "")
+        self.filter_summary.setText(self._filter_summary() if self._filters_folded else "")
 
     def _toggle_filters(self):
-        collapsed = self.filter_body.isVisible()
+        collapsed = not self._filters_folded
         _get_settings().setValue(self._filters_key(), collapsed)
         self._apply_filter_collapse(collapsed)
 
