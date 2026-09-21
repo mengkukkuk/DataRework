@@ -27,6 +27,7 @@ from i18n import tr, column_label, language
 from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
                           QLineEdit, QWidget, QMainWindow, QDialog, QMessageBox, LanguageToggle)
 from rename_dialog import ChildRelabelDialog, RenameContainerDialog
+from delete_dialog import DeleteContainerDialog
 from container_panel import ContainerPanel, LEVELS as CONTAINER_ORDER
 from debug_log import LOG, LogWindow
 
@@ -138,6 +139,7 @@ class MainWindow(QMainWindow):
         self.views.addTab(self.container_panel, tr('Container manager'))
         self.container_panel.refresh_requested.connect(self._refresh_containers)
         self.container_panel.rename_requested.connect(self._rename_from_manager)
+        self.container_panel.delete_requested.connect(self._delete_from_manager)
         self.container_panel.records_requested.connect(self._open_container_records)
         self.views.currentChanged.connect(self._view_changed)
         language.changed.connect(self._translate_tabs)
@@ -172,6 +174,9 @@ class MainWindow(QMainWindow):
     def _rename_from_manager(self, level, serial):
         self._rename_container(level, serial)
         self._refresh_containers()
+
+    def _delete_from_manager(self, level, serial):
+        self._delete_container(level, serial)
 
     def _open_container_records(self, path):
         if any(self._collect_changes()):
@@ -532,6 +537,16 @@ class MainWindow(QMainWindow):
         if not self.is_admin:
             self.rename_btn.setToolTip(tr('Only admins can rename containers'))
         row.addWidget(self.rename_btn)
+
+        # Same reasoning as Rename: removing a container is not a cell edit, so it
+        # neither queues with the grid's pending deletes nor waits for Save.
+        self.delete_container_btn = QPushButton(tr('Delete container…'))
+        self.delete_container_btn.setObjectName("ghostBtn")
+        self.delete_container_btn.clicked.connect(lambda: self._delete_container())
+        self.delete_container_btn.setEnabled(self.is_admin)
+        if not self.is_admin:
+            self.delete_container_btn.setToolTip(tr('Only admins can delete containers'))
+        row.addWidget(self.delete_container_btn)
 
         self.delete_btn = QPushButton(tr('Delete'))
         self.delete_btn.setObjectName("deleteBtn")
@@ -987,7 +1002,7 @@ class MainWindow(QMainWindow):
         self._on_search()
 
     def _on_table_context_menu(self, pos):
-        """Offer "Rename this <level>..." when the click lands on a container serial."""
+        """Offer "Rename this <level>..." and "Delete this <level>..." on a container serial."""
         if not self.is_admin:
             return
         item = self.table.itemAt(pos)
@@ -1006,8 +1021,12 @@ class MainWindow(QMainWindow):
 
         menu = QMenu(self)
         rename_action = menu.addAction(tr('Rename this {p0}…', p0=tr(level)))
-        if menu.exec(self.table.viewport().mapToGlobal(pos)) is rename_action:
+        delete_action = menu.addAction(tr('Delete this {p0}…', p0=tr(level)))
+        chosen = menu.exec(self.table.viewport().mapToGlobal(pos))
+        if chosen is rename_action:
             self._rename_container(level, serial)
+        elif chosen is delete_action:
+            self._delete_container(level, serial)
 
     def _rename_container(self, level=None, old_serial=""):
         """Rename a container, then offer to carry the change down to its children.
@@ -1110,6 +1129,79 @@ class MainWindow(QMainWindow):
         return (
             tr(' Also renamed {p0} child serial(s), {p1} row(s).', p0=child_result["renamed"], p1=child_result["rows"])
         )
+
+    def _delete_container(self, level=None, serial=""):
+        """Delete a container and everything inside it, after showing what is inside.
+
+        Like a rename this is not a cell edit: it happens at once instead of waiting
+        for Save, and the reload afterwards would drop unsaved grid edits, so those
+        are refused first. `level` / `serial` only pre-select the dialog -- empty
+        from the footer button, filled from a right-clicked cell or a card.
+        """
+        if not self.is_admin:
+            return
+        pending_updates, pending_deletes = self._collect_changes()
+        if pending_updates or pending_deletes:
+            self._show_status(
+                tr('Save or cancel your pending edits before deleting a container.'), error=True
+            )
+            return
+
+        dialog = DeleteContainerDialog(self, table=STAGING_TABLE, level=level or "carton",
+                                       serial=serial)
+        if dialog.exec() != QDialog.Accepted:
+            return
+
+        level, serial, preview = dialog.level, dialog.serial(), dialog.preview()
+        if not serial or preview is None:
+            return
+
+        question = tr(
+            'Delete {p0} "{p1}" and everything inside it.\n\nThis permanently deletes {p2} row(s) in public.{p3} and {p4} link(s) in public.{p5}, and releases {p6} unit serial(s).',
+            p0=tr(level), p1=serial, p2=preview["rows"], p3=STAGING_TABLE,
+            p4=preview["edges"], p5=db.STAGING_EDGE_TABLE, p6=preview["units"],
+        )
+        if preview["emptied"]:
+            names = tr(', ').join(
+                [tr(item["level"]) + " " + item["serial_no"] for item in preview["emptied"]])
+            question = question + tr(' It also removes {p0}, which would be left empty.', p0=names)
+        question = question + tr(' This cannot be undone. Continue?')
+
+        reply = QMessageBox.question(
+            self, tr('Confirm delete'), question,
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        try:
+            # `expected` makes the database refuse if the contents changed since the
+            # user reviewed them, instead of deleting something they never saw.
+            result = db.delete_container(level, serial, table=STAGING_TABLE,
+                                         tag_name=self.tag_name, expected=preview)
+        except psycopg2.OperationalError as exc:
+            self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
+            return
+        except db.ContainerDeleteError as exc:
+            self._show_status(str(exc), error=True, exc=exc)
+            return
+        except Exception as exc:
+            self._show_status(tr('Delete failed: {p0}', p0=exc), error=True, exc=exc)
+            return
+
+        LOG.add(
+            f'Deleted {level} "{serial}": {result["rows"]} row(s), {result["edges"]} link(s), '
+            f'{result["units"]} unit serial(s) released ({self.tag_name}).',
+            level="INFO",
+        )
+        self._on_search()
+        # The reload reports "N row(s) loaded."; keep the delete's own outcome on
+        # screen unless the reload itself failed.
+        if self.status_label.property("state") != "error":
+            self._show_status(tr(
+                'Deleted {p0} "{p1}" — {p2} row(s), {p3} link(s), {p4} unit serial(s) released.',
+                p0=tr(level), p1=serial, p2=result["rows"], p3=result["edges"], p4=result["units"],
+            ))
 
     def _on_item_changed(self, item):
         """Glow a cell green while its value differs from what was loaded, or

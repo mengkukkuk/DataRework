@@ -7,6 +7,7 @@ from . import connection
 from . import queries
 from .hierarchy import (LEVELS, STAGING_EDGE_TABLE,
                         SharedEdgeError, SerialConflictError)
+from .deletion import remove_row_links
 from .serial_state import _set_serial_active
 
 
@@ -137,22 +138,11 @@ def _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table
             _set_serial_active(cur, schema, changes["unit_serial_no"], True, tag_name,
                                required=True)
 
-    for pk_values in deletes:
-        row = originals.get(pk_values[0])
-        if not row:
-            continue
-        _set_serial_active(cur, schema, row.get("unit_serial_no"), False,tag_name)
-        # Only the unit edge is private to this row; display/carton
-        # edges stay, since sibling rows still reference them.
-        edge_id = row.get(_edge_id_column("unit"))
-        if edge_id is not None:
-            cur.execute(
-                sql.SQL("DELETE FROM {schema}.{edges} WHERE id = %s").format(
-                    schema=sql.Identifier(schema),
-                    edges=sql.Identifier(STAGING_EDGE_TABLE),
-                ),
-                (edge_id,),
-            )
+    # The unit edge is private to its row and always goes. A display/inner edge is
+    # shared by sibling rows, so it goes only when this whole batch leaves nothing
+    # inside that container -- judged on the batch, never row by row.
+    doomed = [originals[pk_values[0]] for pk_values in deletes if pk_values[0] in originals]
+    remove_row_links(cur, schema, table, pk_column, doomed, tag_name)
 
 
 def update_staging_serial_data(updates, deletes, pk_columns=("id",), schema="public",

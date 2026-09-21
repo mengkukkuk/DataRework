@@ -212,6 +212,14 @@ class TestConnectionRouting(unittest.TestCase):
         self._call(db.rename_container, "display", "D001", "D002")
         self.get_conn_mock.assert_called()
 
+    def test_container_delete_preview_routes_through_get_connection(self):
+        self._call(db.container_delete_preview, "display", "D001")
+        self.get_conn_mock.assert_called()
+
+    def test_delete_container_routes_through_get_connection(self):
+        self._call(db.delete_container, "display", "D001")
+        self.get_conn_mock.assert_called()
+
 
 # ---------------------------------------------------------------------------
 # 2. Exception identity
@@ -227,6 +235,9 @@ class TestExceptionIdentity(unittest.TestCase):
 
     def test_serial_conflict_error_is_same_object(self):
         self.assertIs(db.SerialConflictError, db.hierarchy.SerialConflictError)
+
+    def test_container_delete_error_is_same_object(self):
+        self.assertIs(db.ContainerDeleteError, db.hierarchy.ContainerDeleteError)
 
 
 # ---------------------------------------------------------------------------

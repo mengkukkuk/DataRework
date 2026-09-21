@@ -43,6 +43,7 @@ def build_hierarchy(groups):
 class ContainerPanel(QWidget):
     refresh_requested = Signal()
     rename_requested = Signal(str, str)
+    delete_requested = Signal(str, str)
     records_requested = Signal(object)
 
     def __init__(self, is_admin, parent=None):
@@ -263,6 +264,19 @@ class ContainerPanel(QWidget):
             rename.setToolTip(tr("Only admins can rename containers"))
         rename.clicked.connect(lambda checked=False, l=level, s=serial: self.rename_requested.emit(l, s))
         heading.addWidget(rename)
+        if level != "unit":
+            # After Rename, so the first "linkBtn" on a card is still Rename. Units are
+            # deleted from the records grid, so their cards carry no Delete link.
+            delete = QPushButton(tr("Delete"))
+            delete.setObjectName("linkBtn")
+            delete.setProperty("action", "delete")
+            delete.setEnabled(self.is_admin and serial is not None)
+            if serial is None:
+                delete.setToolTip(tr("Unassigned groups have no serial to delete."))
+            elif not self.is_admin:
+                delete.setToolTip(tr("Only admins can delete containers"))
+            delete.clicked.connect(lambda checked=False, l=level, s=serial: self.delete_requested.emit(l, s))
+            heading.addWidget(delete)
         return card
 
     def _show_image(self, path, product_name):

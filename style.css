@@ -403,6 +403,12 @@ QDialog {
     color: __subtitle__;
     font-size: __font_caption__px;
 }
+/* Read-only list of what a container holds: plain lines rather than the boxed serial
+   fields above, so a carton's ~130 units are not 130 tall boxes. */
+#insideSerial {
+    font-size: __font_small__px;
+    padding: 2px 0;
+}
 #childScroll, #childScroll > QWidget > QWidget, #childScrollInner {
     background-color: transparent;
     border: none;

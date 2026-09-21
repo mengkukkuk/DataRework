@@ -46,3 +46,12 @@ class SerialInventoryError(Exception):
     forever -- silently, because the rename itself would still report success.
     The write is refused instead, rolling the whole transaction back.
     """
+
+
+class ContainerDeleteError(Exception):
+    """A container delete was refused, or backed out, before it could do harm.
+
+    Raised when the serial names no container, names more than one (so "which
+    one?" has no safe answer), or when what is inside changed between the
+    preview the user confirmed and the moment of deletion. Nothing is deleted.
+    """
