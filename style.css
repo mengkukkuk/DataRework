@@ -459,6 +459,43 @@ QTabBar::tab:hover { background: __row_hover__; }
 #containerCard[level="display"] { border-top-color: #4f9bd9; }
 #containerCard[level="unit"] { border-top-color: #34a06c; }
 #levelMark { background: transparent; border: none; }
+/* The picture of the view being left, while it slides and fades away. */
+#gridGhost { background: transparent; border: none; }
+/* The grid is showing one container's rows: what it is, and the way out. */
+#scopeBar {
+    background-color: __strip_bg__;
+    border: 1px solid __strip_border__;
+    border-left: 3px solid #5b9bd5;
+    border-radius: 8px;
+}
+#scopeLead { color: __subtitle__; font-size: __font_caption__px; font-weight: 600; }
+#scopeBar QLabel { color: __subtitle__; font-size: __font_caption__px; }
+#scopeChip {
+    background-color: __panel_bg__;
+    border: 1px solid __panel_border__;
+    border-radius: 6px;
+}
+#scopeChip[level="carton"] { border-color: #d1873c; }
+#scopeChip[level="inner"] { border-color: #8d74d8; }
+#scopeChip[level="display"] { border-color: #4f9bd9; }
+#scopeChip[level="unit"] { border-color: #34a06c; }
+#scopeChipText { color: __title__; font-size: __font_caption__px; font-weight: 600; }
+#scopeClear {
+    background-color: transparent;
+    color: #5b9bd5;
+    border: 1px solid __panel_border__;
+    padding: 3px 12px;
+    min-height: 18px;
+    font-size: __font_caption__px;
+}
+#scopeClear:hover { background-color: __row_hover__; border-color: #5b9bd5; color: #75b0e0; }
+/* Which filters are keeping containers out of the card view. */
+#panelFilterNote {
+    background-color: __strip_bg__;
+    border: 1px solid __strip_border__;
+    border-radius: 8px;
+}
+#panelFilterNoteText { color: __subtitle__; font-size: __font_caption__px; }
 /* The route row's count turns into the panel's error line when a load fails. */
 #containerSummary { color: __subtitle__; font-size: __font_caption__px; }
 #containerSummary[state="error"] { color: __status_error__; font-weight: 600; }

@@ -4,10 +4,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import unittest
 from unittest.mock import MagicMock, patch
 
+from PySide6.QtCore import QEventLoop, QTimer
 from PySide6.QtWidgets import QApplication
 from psycopg2 import sql
 import db
-from container_panel import ContainerPanel, build_hierarchy, CARD_HEIGHT, GRID_GAP
+from container_panel import (ContainerPanel, build_hierarchy, CARD_HEIGHT, GRID_GAP,
+                             SHIFT, TRANSITION_MS)
 from i18n_widgets import QLabel, QPushButton
 from level_marks import LEVEL_COLORS, level_mark
 from main_window import MainWindow
@@ -317,6 +319,181 @@ class ContainerPanelTests(unittest.TestCase):
             self.assertEqual(panel.page, 1)
             win.close()
             win.deleteLater()
+
+    # -- opening a container's records must not pin the rest of the app -----
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    @patch("db.container_groups", return_value=GROUPS)
+    @patch("db.get_primary_key_columns", return_value=["id"])
+    @patch("db.query_rows", return_value=(COLUMNS, []))
+    def test_opening_records_scopes_the_grid_and_leaves_the_filter_bar_alone(self, *mocks):
+        settings = FakeSettings()
+        with patch("main_window._get_settings", return_value=settings):
+            win = MainWindow("tester", "admin", "TEST-OPERATOR")
+            win.show()
+            win._open_container_records(("C1", "I1", "D1", "U1"))
+
+            # The grid shows that one unit ...
+            self.assertEqual(win.views.currentIndex(), 0)
+            self.assertEqual(win._record_scope, ("C1", "I1", "D1", "U1"))
+            self.assertTrue(win.scope_bar.isVisible())
+            # ... and the filter bar is untouched, so the container manager is too.
+            self.assertIsNone(win.category_combo.currentData())
+            self.assertEqual(win.tag_value_edit.text(), "")
+            self.assertEqual(win._category_tag_condition(COLUMNS), [])
+
+            win.views.setCurrentIndex(1)
+            # C1, C2 and the unassigned group: the whole level, not one card.
+            self.assertEqual(len(win.container_panel.cards), 3)
+            win.close()
+            win.deleteLater()
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    @patch("db.container_groups", return_value=GROUPS)
+    @patch("db.get_primary_key_columns", return_value=["id"])
+    @patch("db.query_rows", return_value=(COLUMNS, []))
+    def test_the_scope_travels_with_the_query_and_is_dropped_on_demand(self, *mocks, **kw):
+        settings = FakeSettings()
+        rows = mocks[0]
+        with patch("main_window._get_settings", return_value=settings):
+            win = MainWindow("tester", "admin", "TEST-OPERATOR")
+            win.show()
+            win._open_container_records(("C1", "I1"))
+            conditions = rows.call_args.args[2]
+            self.assertEqual([values for _, values in conditions][-2:], [["C1"], ["I1"]])
+
+            # Saving or deleting reloads the same view, scope and all.
+            win._on_search(container_path=win._record_scope)
+            self.assertEqual([values for _, values in rows.call_args.args[2]][-2:],
+                             [["C1"], ["I1"]])
+
+            # The bar's own button, and a search the user asks for, drop it.
+            win.scope_clear.click()
+            self.assertIsNone(win._record_scope)
+            self.assertFalse(win.scope_bar.isVisible())
+            self.assertNotIn(["C1"], [values for _, values in rows.call_args.args[2]])
+            win._open_container_records(("C1",))
+            win.search_btn.click()
+            self.assertIsNone(win._record_scope)
+            win._open_container_records(("C1",))
+            win._on_clear()
+            self.assertIsNone(win._record_scope)
+            win.close()
+            win.deleteLater()
+
+    # -- saying what is filtering the cards, and letting go of it -----------
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    @patch("db.container_groups", return_value=GROUPS)
+    def test_the_panel_says_what_is_narrowing_it_and_can_clear_it(self, *mocks):
+        settings = FakeSettings()
+        with patch("main_window._get_settings", return_value=settings):
+            win = MainWindow("tester", "admin", "TEST-OPERATOR")
+            win.show()
+            win.views.setCurrentIndex(1)
+            # A date alone is every search there is: it is not a notice.
+            self.assertFalse(win.container_panel.filter_note.isVisible())
+
+            win.category_combo.setCurrentIndex(win.category_combo.findData("unit"))
+            win.tag_combo.setCurrentIndex(win.tag_combo.findData("serial_no"))
+            win.tag_value_edit.setText("U1")
+            win.product_name_combo.setCurrentText("Lotion")
+            win._refresh_containers()
+            self.assertTrue(win.container_panel.filter_note.isVisible())
+            self.assertIn("Lotion", win.container_panel.filter_note_label.text())
+
+            win.container_panel.clear_filters_requested.emit()
+            self.assertEqual(win.tag_value_edit.text(), "")
+            self.assertIsNone(win.category_combo.currentData())
+            self.assertEqual(win.product_name_combo.currentText(), "")
+            self.assertFalse(win.container_panel.filter_note.isVisible())
+            # The date survives: it is how much data is loaded, not a choice
+            # about which containers to look at.
+            self.assertIsNotNone(win.month_combo.currentData())
+            win.close()
+            win.deleteLater()
+
+    def test_the_level_search_can_be_cleared_from_inside_the_box(self):
+        panel = ContainerPanel(True)
+        self.assertTrue(panel.search.isClearButtonEnabled())
+        panel.deleteLater()
+
+    # -- the transition between views ---------------------------------------
+
+    def _settled_panel(self):
+        """A shown panel with enough cartons to page through."""
+        panel = ContainerPanel(True)
+        panel.resize(1300, 460)
+        panel.show()
+        panel.set_groups([(f"C{c:03}", "I1", "D1", f"U{c}", 1) for c in range(30)])
+        panel._fit_page()
+        self.app.processEvents()
+        return panel
+
+    def _wait_out(self, panel):
+        """Let the transition finish, the way the event loop would."""
+        loop = QEventLoop()
+        QTimer.singleShot(TRANSITION_MS + 150, loop.quit)
+        loop.exec()
+
+    def _ghosts(self, panel):
+        return [child for child in panel.inner.children()
+                if child.objectName() == "gridGhost"]
+
+    def test_a_page_turn_and_a_level_change_animate_in_their_own_direction(self):
+        panel = self._settled_panel()
+        moves = {}
+        for label, act in (("next", lambda: panel.next.click()),
+                           ("previous", lambda: panel.previous.click()),
+                           ("deeper", lambda: panel.navigate(("C000",))),
+                           ("back", lambda: panel.go_back())):
+            act()
+            ghost = panel._ghost
+            self.assertIsNotNone(ghost, label)
+            moves[label] = panel._animation.animationAt(0).endValue()
+            self._wait_out(panel)
+
+        # A page moves sideways, a level moves in depth, and back is not deeper.
+        self.assertEqual((moves["next"].x(), moves["next"].y()), (-SHIFT, 0))
+        self.assertEqual((moves["previous"].x(), moves["previous"].y()), (SHIFT, 0))
+        self.assertEqual((moves["deeper"].x(), moves["deeper"].y()), (0, -SHIFT))
+        self.assertEqual((moves["back"].x(), moves["back"].y()), (0, SHIFT))
+        panel.deleteLater()
+
+    def test_the_cards_are_right_before_the_animation_starts_and_it_cleans_up(self):
+        panel = self._settled_panel()
+        first = [card.property("level") for card in panel.cards]
+        panel.next.click()
+        # Nothing waits for the frames: the page has already turned.
+        self.assertEqual(panel.page, 1)
+        self.assertEqual(len(self._ghosts(panel)), 1)
+        self.assertNotEqual([id(card) for card in panel.cards], first)
+        self._wait_out(panel)
+        self.assertEqual(self._ghosts(panel), [])
+        self.assertIsNone(panel._ghost)
+        self.assertIsNone(panel.inner.graphicsEffect())
+        panel.deleteLater()
+
+    def test_clicking_faster_than_the_animation_leaves_one_picture_behind(self):
+        panel = self._settled_panel()
+        for _ in range(3):
+            panel.next.click()
+        self.assertEqual(panel.page, 3)
+        self.assertEqual(len(self._ghosts(panel)), 1)
+        self._wait_out(panel)
+        self.assertEqual(self._ghosts(panel), [])
+        panel.deleteLater()
+
+    def test_a_panel_nobody_is_looking_at_does_not_animate(self):
+        panel = ContainerPanel(True)
+        panel.set_groups([(f"C{c:03}", "I1", "D1", "U1", 1) for c in range(30)])
+        panel.next.click()
+        self.assertIsNone(panel._ghost)
+        self.assertEqual(panel.page, 1)
+        panel.deleteLater()
 
     def test_database_aggregation_is_parameterized_and_has_no_record_limit(self):
         conn = MagicMock()

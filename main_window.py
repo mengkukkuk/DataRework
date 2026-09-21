@@ -29,6 +29,7 @@ from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
 from rename_dialog import ChildRelabelDialog, RenameContainerDialog
 from delete_dialog import DeleteContainerDialog
 from container_panel import ContainerPanel, LEVELS as CONTAINER_ORDER
+from level_marks import level_mark
 from debug_log import LOG, LogWindow
 
 # --- Schema mapping --------------------------------------------------------
@@ -111,6 +112,10 @@ class MainWindow(QMainWindow):
         self._sort_column = None
         self._sort_order = Qt.AscendingOrder
         self._log_window = None
+        # The container whose records the grid is showing, if the user opened it
+        # from a card. It narrows the grid only -- never the filter bar, and never
+        # the container manager, so going back to the cards shows the whole level.
+        self._record_scope = None
         self._theme = _get_settings().value("theme", "dark", type=str)
         if self._theme not in THEMES:
             self._theme = "dark"
@@ -132,6 +137,7 @@ class MainWindow(QMainWindow):
         records_page = QWidget()
         records_layout = QVBoxLayout(records_page)
         records_layout.setContentsMargins(0, 10, 0, 0)
+        records_layout.addWidget(self._build_scope_bar())
         records_layout.addWidget(self._build_columns_strip())
         records_layout.addWidget(self._build_table(), 1)
         self.views.addTab(records_page, tr('Records'))
@@ -141,6 +147,7 @@ class MainWindow(QMainWindow):
         self.container_panel.rename_requested.connect(self._rename_from_manager)
         self.container_panel.delete_requested.connect(self._delete_from_manager)
         self.container_panel.records_requested.connect(self._open_container_records)
+        self.container_panel.clear_filters_requested.connect(self._clear_container_filters)
         self.views.currentChanged.connect(self._view_changed)
         language.changed.connect(self._translate_tabs)
         root.addWidget(self.views, stretch=1)
@@ -169,9 +176,24 @@ class MainWindow(QMainWindow):
             self.container_panel.set_groups(db.container_groups(
                 STAGING_TABLE, columns, conditions, product_column=FILTER_COLUMNS['product_name']
             ))
+            self.container_panel.set_filter_note(self._narrowing_filter_text())
         except Exception as exc:
             LOG.add(f"Could not load containers: {exc}", exc)
             self.container_panel.show_error()
+
+    def _clear_container_filters(self):
+        """Drop everything the container view is filtered by except the date.
+
+        The date is how much data the app loads at all, not a choice about which
+        containers to look at, so "Show all" leaves it where the user set it.
+        """
+        for combo in (self.job_combo, self.product_name_combo):
+            combo.setCurrentText("")
+        self.category_combo.setCurrentIndex(0)
+        self.tag_value_edit.clear()
+        self._refresh_dependent_combos()
+        self._sync_filter_summary()
+        self._refresh_containers()
 
     def _rename_from_manager(self, level, serial):
         self._rename_container(level, serial)
@@ -181,15 +203,87 @@ class MainWindow(QMainWindow):
         self._delete_container(level, serial)
 
     def _open_container_records(self, path):
+        """Show one container's rows in the grid, without touching the filters.
+
+        Writing the serial into the category/tag/value boxes used to be how this
+        worked, and it left the whole app pinned to one unit: the same boxes
+        narrow the container manager, so coming back to the cards showed a single
+        card until the user cleared the bar by hand. The path now travels with
+        the search instead, and says so in a bar the user can dismiss.
+        """
         if any(self._collect_changes()):
             self._show_status(tr('Save or cancel your pending edits before opening container records.'), error=True)
             return
-        level = CONTAINER_ORDER[len(path) - 1]
-        self.category_combo.setCurrentIndex(self.category_combo.findData(level))
-        self.tag_combo.setCurrentIndex(self.tag_combo.findData('serial_no'))
-        self.tag_value_edit.setText(path[-1] or '')
+        self._set_record_scope(path)
         self.views.setCurrentIndex(0)
         self._on_search(container_path=path)
+
+    # -- the grid's container scope -------------------------------------------
+
+    def _build_scope_bar(self):
+        self.scope_bar = QFrame()
+        self.scope_bar.setObjectName("scopeBar")
+        row = QHBoxLayout(self.scope_bar)
+        row.setContentsMargins(10, 5, 8, 5)
+        row.setSpacing(8)
+        self.scope_lead = QLabel()
+        self.scope_lead.setObjectName("scopeLead")
+        row.addWidget(self.scope_lead)
+        self.scope_trail = QHBoxLayout()
+        self.scope_trail.setSpacing(4)
+        row.addLayout(self.scope_trail)
+        row.addStretch(1)
+        self.scope_clear = QPushButton(tr('Show all records'))
+        self.scope_clear.setObjectName("scopeClear")
+        self.scope_clear.setCursor(Qt.PointingHandCursor)
+        self.scope_clear.setToolTip(tr('Stop showing only this container'))
+        self.scope_clear.clicked.connect(self._clear_record_scope)
+        row.addWidget(self.scope_clear)
+        self.scope_bar.setVisible(False)
+        return self.scope_bar
+
+    def _set_record_scope(self, path):
+        self._record_scope = tuple(path) if path else None
+        while self.scope_trail.count():
+            # Hold the widget: the layout item forgets it the moment it is
+            # reparented, and item.widget() then answers None.
+            widget = self.scope_trail.takeAt(0).widget()
+            if widget is not None:
+                widget.setParent(None)
+                widget.deleteLater()
+        self.scope_bar.setVisible(self._record_scope is not None)
+        if self._record_scope is None:
+            return
+        self.scope_lead.setText(tr('Showing the records in'))
+        for index, serial in enumerate(self._record_scope):
+            if index:
+                self.scope_trail.addWidget(QLabel("›"))
+            self.scope_trail.addWidget(
+                self._scope_chip(CONTAINER_ORDER[index], serial))
+
+    def _scope_chip(self, level, serial):
+        chip = QFrame()
+        chip.setObjectName("scopeChip")
+        chip.setProperty("level", level)
+        row = QHBoxLayout(chip)
+        row.setContentsMargins(7, 2, 9, 2)
+        row.setSpacing(5)
+        mark = QLabel()
+        mark.setPixmap(level_mark(level, 14))
+        mark.setFixedSize(14, 14)
+        row.addWidget(mark)
+        name = QLabel(serial if serial not in (None, "") else tr('Unassigned'))
+        name.setObjectName("scopeChipText")
+        name.setTextFormat(Qt.PlainText)
+        row.addWidget(name)
+        chip.setToolTip(tr('{p0} {p1}', p0=tr(level.capitalize()),
+                           p1=serial if serial not in (None, "") else tr('Unassigned')))
+        return chip
+
+    def _clear_record_scope(self):
+        """Back to what the filter bar alone says, without disturbing the bar."""
+        self._set_record_scope(None)
+        self._on_search()
 
     def _build_header(self):
         row = QHBoxLayout()
@@ -373,7 +467,10 @@ class MainWindow(QMainWindow):
 
         self.search_btn = QPushButton(tr('Search'))
         self.search_btn.setObjectName("searchBtn")
-        self.search_btn.clicked.connect(self._on_search)
+        # A search the user asked for is about the filter bar, so it leaves the
+        # one-container view behind. The same goes for a scanner's Enter in the
+        # Value box below, which is a filter search by another route.
+        self.search_btn.clicked.connect(self._on_filter_search)
 
         self.clear_btn = QPushButton(tr('Clear'))
         self.clear_btn.setObjectName("clearBtn")
@@ -425,16 +522,17 @@ class MainWindow(QMainWindow):
         _get_settings().setValue(self._filters_key(), collapsed)
         self._apply_filter_collapse(collapsed)
 
-    def _filter_summary(self):
-        """What is still filtering the view while the inputs are out of sight."""
+    def _filter_parts(self, date=True):
+        """Each filter that is set, as a phrase; `date` includes the date one."""
         parts = []
-        # Day, month name, year, in that order and only the ones that are set.
-        date = [str(self.day_combo.currentData()) if self.day_combo.currentData() else None,
-                self.month_combo.currentText() if self.month_combo.currentData() else None,
-                str(self.year_combo.currentData()) if self.year_combo.currentData() else None]
-        date = [part for part in date if part]
         if date:
-            parts.append(" ".join(date))
+            # Day, month name, year, in that order and only the ones that are set.
+            chosen = [str(self.day_combo.currentData()) if self.day_combo.currentData() else None,
+                      self.month_combo.currentText() if self.month_combo.currentData() else None,
+                      str(self.year_combo.currentData()) if self.year_combo.currentData() else None]
+            chosen = [part for part in chosen if part]
+            if chosen:
+                parts.append(" ".join(chosen))
         for combo in (self.job_combo, self.product_name_combo):
             if combo.currentText().strip():
                 parts.append(combo.currentText().strip())
@@ -443,7 +541,21 @@ class MainWindow(QMainWindow):
         if category and tag and value:
             # column_label already names the level it belongs to.
             parts.append(f"{column_label(f'{category}_{tag}')} = {value}")
+        return parts
+
+    def _filter_summary(self):
+        """What is still filtering the view while the inputs are out of sight."""
+        parts = self._filter_parts()
         return tr('Filtering by {p0}', p0=" · ".join(parts)) if parts else tr('No filters applied')
+
+    def _narrowing_filter_text(self):
+        """What the container manager says above its cards, or "" for nothing.
+
+        The date is left out on purpose: every search has one, so naming it would
+        put a permanent notice over the cards that means nothing is wrong.
+        """
+        parts = self._filter_parts(date=False)
+        return tr('Filtering by {p0}', p0=" · ".join(parts)) if parts else ""
 
     def _on_date_changed(self):
         self._sync_day_range()
@@ -535,7 +647,11 @@ class MainWindow(QMainWindow):
 
     def _on_value_enter(self):
         if self.tag_value_edit.text().strip():
-            self._on_search()
+            self._on_filter_search()
+
+    def _on_filter_search(self):
+        self._set_record_scope(None)
+        self._on_search()
 
     def _make_typing_combo(self, placeholder):
         combo = QComboBox()
@@ -1023,6 +1139,7 @@ class MainWindow(QMainWindow):
             combo.setCurrentText("")
         self.category_combo.setCurrentIndex(0)
         self.tag_value_edit.clear()
+        self._set_record_scope(None)
         self._refresh_dependent_combos()
         # Folded, the heading is the only record of what the filters say, so it
         # has to follow them back to empty.
@@ -1095,7 +1212,8 @@ class MainWindow(QMainWindow):
             return
 
         self._show_status(tr('Changes saved.'))
-        self._on_search()
+        # Still the same view the user was in, one container's rows or all of them.
+        self._on_search(container_path=self._record_scope)
 
     def _on_table_context_menu(self, pos):
         """Offer "Rename this <level>..." and "Delete this <level>..." on a container serial."""
@@ -1188,7 +1306,7 @@ class MainWindow(QMainWindow):
         self._show_status(message)
         if level != "unit":
             self._show_status(message + self._relabel_children(level, old_serial, new_serial))
-        self._on_search()
+        self._on_search(container_path=self._record_scope)
 
     def _relabel_children(self, level, old_serial, new_serial):
         """Stage 2 — list what the renamed container holds and rename the ticked rows.
@@ -1292,7 +1410,7 @@ class MainWindow(QMainWindow):
             f'{result["units"]} unit serial(s) released ({self.tag_name}).{note}',
             level="INFO",
         )
-        self._on_search()
+        self._on_search(container_path=self._record_scope)
         # The reload reports "N row(s) loaded."; keep the delete's own outcome on
         # screen unless the reload itself failed.
         if self.status_label.property("state") != "error":

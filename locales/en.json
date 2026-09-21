@@ -203,5 +203,11 @@
   "Hide filters": "Hide filters",
   "Show filters": "Show filters",
   "Filtering by {p0}": "Filtering by {p0}",
-  "No filters applied": "No filters applied"
+  "No filters applied": "No filters applied",
+  "Showing the records in": "Showing the records in",
+  "Show all records": "Show all records",
+  "Stop showing only this container": "Stop showing only this container",
+  "Show all": "Show all",
+  "Clear these filters and show every container": "Clear these filters and show every container",
+  "{p0} {p1}": "{p0} {p1}"
 }

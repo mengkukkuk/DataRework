@@ -1,9 +1,11 @@
 """Browse packaging as nested crates, using persisted records and full paths."""
 from dataclasses import dataclass, field
 
-from PySide6.QtCore import Qt, Signal, QEvent, QSize, QTimer
+from PySide6.QtCore import (Qt, Signal, QEasingCurve, QEvent, QParallelAnimationGroup,
+                            QPoint, QPropertyAnimation, QSize, QTimer)
 from PySide6.QtGui import QKeySequence, QShortcut
-from PySide6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QSizePolicy, QVBoxLayout
+from PySide6.QtWidgets import (QFrame, QGraphicsOpacityEffect, QGridLayout, QHBoxLayout,
+                               QSizePolicy, QVBoxLayout)
 
 from i18n import tr, language
 from i18n_widgets import QLabel, QLineEdit, QPushButton, QWidget
@@ -16,6 +18,23 @@ PAGE_SIZE = 20
 CARD_HEIGHT = 132
 CARD_WIDTH = 250
 GRID_GAP = 8
+
+# Motion. Long enough to be read as movement, short enough that an operator
+# working at scanner pace is never waiting for it. The grid is rebuilt before a
+# frame is drawn, so the animation decorates a change that has already happened
+# and nothing depends on it finishing.
+TRANSITION_MS = 170
+SHIFT = 26
+# Where the view that is leaving goes. A page turn moves sideways; opening a
+# container moves in depth -- the level you were on lifts away as you go into
+# it, and drops back when you come out.
+TRANSITION_MOVES = {
+    "next": (-SHIFT, 0),
+    "previous": (SHIFT, 0),
+    "deeper": (0, -SHIFT),
+    "back": (0, SHIFT),
+    "sideways": (0, 0),
+}
 
 
 @dataclass
@@ -47,6 +66,7 @@ class ContainerPanel(QWidget):
     rename_requested = Signal(str, str)
     delete_requested = Signal(str, str)
     records_requested = Signal(object)
+    clear_filters_requested = Signal()
 
     def __init__(self, is_admin, parent=None):
         super().__init__(parent)
@@ -62,6 +82,8 @@ class ContainerPanel(QWidget):
         self.history_at = 0
         self.page = 0
         self.cards = []
+        self._ghost = None
+        self._animation = None
         self._grid_columns = 5
         self.page_size = PAGE_SIZE
         self._resize_timer = QTimer(self)
@@ -89,6 +111,7 @@ class ContainerPanel(QWidget):
         self.search.setPlaceholderText(tr("Find serial in this level"))
         self.search.setObjectName("containerSearch")
         self.search.setMinimumWidth(240)
+        self.search.setClearButtonEnabled(True)
         self.search.textChanged.connect(self._filter_changed)
         top.addWidget(self.search)
         refresh = QPushButton(tr("Refresh"))
@@ -116,6 +139,26 @@ class ContainerPanel(QWidget):
         self.summary.setObjectName("containerSummary")
         route.addWidget(self.summary, alignment=Qt.AlignRight | Qt.AlignVCenter)
         layout.addLayout(route)
+        # Why these cards and not more: the filter bar narrows what the database
+        # aggregated, and folded away it is out of sight. The way back is here,
+        # next to the cards it is hiding.
+        self.filter_note = QFrame()
+        self.filter_note.setObjectName("panelFilterNote")
+        note_row = QHBoxLayout(self.filter_note)
+        note_row.setContentsMargins(10, 4, 8, 4)
+        note_row.setSpacing(8)
+        self.filter_note_label = QLabel()
+        self.filter_note_label.setObjectName("panelFilterNoteText")
+        self.filter_note_label.setWordWrap(True)
+        note_row.addWidget(self.filter_note_label, 1)
+        show_all = QPushButton(tr("Show all"))
+        show_all.setObjectName("linkBtn")
+        show_all.setCursor(Qt.PointingHandCursor)
+        show_all.setToolTip(tr("Clear these filters and show every container"))
+        show_all.clicked.connect(self.clear_filters_requested.emit)
+        note_row.addWidget(show_all)
+        self.filter_note.setVisible(False)
+        layout.addWidget(self.filter_note)
         # Scoped to this panel: Alt+Left on the records tab is not a request to
         # move a container view nobody is looking at.
         for keys, slot in ((QKeySequence.Back, self.go_back),
@@ -164,6 +207,11 @@ class ContainerPanel(QWidget):
         self.path = valid
         self.render()
 
+    def set_filter_note(self, text):
+        """Say, above the cards, what is keeping containers out of this view."""
+        self.filter_note_label.setText(text or "")
+        self.filter_note.setVisible(bool(text))
+
     def show_error(self):
         self.set_groups([])
         self._set_summary(tr("Unable to load containers. Try Refresh."), error=True)
@@ -181,12 +229,16 @@ class ContainerPanel(QWidget):
         if record and path != self.path:
             self.history = self.history[:self.history_at + 1] + [path]
             self.history_at = len(self.history) - 1
+        leaving = self._snapshot() if path != self.path else None
+        move = ("deeper" if len(path) > len(self.path) else
+                "back" if len(path) < len(self.path) else "sideways")
         self.path = path
         self.page = 0
         self.search.blockSignals(True)
         self.search.clear()
         self.search.blockSignals(False)
         self.render()
+        self._animate(leaving, move)
 
     def go_back(self):
         if self.history_at > 0:
@@ -220,8 +272,82 @@ class ContainerPanel(QWidget):
         self.render()
 
     def _change_page(self, delta):
+        leaving = self._snapshot()
         self.page += delta
         self.render()
+        self._animate(leaving, "next" if delta > 0 else "previous")
+
+    # -- moving between views ------------------------------------------------
+
+    def _snapshot(self):
+        """The grid as it looks right now, or None when there is nothing to show.
+
+        Grabbed from the panel rather than from the grid itself, so the panel's
+        own background comes with it and the picture is opaque: it has to hide
+        the rebuilt grid underneath until it has faded.
+        """
+        if not self.isVisible():
+            return None
+        rect = self.inner.geometry()
+        if rect.width() < 40 or rect.height() < 40:
+            return None
+        return self.grab(rect)
+
+    def _animate(self, leaving, move):
+        """Slide and dissolve the picture of the old grid off the new one.
+
+        The picture is a child of the grid, not of the panel: inside the grid it
+        is clipped to it, it cannot slide over the route row, and showing it does
+        not disturb a layout that the panel would then jitter by a pixel or two.
+        Only the picture is animated -- the new cards are simply uncovered, which
+        is one effect instead of two and keeps the cards out of a graphics
+        effect they would otherwise all be re-rendered through.
+        """
+        if leaving is None or not self.isVisible():
+            return
+        self._stop_animation()
+        ghost = QLabel(self.inner)
+        ghost.setObjectName("gridGhost")
+        ghost.setAttribute(Qt.WA_TransparentForMouseEvents)
+        ghost.setPixmap(leaving)
+        ghost.setGeometry(0, 0, leaving.width(), leaving.height())
+        ghost.show()
+        ghost.raise_()
+        fading = QGraphicsOpacityEffect(ghost)
+        ghost.setGraphicsEffect(fading)
+
+        dx, dy = TRANSITION_MOVES[move]
+        group = QParallelAnimationGroup(self)
+        # The slide decelerates, the way a thing being put down does; the fade is
+        # even, so the old view is still legible for the first half of the move
+        # instead of vanishing in the first few frames.
+        for target, prop, start, end, curve in (
+                (ghost, b"pos", QPoint(0, 0), QPoint(dx, dy), QEasingCurve.OutCubic),
+                (fading, b"opacity", 1.0, 0.0, QEasingCurve.Linear)):
+            animation = QPropertyAnimation(target, prop, group)
+            animation.setDuration(TRANSITION_MS)
+            animation.setStartValue(start)
+            animation.setEndValue(end)
+            animation.setEasingCurve(curve)
+            group.addAnimation(animation)
+        group.finished.connect(self._stop_animation)
+        self._ghost, self._animation = ghost, group
+        group.start()
+
+    def _stop_animation(self):
+        """Take the picture back off, whether it finished or was interrupted."""
+        animation, ghost = self._animation, self._ghost
+        self._animation, self._ghost = None, None
+        if animation is not None:
+            animation.stop()
+            animation.deleteLater()
+        if ghost is not None:
+            # Hide, then detach: deleteLater() alone would leave it a child of
+            # the grid until the event loop gets round to it, so three quick
+            # clicks would pile three pictures up behind the one on screen.
+            ghost.hide()
+            ghost.setParent(None)
+            ghost.deleteLater()
 
     def render(self):
         while self.breadcrumbs.count():
@@ -248,13 +374,7 @@ class ContainerPanel(QWidget):
                 item.widget().hide()
                 item.widget().deleteLater()
         self.cards = []
-        node = self.root
-        for serial in self.path:
-            node = node.children[serial]
-        query = self.search.text().casefold()
-        children = [child for serial, child in node.children.items()
-                    if query in (serial if serial is not None else str(tr("Unassigned"))).casefold()]
-        children.sort(key=lambda child: (child.path[-1] is None, child.path[-1] or ""))
+        node, children = self._visible_children()
         pages = max(1, (len(children) + self.page_size - 1) // self.page_size)
         self.page = max(0, min(self.page, pages - 1))
         self._set_summary(tr("{p0} items · {p1} saved rows", p0=len(children), p1=node.rows))
@@ -270,6 +390,19 @@ class ContainerPanel(QWidget):
         self.previous.setEnabled(self.page > 0)
         self.next.setEnabled(self.page + 1 < pages)
         self._sync_route_buttons()
+
+    def _visible_children(self):
+        """The container this level stands in, and the children it is showing:
+        everything inside it that the level search has not filtered out, in the
+        order the cards appear."""
+        node = self.root
+        for serial in self.path:
+            node = node.children[serial]
+        query = self.search.text().casefold()
+        children = [child for serial, child in node.children.items()
+                    if query in (serial if serial is not None else str(tr("Unassigned"))).casefold()]
+        children.sort(key=lambda child: (child.path[-1] is None, child.path[-1] or ""))
+        return node, children
 
     def _card(self, node):
         level = LEVELS[len(node.path) - 1]
@@ -401,5 +534,9 @@ class ContainerPanel(QWidget):
 
     def eventFilter(self, watched, event):
         if event.type() == QEvent.Resize and watched is self.inner:
+            # Deliberately not stopping the transition here: a page turn flushes
+            # a pending layout, and that arrives as a resize of a pixel or two.
+            # A real resize repaginates, and the picture on top has faded out
+            # long before the user has finished dragging the window edge.
             self._resize_timer.start(0)
         return super().eventFilter(watched, event)

@@ -203,5 +203,11 @@
   "Hide filters": "ซ่อนตัวกรอง",
   "Show filters": "แสดงตัวกรอง",
   "Filtering by {p0}": "กรองด้วย {p0}",
-  "No filters applied": "ยังไม่ได้ใช้ตัวกรอง"
+  "No filters applied": "ยังไม่ได้ใช้ตัวกรอง",
+  "Showing the records in": "กำลังแสดงข้อมูลใน",
+  "Show all records": "แสดงข้อมูลทั้งหมด",
+  "Stop showing only this container": "เลิกแสดงเฉพาะบรรจุภัณฑ์นี้",
+  "Show all": "แสดงทั้งหมด",
+  "Clear these filters and show every container": "ล้างตัวกรองเหล่านี้และแสดงบรรจุภัณฑ์ทั้งหมด",
+  "{p0} {p1}": "{p0} {p1}"
 }
