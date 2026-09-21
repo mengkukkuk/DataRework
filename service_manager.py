@@ -26,7 +26,7 @@ DESCRIPTION = (
     "activate counts for the DataRework app."
 )
 
-NSSM = "nssm.exe"
+NSSM = "C:\\Windows\\System32\\nssm.exe"
 _CREATE_NO_WINDOW = 0x08000000
 _INSTALL_FLAG = "--install-service"
 
