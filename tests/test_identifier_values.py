@@ -54,6 +54,9 @@ class IdentifierValuesTests(unittest.TestCase):
         self.win.product_name_combo.setCurrentText("Product A")
         self.win.tag_value_edit.setText("12")
         self.win.product_name_combo.lineEdit().editingFinished.emit()
+        # The cascade refresh is now debounced (main_window.py); flush it
+        # immediately instead of waiting out the real timer in a test.
+        self.win._combo_refresh_timer.timeout.emit()
         params = [p for _, values in self.values.call_args.kwargs["conditions"] for p in values]
         self.assertIn("JOB-1", params)
         self.assertIn("Product A", params)

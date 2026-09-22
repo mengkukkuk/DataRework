@@ -4,11 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add analytics for mismatched container data and enhance container deletion logic&#10;&#10;Introduce `link_table_mismatch.sql` for diagnosing data discrepancies between saved rows and the link table. Update `container_delete` logic to handle levels with missing links by listing saved contents for user clarity. Expand PostgreSQL tests to validate these scenarios. Improve filter syncing behavior in the main window and adjust `.idea` settings for database object filtering.">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Expand container deletion logic to handle serials at all levels&#10;&#10;Refine `delete_container` to deactivate serials for containers, sub-containers, and emptied ancestors. Update tests to validate multi-level serial deactivation and adjust SQL logic for comprehensive container clean-up. Ensure robust handling of `tag_name` for better traceability.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/deletion.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/deletion.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/serial_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/serial_state.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_container_delete.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_delete.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/container_panel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/connection.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/connection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/schema.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_panel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_db_package.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_db_package.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_delete_container_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_delete_container_ui.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_identifier_values.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_identifier_values.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -235,9 +240,9 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="PowerShell.build.ps1" />
         <item itemvalue="Python.main" />
         <item itemvalue="Python tests.Python tests in tests" />
+        <item itemvalue="PowerShell.build.ps1" />
       </list>
     </recent_temporary>
   </component>
@@ -505,7 +510,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790007839658</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="Expand container deletion logic to handle serials at all levels&#10;&#10;Refine `delete_container` to deactivate serials for containers, sub-containers, and emptied ancestors. Update tests to validate multi-level serial deactivation and adjust SQL logic for comprehensive container clean-up. Ensure robust handling of `tag_name` for better traceability.">
+      <option name="closed" value="true" />
+      <created>1790047730535</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1790047730535</updated>
+    </task>
+    <option name="localTasksCounter" value="33" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -523,7 +536,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Main window optimizing. Order by desc/asc" />
     <MESSAGE value="style.css added" />
     <MESSAGE value="Add product name filter, region category/tag search, and Python bcrypt hash verification tool" />
     <MESSAGE value="update to pc" />
@@ -548,6 +560,7 @@
     <MESSAGE value="Add container deletion preview, logic, and dialog&#10;&#10;Introduce `delete_dialog.py` for reviewing containers before deletion. Add `_test_container_delete_pg.py` for validating SQL correctness and scenarios in PostgreSQL temporary tables. Implement `db/deletion.py` for logic to clean up containers and their dependencies." />
     <MESSAGE value="Add level marks for containers and navigation history in `ContainerPanel`&#10;&#10;Introduce visual &quot;level marks&quot; for each packaging level to enhance clarity. Add navigation history with breadcrumbs and Back/Forward controls for improved user navigation. Update styles, translations, and tests to support these enhancements." />
     <MESSAGE value="Add analytics for mismatched container data and enhance container deletion logic&#10;&#10;Introduce `link_table_mismatch.sql` for diagnosing data discrepancies between saved rows and the link table. Update `container_delete` logic to handle levels with missing links by listing saved contents for user clarity. Expand PostgreSQL tests to validate these scenarios. Improve filter syncing behavior in the main window and adjust `.idea` settings for database object filtering." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add analytics for mismatched container data and enhance container deletion logic&#10;&#10;Introduce `link_table_mismatch.sql` for diagnosing data discrepancies between saved rows and the link table. Update `container_delete` logic to handle levels with missing links by listing saved contents for user clarity. Expand PostgreSQL tests to validate these scenarios. Improve filter syncing behavior in the main window and adjust `.idea` settings for database object filtering." />
+    <MESSAGE value="Expand container deletion logic to handle serials at all levels&#10;&#10;Refine `delete_container` to deactivate serials for containers, sub-containers, and emptied ancestors. Update tests to validate multi-level serial deactivation and adjust SQL logic for comprehensive container clean-up. Ensure robust handling of `tag_name` for better traceability." />
+    <option name="LAST_COMMIT_MESSAGE" value="Expand container deletion logic to handle serials at all levels&#10;&#10;Refine `delete_container` to deactivate serials for containers, sub-containers, and emptied ancestors. Update tests to validate multi-level serial deactivation and adjust SQL logic for comprehensive container clean-up. Ensure robust handling of `tag_name` for better traceability." />
   </component>
 </project>

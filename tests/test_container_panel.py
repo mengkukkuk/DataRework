@@ -32,10 +32,36 @@ GROUPS = [("C1", "I1", "D1", "U1", 2), ("C1", "I1", "D1", "U2", 1),
 COLUMNS = ["id", "carton_serial_no", "inner_serial_no", "display_serial_no", "unit_serial_no"]
 
 
+def _run_worker_synchronously(fn, *args, on_success=None, on_error=None, request_id=None, **kwargs):
+    """Stand-in for db_worker.run_async: run `fn` and deliver its callback
+    immediately, in place, instead of on a background thread.
+
+    main_window.py's _on_search/_refresh_containers dispatch through
+    db_worker.run_async and pick the result back up in a callback once the
+    Qt event loop delivers it -- these tests assert on state right after
+    calling them, the way the code read before it became async, so this
+    collapses dispatch-and-deliver back into one synchronous call. Real
+    cross-thread delivery is covered by tests/test_db_worker.py instead.
+    """
+    try:
+        result = fn(*args, **kwargs)
+    except Exception as exc:
+        if on_error:
+            on_error(exc, request_id)
+    else:
+        if on_success:
+            on_success(result, request_id)
+
+
 class ContainerPanelTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        patcher = patch("db_worker.run_async", side_effect=_run_worker_synchronously)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_paths_do_not_merge_shared_serials_or_lose_missing_parents(self):
         root = build_hierarchy(GROUPS)
@@ -61,6 +87,17 @@ class ContainerPanelTests(unittest.TestCase):
             self.assertEqual(requested[-1], (level, serial))
         panel.navigate(())
         self.assertFalse(panel.cards[-1].findChild(QPushButton, "linkBtn").isEnabled())
+        panel.deleteLater()
+
+    def test_loading_disables_refresh_and_search_and_says_so(self):
+        panel = ContainerPanel(True)
+        panel.set_loading(True)
+        self.assertFalse(panel.refresh_btn.isEnabled())
+        self.assertFalse(panel.search.isEnabled())
+        self.assertIn("Loading", panel.summary.text())
+        panel.set_loading(False)
+        self.assertTrue(panel.refresh_btn.isEnabled())
+        self.assertTrue(panel.search.isEnabled())
         panel.deleteLater()
 
     def test_unit_rename_updates_serial_state_in_same_transaction(self):
@@ -110,6 +147,28 @@ class ContainerPanelTests(unittest.TestCase):
         panel.set_groups([])
         self.assertEqual(panel.path, ())
         panel.deleteLater()
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    def test_a_stale_search_result_is_dropped(self, *mocks):
+        win = MainWindow("tester", "admin", "TEST-OPERATOR")
+        win._populate_table(["id", "unit_serial_no"], [(1, "ORIGINAL")], ["id"])
+        win._search_generation = 5  # a newer search has since been dispatched
+        win._on_search_succeeded((["id"], ["id", "unit_serial_no"], [(2, "STALE")]),
+                                 4, [], None)
+        self.assertEqual(win._row_originals, [{"id": 1, "unit_serial_no": "ORIGINAL"}])
+        win.deleteLater()
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    def test_the_current_generations_result_is_applied(self, *mocks):
+        win = MainWindow("tester", "admin", "TEST-OPERATOR")
+        win._populate_table(["id", "unit_serial_no"], [(1, "ORIGINAL")], ["id"])
+        win._search_generation = 5
+        win._on_search_succeeded((["id"], ["id", "unit_serial_no"], [(2, "FRESH")]),
+                                 5, [], None)
+        self.assertEqual(win._row_originals, [{"id": 2, "unit_serial_no": "FRESH"}])
+        win.deleteLater()
 
     @patch("db.get_columns", return_value=COLUMNS)
     @patch("db.fetch_distinct_values", return_value=[])
@@ -188,6 +247,31 @@ class ContainerPanelTests(unittest.TestCase):
         panel.navigate(("C2",))
         self.assertEqual(panel.history, [(), ("C1",), ("C2",)])
         self.assertFalse(panel.forward_btn.isEnabled())
+        panel.deleteLater()
+
+    def test_going_back_restores_the_page_you_left(self):
+        panel = ContainerPanel(True)
+        panel.set_groups([(f"C{i:03}", "I", "D", "U", 1) for i in range(24)])
+        panel.next.click()
+        self.assertEqual(panel.page, 1)
+        panel.navigate(("C001",))
+        self.assertEqual(panel.page, 0)  # a level never visited starts at its own page 1
+        panel.back_btn.click()
+        self.assertEqual(panel.path, ())
+        self.assertEqual(panel.page, 1)  # picked back up where it was left, not reset
+        panel.forward_btn.click()
+        panel.back_btn.click()
+        self.assertEqual(panel.page, 1)  # forward-then-back still remembers it
+        panel.deleteLater()
+
+    def test_reopening_a_level_from_a_breadcrumb_also_restores_its_page(self):
+        panel = ContainerPanel(True)
+        panel.set_groups([(f"C{i:03}", "I", "D", "U", 1) for i in range(24)])
+        panel.next.click()
+        self.assertEqual(panel.page, 1)
+        panel.navigate(("C001",))  # e.g. opening a card, not retracing history
+        panel.navigate(())  # the "All cartons" breadcrumb
+        self.assertEqual(panel.page, 1)
         panel.deleteLater()
 
     def test_the_arrows_say_where_they_lead_and_new_data_clears_a_dead_route(self):

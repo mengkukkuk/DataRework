@@ -4,7 +4,7 @@ import os
 
 import psycopg2
 from psycopg2 import sql
-from PySide6.QtCore import Qt, QSettings
+from PySide6.QtCore import Qt, QSettings, QTimer
 from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 import db
+import db_worker
 from theme import THEMES, _render_stylesheet
 from i18n import tr, column_label, language
 from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
@@ -95,6 +96,14 @@ def _get_settings():
     return QSettings("DataRework", "ProductionRework")
 
 
+def _fetch_search_results(table, columns, conditions):
+    """The db_worker payload for a search: both remaining round trips bundled
+    into one job, so the UI thread dispatches once instead of twice."""
+    pk_columns = db.get_primary_key_columns(table)
+    col_names, rows = db.query_rows(table, columns, conditions)
+    return pk_columns, col_names, rows
+
+
 class MainWindow(QMainWindow):
     def __init__(self, username, permission, tag_name):
         super().__init__()
@@ -116,6 +125,17 @@ class MainWindow(QMainWindow):
         # from a card. It narrows the grid only -- never the filter bar, and never
         # the container manager, so going back to the cards shows the whole level.
         self._record_scope = None
+        # Bumped on every dispatch to db_worker for that operation; a result
+        # tagged with an older value than the current counter is stale (a newer
+        # request has since superseded it) and is dropped instead of applied.
+        self._search_generation = 0
+        self._containers_generation = 0
+        # Coalesces bursts of filter-widget changes into one _refresh_dependent_combos
+        # call instead of one per keystroke/combo change.
+        self._combo_refresh_timer = QTimer(self)
+        self._combo_refresh_timer.setSingleShot(True)
+        self._combo_refresh_timer.setInterval(280)
+        self._combo_refresh_timer.timeout.connect(self._refresh_dependent_combos)
         self._theme = _get_settings().value("theme", "dark", type=str)
         if self._theme not in THEMES:
             self._theme = "dark"
@@ -170,16 +190,40 @@ class MainWindow(QMainWindow):
             self._refresh_containers()
 
     def _refresh_containers(self):
+        """Aggregate what is in the cards; the aggregate itself runs off the UI
+        thread (db_worker), since it scans the whole filtered staging table."""
         try:
             columns = db.get_columns(STAGING_TABLE)
-            conditions = self._current_conditions(columns) + self._category_tag_condition(columns)
-            self.container_panel.set_groups(db.container_groups(
-                STAGING_TABLE, columns, conditions, product_column=FILTER_COLUMNS['product_name']
-            ))
-            self.container_panel.set_filter_note(self._narrowing_filter_text())
         except Exception as exc:
             LOG.add(f"Could not load containers: {exc}", exc)
             self.container_panel.show_error()
+            return
+        conditions = self._current_conditions(columns) + self._category_tag_condition(columns)
+
+        self._containers_generation += 1
+        generation = self._containers_generation
+        self.container_panel.set_loading(True)
+        db_worker.run_async(
+            db.container_groups, STAGING_TABLE, columns, conditions,
+            product_column=FILTER_COLUMNS['product_name'],
+            on_success=lambda groups, gen: self._on_containers_loaded(groups, gen),
+            on_error=lambda exc, gen: self._on_containers_failed(exc, gen),
+            request_id=generation,
+        )
+
+    def _on_containers_loaded(self, groups, generation):
+        if generation != self._containers_generation:
+            return  # a newer refresh has since superseded this one
+        self.container_panel.set_loading(False)
+        self.container_panel.set_groups(groups)
+        self.container_panel.set_filter_note(self._narrowing_filter_text())
+
+    def _on_containers_failed(self, exc, generation):
+        if generation != self._containers_generation:
+            return
+        LOG.add(f"Could not load containers: {exc}", exc)
+        self.container_panel.set_loading(False)
+        self.container_panel.show_error()
 
     def _clear_container_filters(self):
         """Drop everything the container view is filtered by except the date.
@@ -191,7 +235,7 @@ class MainWindow(QMainWindow):
             combo.setCurrentText("")
         self.category_combo.setCurrentIndex(0)
         self.tag_value_edit.clear()
-        self._refresh_dependent_combos()
+        self._schedule_dependent_combo_refresh()
         self._sync_filter_summary()
         self._refresh_containers()
 
@@ -448,7 +492,7 @@ class MainWindow(QMainWindow):
         # affects the ones after it in CASCADE_FIELDS. Refresh on
         # editingFinished/activated rather than every keystroke, so typing
         # doesn't fire a query per character.
-        self.day_combo.currentIndexChanged.connect(lambda _=None: self._refresh_dependent_combos())
+        self.day_combo.currentIndexChanged.connect(lambda _=None: self._schedule_dependent_combo_refresh())
         self.month_combo.currentIndexChanged.connect(lambda _=None: self._on_date_changed())
         self.year_combo.currentIndexChanged.connect(lambda _=None: self._on_date_changed())
         # Month/year already carry today's date by now, so trim the day list
@@ -457,10 +501,10 @@ class MainWindow(QMainWindow):
         for field_key in CASCADE_FIELDS:
             combo = self._cascade_combos[field_key]
             combo.lineEdit().editingFinished.connect(
-                lambda fk=field_key: self._refresh_dependent_combos(fk)
+                lambda fk=field_key: self._schedule_dependent_combo_refresh(fk)
             )
             combo.activated.connect(
-                lambda _=None, fk=field_key: self._refresh_dependent_combos(fk)
+                lambda _=None, fk=field_key: self._schedule_dependent_combo_refresh(fk)
             )
 
         row2.addStretch(1)
@@ -559,7 +603,7 @@ class MainWindow(QMainWindow):
 
     def _on_date_changed(self):
         self._sync_day_range()
-        self._refresh_dependent_combos()
+        self._schedule_dependent_combo_refresh()
 
     def _sync_day_range(self):
         """Keep the day list to the days the chosen month really has, so
@@ -854,6 +898,21 @@ class MainWindow(QMainWindow):
         # exact, case-insensitive match (not a substring search).
         return [(sql.SQL("{}::text ILIKE %s").format(sql.Identifier(column)), [value])]
 
+    def _schedule_dependent_combo_refresh(self, from_field=None):
+        """Coalesce a burst of filter changes into one _refresh_dependent_combos
+        call, shortly after the last change in the burst.
+
+        This writes back into the same combo the user might still be typing in
+        (see _refresh_dependent_combos), so it is debounced rather than run off
+        the UI thread -- a result landing mid-keystroke would be worse than the
+        latency it saves. Always refreshes every cascade field once the timer
+        fires rather than tracking which single field triggered it: with only
+        two entries in CASCADE_FIELDS, the extra fetch_distinct_values call a
+        from_field-scoped refresh would sometimes have skipped is cheap, and
+        this is simpler than reconciling several changes within one burst.
+        """
+        self._combo_refresh_timer.start()
+
     def _refresh_dependent_combos(self, from_field=None):
         """Repopulate the typing combos after `from_field` in CASCADE_FIELDS
         (all of them if `from_field` is None) with the distinct values that
@@ -888,7 +947,17 @@ class MainWindow(QMainWindow):
 
         self._refresh_tag_values()
 
-    def _on_search(self, *, container_path=None):
+    def _on_search(self, *, container_path=None, success_message=None):
+        """Load the grid. The row fetch itself runs off the UI thread
+        (db_worker); everything that reads filter-widget state has to stay
+        synchronous and run first, here, before dispatch.
+
+        `success_message` lets a caller that is about to reload as a side
+        effect of its own action (delete/rename a container) say what the
+        status line should read once the reload lands, instead of the
+        generic "N row(s) loaded." -- the reload would otherwise overwrite
+        the caller's own message the moment it completes.
+        """
         # Folded away, the heading line is the only thing still saying what the
         # view is filtered by, so keep it current.
         self._sync_filter_summary()
@@ -942,25 +1011,47 @@ class MainWindow(QMainWindow):
                 else:
                     conditions.append((sql.SQL("{}::text = %s").format(identifier), [serial]))
 
-        try:
-            pk_columns = db.get_primary_key_columns(STAGING_TABLE)
-            col_names, rows = db.query_rows(STAGING_TABLE, columns, conditions)
-        except psycopg2.OperationalError as exc:
-            self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
-            return
-        except Exception as exc:
-            self._show_status(str(exc), error=True, exc=exc)
-            return
+        self._search_generation += 1
+        generation = self._search_generation
+        self.search_btn.setEnabled(False)
+        self.save_btn.setEnabled(False)
+        self._show_status(tr('Loading…'))
+        db_worker.run_async(
+            _fetch_search_results, STAGING_TABLE, columns, conditions,
+            on_success=lambda result, gen: self._on_search_succeeded(
+                result, gen, warnings, success_message),
+            on_error=lambda exc, gen: self._on_search_failed(exc, gen),
+            request_id=generation,
+        )
 
+    def _on_search_succeeded(self, result, generation, warnings, success_message):
+        if generation != self._search_generation:
+            return  # a newer search has since superseded this one
+        self.search_btn.setEnabled(True)
+        self.save_btn.setEnabled(self.is_admin)
+        pk_columns, col_names, rows = result
         self._populate_table(col_names, rows, pk_columns)
         if self.views.currentIndex() == 1:
             self._refresh_containers()
+        if success_message is not None:
+            self._show_status(success_message)
+            return
         message = tr('{p0} row(s) loaded.', p0=len(rows))
         if warnings:
             message += " " + tr("; ").join(warnings)
             self._show_status(message, error=True)
         else:
             self._show_status(message)
+
+    def _on_search_failed(self, exc, generation):
+        if generation != self._search_generation:
+            return
+        self.search_btn.setEnabled(True)
+        self.save_btn.setEnabled(self.is_admin)
+        if isinstance(exc, psycopg2.OperationalError):
+            self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
+        else:
+            self._show_status(str(exc), error=True, exc=exc)
 
     def _populate_table(self, columns, rows, pk_columns):
         self._columns = columns
@@ -1140,7 +1231,7 @@ class MainWindow(QMainWindow):
         self.category_combo.setCurrentIndex(0)
         self.tag_value_edit.clear()
         self._set_record_scope(None)
-        self._refresh_dependent_combos()
+        self._schedule_dependent_combo_refresh()
         # Folded, the heading is the only record of what the filters say, so it
         # has to follow them back to empty.
         self._sync_filter_summary()
@@ -1410,14 +1501,14 @@ class MainWindow(QMainWindow):
             f'{result["units"]} unit serial(s) released ({self.tag_name}).{note}',
             level="INFO",
         )
-        self._on_search(container_path=self._record_scope)
-        # The reload reports "N row(s) loaded."; keep the delete's own outcome on
-        # screen unless the reload itself failed.
-        if self.status_label.property("state") != "error":
-            self._show_status(tr(
-                'Deleted {p0} "{p1}" — {p2} row(s), {p3} link(s), {p4} unit serial(s) released.',
-                p0=tr(level), p1=serial, p2=result["rows"], p3=result["edges"], p4=result["units"],
-            ))
+        # The reload runs off the UI thread now, so its own "N row(s) loaded."
+        # message lands later than this call returns -- success_message asks it
+        # to show the delete's own outcome instead, once it actually succeeds
+        # (a failed reload still reports its own "Unable to reach the database").
+        self._on_search(container_path=self._record_scope, success_message=tr(
+            'Deleted {p0} "{p1}" — {p2} row(s), {p3} link(s), {p4} unit serial(s) released.',
+            p0=tr(level), p1=serial, p2=result["rows"], p3=result["edges"], p4=result["units"],
+        ))
 
     def _on_item_changed(self, item):
         """Glow a cell green while its value differs from what was loaded, or
@@ -1536,3 +1627,9 @@ class MainWindow(QMainWindow):
         self._log_window.show()
         self._log_window.raise_()
         self._log_window.activateWindow()
+
+    def closeEvent(self, event):
+        # A search/container-refresh still in flight would otherwise deliver
+        # its signal into a widget tree that is being torn down underneath it.
+        db_worker.shutdown()
+        super().closeEvent(event)

@@ -177,7 +177,16 @@ class DeleteContainerFlowTests(unittest.TestCase):
                          return_value=QMessageBox.Yes).start()
         self.delete = patch("db.delete_container", return_value=dict(DELETED)).start()
         self.win = MainWindow("tester", "admin", "TEST-OPERATOR")
-        self.search = patch.object(self.win, "_on_search").start()
+        # _on_search now runs the reload off the UI thread and only shows
+        # success_message from inside its own (bypassed-here) success callback;
+        # stand in for that one effect so delete-flow assertions on the status
+        # line still hold without actually exercising the reload.
+        self.search = patch.object(
+            self.win, "_on_search",
+            side_effect=lambda *args, success_message=None, **kwargs: (
+                self.win._show_status(success_message) if success_message is not None else None
+            ),
+        ).start()
 
     def tearDown(self):
         self.win.close()

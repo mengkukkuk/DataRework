@@ -108,6 +108,10 @@ class TestConnectionRouting(unittest.TestCase):
     """
 
     def setUp(self):
+        # get_columns/get_primary_key_columns cache by (schema, table); without
+        # this, a cache hit left over from another test would make the
+        # get_conn_mock.assert_called() checks below order-dependent.
+        db.schema.clear_cache()
         self.sentinel = _make_conn_cur()[0]
         self.get_conn_patcher = patch(
             "db.connection.get_connection", return_value=self.sentinel
@@ -219,6 +223,50 @@ class TestConnectionRouting(unittest.TestCase):
     def test_delete_container_routes_through_get_connection(self):
         self._call(db.delete_container, "display", "D001")
         self.get_conn_mock.assert_called()
+
+
+class TestSchemaCache(unittest.TestCase):
+    """get_columns/get_primary_key_columns cache by (schema, table), so a
+    session's second search/refresh doesn't re-hit information_schema."""
+
+    def setUp(self):
+        db.schema.clear_cache()
+        self.conn, self.cur = _make_conn_cur()
+        self.get_conn_patcher = patch(
+            "db.connection.get_connection", return_value=self.conn
+        )
+        self.get_conn_mock = self.get_conn_patcher.start()
+
+    def tearDown(self):
+        patch.stopall()
+        db.schema.clear_cache()
+
+    def test_get_columns_hits_the_database_once_then_serves_from_cache(self):
+        self.cur.fetchall.return_value = [("id",), ("name",)]
+        first = db.get_columns("t1")
+        second = db.get_columns("t1")
+        self.assertEqual((first, second), (["id", "name"], ["id", "name"]))
+        self.assertEqual(self.get_conn_mock.call_count, 1)
+
+    def test_different_tables_are_cached_separately(self):
+        self.cur.fetchall.return_value = [("id",)]
+        db.get_columns("t1")
+        db.get_columns("t2")
+        self.assertEqual(self.get_conn_mock.call_count, 2)
+
+    def test_an_empty_columns_result_is_not_cached(self):
+        # Empty is what _on_search reads as "table not found" -- caching a
+        # transient empty result would make that permanent for the session.
+        self.cur.fetchall.return_value = []
+        db.get_columns("missing")
+        db.get_columns("missing")
+        self.assertEqual(self.get_conn_mock.call_count, 2)
+
+    def test_primary_key_columns_are_cached_too(self):
+        self.cur.fetchall.return_value = [("id",)]
+        db.get_primary_key_columns("t1")
+        db.get_primary_key_columns("t1")
+        self.assertEqual(self.get_conn_mock.call_count, 1)
 
 
 # ---------------------------------------------------------------------------

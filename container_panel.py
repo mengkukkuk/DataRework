@@ -81,6 +81,10 @@ class ContainerPanel(QWidget):
         self.history = [()]
         self.history_at = 0
         self.page = 0
+        # Last page shown at each path, so returning to a level -- via Back,
+        # Forward, a breadcrumb, or reopening the same card -- picks up where
+        # the user left it instead of always starting over at page 1.
+        self._page_by_path = {}
         self.cards = []
         self._ghost = None
         self._animation = None
@@ -114,10 +118,10 @@ class ContainerPanel(QWidget):
         self.search.setClearButtonEnabled(True)
         self.search.textChanged.connect(self._filter_changed)
         top.addWidget(self.search)
-        refresh = QPushButton(tr("Refresh"))
-        refresh.setObjectName("ghostBtn")
-        refresh.clicked.connect(self.refresh_requested.emit)
-        top.addWidget(refresh)
+        self.refresh_btn = QPushButton(tr("Refresh"))
+        self.refresh_btn.setObjectName("ghostBtn")
+        self.refresh_btn.clicked.connect(self.refresh_requested.emit)
+        top.addWidget(self.refresh_btn)
         layout.addLayout(top)
         # One route row: Back/Forward, the trail, and the count of what is in view.
         route = QHBoxLayout()
@@ -216,6 +220,18 @@ class ContainerPanel(QWidget):
         self.set_groups([])
         self._set_summary(tr("Unable to load containers. Try Refresh."), error=True)
 
+    def set_loading(self, loading):
+        """Card grid is stale until the next set_groups()/show_error() call.
+
+        The fetch itself runs off the UI thread (main_window.py), so this is
+        purely visual: block another refresh from piling on top of one still
+        in flight, and say so where the count normally is.
+        """
+        self.refresh_btn.setEnabled(not loading)
+        self.search.setEnabled(not loading)
+        if loading:
+            self._set_summary(tr("Loading containers…"))
+
     def _set_summary(self, text, error=False):
         """The count of what is in view, or why there is nothing in view."""
         self.summary.setText(text)
@@ -232,8 +248,9 @@ class ContainerPanel(QWidget):
         leaving = self._snapshot() if path != self.path else None
         move = ("deeper" if len(path) > len(self.path) else
                 "back" if len(path) < len(self.path) else "sideways")
+        self._page_by_path[self.path] = self.page
         self.path = path
-        self.page = 0
+        self.page = self._page_by_path.get(path, 0)
         self.search.blockSignals(True)
         self.search.clear()
         self.search.blockSignals(False)
