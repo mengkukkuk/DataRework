@@ -48,6 +48,17 @@ class SerialInventoryError(Exception):
     """
 
 
+class SerialInUseError(Exception):
+    """A serial can't be reported damaged while it is still active.
+
+    activate=true means the serial is on a container or unit that is still in
+    production tracking; reporting it damaged first would let the same serial
+    keep being counted as in use while also being flagged unusable. The
+    operator has to take it out of use (delete the container, or delete/edit
+    the unit's row) before the report is accepted.
+    """
+
+
 class ContainerDeleteError(Exception):
     """A container delete was refused, or backed out, before it could do harm.
 

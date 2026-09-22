@@ -114,6 +114,33 @@ def _apply_serial_rename(cur, level, old_serial, new_serial, schema, table):
     return cur.rowcount
 
 
+def serial_level(serial_no, schema="public", table="filling_product_logs"):
+    """Which level currently names `serial_no` in the flat table, or None.
+
+    Best-effort, for routing an operator to the right editor (e.g. from a
+    damage report blocked because the serial is still active) -- not a source
+    of truth about the label scheme, and not the only place a serial could
+    exist (a link with no saved row wouldn't show up here). Checked in
+    LEVELS order (unit before its containers), one query per level.
+    """
+    if not serial_no:
+        return None
+    with contextlib.closing(connection.get_connection()) as conn:
+        with conn.cursor() as cur:
+            for level in LEVELS:
+                cur.execute(
+                    sql.SQL("SELECT 1 FROM {schema}.{table} WHERE {col} = %s LIMIT 1").format(
+                        schema=sql.Identifier(schema),
+                        table=sql.Identifier(table),
+                        col=sql.Identifier(f"{level}_serial_no"),
+                    ),
+                    (serial_no,),
+                )
+                if cur.fetchone() is not None:
+                    return level
+    return None
+
+
 def container_serials(level, schema="public", limit=1000):
     """Every serial that names a container at `level`, for the picker."""
     if level not in LEVELS:
@@ -173,6 +200,12 @@ def rename_children(renames, schema="public", table="filling_product_logs"):
     second panel, where the user has picked which children of a just-renamed
     container should follow it. Atomic because a half-applied batch would leave
     the operator guessing which rows still carry the old scheme.
+
+    Each rename also deactivates the old serial and activates the new one in
+    staging_serial_data (raising SerialInventoryError, aborting the whole
+    batch, if the new serial has no inventory row there) -- at every level,
+    not just unit: whatever roll_no a serial carries is counted the same way
+    regardless of which level it names.
     """
     renames = [tuple(r) for r in renames]
     if not renames:
@@ -213,9 +246,8 @@ def rename_children(renames, schema="public", table="filling_product_logs"):
 
             for level, old, new in renames:
                 total_rows += _apply_serial_rename(cur, level, old, new, schema, table)
-                if level == "unit":
-                    _set_serial_active(cur, schema, old, False)
-                    _set_serial_active(cur, schema, new, True, required=True)
+                _set_serial_active(cur, schema, old, False)
+                _set_serial_active(cur, schema, new, True, required=True)
 
         conn.commit()
 
@@ -250,6 +282,12 @@ def rename_container(level, old_serial, new_serial, schema="public",
     lives here rather than in the schema because staging_product_logs carries no
     unique constraint on the business key -- the database would otherwise let two
     containers share a name without complaint.
+
+    Also deactivates the old serial and activates the new one in
+    staging_serial_data (raising SerialInventoryError if the new serial has no
+    inventory row there), the same as a unit rename -- a container's roll_no is
+    counted the same way a unit's is, so its activate flag has to follow the
+    serial just as reliably.
     """
     if level not in LEVELS:
         raise ValueError(f"{level} is not a label level")
@@ -270,9 +308,8 @@ def rename_container(level, old_serial, new_serial, schema="public",
                 )
 
             rows = _apply_serial_rename(cur, level, old_serial, new_serial, schema, table)
-            if level == "unit":
-                _set_serial_active(cur, schema, old_serial, False)
-                _set_serial_active(cur, schema, new_serial, True, required=True)
+            _set_serial_active(cur, schema, old_serial, False)
+            _set_serial_active(cur, schema, new_serial, True, required=True)
 
         conn.commit()
 

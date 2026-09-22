@@ -8,8 +8,9 @@ _apply_serial_rename looks the new roll_no up itself and writes it everywhere
 the serial itself lands.
 """
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
+import db
 from db import containers
 
 
@@ -67,6 +68,34 @@ class ApplySerialRenameRollNoTests(unittest.TestCase):
         self.assertEqual(child_edge_params, ["D2", "D1", "display"])
         self.assertEqual(parent_edge_params, ["D2", "D1", "display"])
         self.assertEqual(flat_params, ["D2", "D1"])
+
+
+class RenameSerialStateTests(unittest.TestCase):
+    """rename_container/rename_children flip staging_serial_data.activate for
+    the renamed serial at every level, not just unit -- a container's roll_no
+    is counted the same way a unit's is, so its activate flag has to follow
+    the serial just as reliably."""
+
+    def test_rename_children_updates_serial_state_at_every_level_in_the_batch(self):
+        conn = MagicMock()
+        cur = conn.cursor.return_value.__enter__.return_value
+        with patch("db.connection.get_connection", return_value=conn), patch(
+            "db.containers._serial_in_use", return_value=False
+        ), patch("db.containers._container_edge_counts", return_value=(1, 0)), patch(
+            "db.containers._apply_serial_rename", return_value=1
+        ), patch("db.containers._set_serial_active") as active:
+            db.rename_children([
+                ("unit", "U1", "U-new"),
+                ("display", "D1", "D-new"),
+            ])
+        self.assertEqual(
+            [call.args[2:] for call in active.call_args_list],
+            [("U1", False), ("U-new", True), ("D1", False), ("D-new", True)],
+        )
+        self.assertTrue(all(
+            call.kwargs == {"required": True}
+            for call in active.call_args_list[1::2]
+        ))
 
 
 if __name__ == "__main__":

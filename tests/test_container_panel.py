@@ -114,6 +114,25 @@ class ContainerPanelTests(unittest.TestCase):
         conn.commit.assert_called_once()
         self.assertEqual(result, {"rows": 1, "edges": 1})
 
+    def test_container_level_rename_also_updates_serial_state(self):
+        # Same as a unit rename: the old serial's roll_no is counted the same
+        # way regardless of level, so its activate flag has to follow renames
+        # at display/inner/carton too, not just unit.
+        conn = MagicMock()
+        cur = conn.cursor.return_value.__enter__.return_value
+        with patch("db.connection.get_connection", return_value=conn), patch(
+            "db.containers._serial_in_use", return_value=False
+        ), patch("db.containers._container_edge_counts", return_value=(1, 0)), patch(
+            "db.containers._apply_serial_rename", return_value=6
+        ) as rename, patch("db.containers._set_serial_active") as active:
+            result = db.rename_container("display", "D1", "D-new")
+        rename.assert_called_once_with(cur, "display", "D1", "D-new", "public", "filling_product_logs")
+        self.assertEqual([call.args[2:] for call in active.call_args_list],
+                         [("D1", False), ("D-new", True)])
+        self.assertEqual(active.call_args_list[1].kwargs, {"required": True})
+        conn.commit.assert_called_once()
+        self.assertEqual(result, {"rows": 6, "edges": 1})
+
     def test_unit_dialog_keeps_clicked_serial_outside_picker_limit(self):
         from rename_dialog import RenameContainerDialog
         with patch("db.container_serials", return_value=["OTHER"]), patch(
@@ -430,6 +449,50 @@ class ContainerPanelTests(unittest.TestCase):
             win.views.setCurrentIndex(1)
             # C1, C2 and the unassigned group: the whole level, not one card.
             self.assertEqual(len(win.container_panel.cards), 3)
+            win.close()
+            win.deleteLater()
+
+    # -- routing a still-active serial to the records editor ----------------
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    @patch("db.get_primary_key_columns", return_value=["id"])
+    @patch("db.query_rows", return_value=(COLUMNS, []))
+    @patch("db.serial_level", return_value="display")
+    def test_locating_a_serial_switches_tabs_and_filters_by_its_level(self, level, rows, *mocks):
+        settings = FakeSettings()
+        with patch("main_window._get_settings", return_value=settings):
+            win = MainWindow("tester", "admin", "TEST-OPERATOR")
+            win.show()
+            win.views.setCurrentIndex(1)  # start somewhere other than Records
+
+            win._locate_serial_to_free_it("D1")
+
+            self.assertEqual(win.views.currentIndex(), 0)
+            self.assertEqual(win.category_combo.currentData(), "display")
+            self.assertEqual(win.tag_combo.currentData(), "serial_no")
+            self.assertEqual(win.tag_value_edit.text(), "D1")
+            level.assert_called_once_with("D1")
+            condition = rows.call_args.args[2]
+            self.assertIn(["D1"], [values for _, values in condition])
+            win.close()
+            win.deleteLater()
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    @patch("db.serial_level", return_value=None)
+    def test_a_serial_with_no_known_level_just_switches_to_records(self, *mocks):
+        settings = FakeSettings()
+        with patch("main_window._get_settings", return_value=settings):
+            win = MainWindow("tester", "admin", "TEST-OPERATOR")
+            win.show()
+            win.views.setCurrentIndex(1)
+
+            win._locate_serial_to_free_it("MYSTERY")
+
+            self.assertEqual(win.views.currentIndex(), 0)
+            self.assertIn("MYSTERY", win.status_label.text())
+            self.assertEqual(win.status_label.property("state"), "error")
             win.close()
             win.deleteLater()
 

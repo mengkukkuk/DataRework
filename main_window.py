@@ -30,6 +30,7 @@ from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
 from rename_dialog import ChildRelabelDialog, RenameContainerDialog
 from delete_dialog import DeleteContainerDialog
 from container_panel import ContainerPanel, LEVELS as CONTAINER_ORDER
+from damage_report_panel import DamageReportPanel
 from level_marks import level_mark
 from debug_log import LOG, LogWindow
 
@@ -168,6 +169,9 @@ class MainWindow(QMainWindow):
         self.container_panel.delete_requested.connect(self._delete_from_manager)
         self.container_panel.records_requested.connect(self._open_container_records)
         self.container_panel.clear_filters_requested.connect(self._clear_container_filters)
+        self.damage_panel = DamageReportPanel()
+        self.views.addTab(self.damage_panel, tr('Report damage'))
+        self.damage_panel.locate_requested.connect(self._locate_serial_to_free_it)
         self.views.currentChanged.connect(self._view_changed)
         language.changed.connect(self._translate_tabs)
         root.addWidget(self.views, stretch=1)
@@ -182,12 +186,15 @@ class MainWindow(QMainWindow):
     def _translate_tabs(self):
         self.views.setTabText(0, tr('Records'))
         self.views.setTabText(1, tr('Container manager'))
+        self.views.setTabText(2, tr('Report damage'))
 
     def _view_changed(self, index):
         self._update_delete_button()
         self._apply_filter_collapse(self._filters_collapsed(index))
         if index == 1:
             self._refresh_containers()
+        elif index == 2:
+            self.damage_panel.focus_input()
 
     def _refresh_containers(self):
         """Aggregate what is in the cards; the aggregate itself runs off the UI
@@ -696,6 +703,35 @@ class MainWindow(QMainWindow):
     def _on_filter_search(self):
         self._set_record_scope(None)
         self._on_search()
+
+    def _locate_serial_to_free_it(self, serial):
+        """Jump to Records, filtered to whatever `serial` names, so its still-
+        active row (a unit) or container (display/inner/carton) can be found
+        and taken out of use -- deleted, or renamed onto something else --
+        before it can be reported damaged.
+
+        Best-effort: db.serial_level can't always place a serial (e.g. it
+        names a link with no saved row), in which case this just switches
+        tabs and says so, since there is nothing more specific to filter by.
+        """
+        try:
+            level = db.serial_level(serial)
+        except Exception as exc:
+            level = None
+            LOG.add(f'Could not determine what level "{serial}" belongs to: {exc}', exc)
+
+        self.views.setCurrentIndex(0)
+        if not level:
+            self._show_status(
+                tr('Could not find "{p0}" in the records -- search for it manually.', p0=serial),
+                error=True,
+            )
+            return
+
+        self.category_combo.setCurrentIndex(self.category_combo.findData(level))
+        self.tag_combo.setCurrentIndex(self.tag_combo.findData("serial_no"))
+        self.tag_value_edit.setText(serial)
+        self._on_filter_search()
 
     def _make_typing_combo(self, placeholder):
         combo = QComboBox()

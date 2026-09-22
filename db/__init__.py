@@ -5,14 +5,15 @@ from . import connection
 from .connection import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, get_connection
 from .hierarchy import (LEVELS, CONTAINER_LEVELS, STAGING_EDGE_TABLE,
                         SERIAL_DATA_TABLE, SharedEdgeError, SerialConflictError,
-                        SerialInventoryError, ContainerDeleteError)
+                        SerialInventoryError, SerialInUseError, ContainerDeleteError)
 from .auth import authenticate
 from .schema import get_columns, get_primary_key_columns
 from .queries import fetch_distinct_values, query_rows, save_changes, container_groups
 from .edge_mirror import update_staging_serial_data, save_grid_changes
 from .containers import (container_serials, container_children, rename_children,
-                         container_rename_preview, rename_container)
+                         container_rename_preview, rename_container, serial_level)
 from .deletion import container_delete_preview, delete_container
+from .serial_state import report_damage
 
 __all__ = [
     "connection",
@@ -28,6 +29,7 @@ __all__ = [
     "SharedEdgeError",
     "SerialConflictError",
     "SerialInventoryError",
+    "SerialInUseError",
     "ContainerDeleteError",
     "authenticate",
     "get_columns",
@@ -45,4 +47,6 @@ __all__ = [
     "rename_container",
     "container_delete_preview",
     "delete_container",
+    "serial_level",
+    "report_damage",
 ]
