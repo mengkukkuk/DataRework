@@ -342,10 +342,10 @@ class MainWindow(QMainWindow):
         title_box.setSpacing(2)
         title = QLabel(tr('Production Rework'))
         title.setObjectName("pageTitle")
-        subtitle = QLabel(tr('Table = {p0}', p0=STAGING_TABLE))
-        subtitle.setObjectName("pageSubtitle")
+        #subtitle = QLabel(tr('Table = {p0}', p0=STAGING_TABLE))
+        #subtitle.setObjectName("pageSubtitle")
         title_box.addWidget(title)
-        title_box.addWidget(subtitle)
+        #title_box.addWidget(subtitle)
         row.addLayout(title_box)
         row.addStretch(1)
 

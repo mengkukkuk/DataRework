@@ -4,15 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Tag serial changing with roll_no staging_serial_data">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add `DamageReportPanel` for reporting damaged serials and related database logic&#10;&#10;Introduce `DamageReportPanel` to enable operators to flag serials as damaged, ensuring inactive status prior to reporting. Update database logic with `report_damage` and `serial_level` support, handling conflicts like active or unknown serials. Add tests for panel interactions, backend validation, and roll_no syncing in `serial_store_aio`.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/containers.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/containers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/hierarchy.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/hierarchy.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/serial_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/serial_state.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/auth.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/login_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/login_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_container_rename.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_rename.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -240,8 +238,8 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.main" />
-        <item itemvalue="Python tests.Python tests in tests" />
         <item itemvalue="PowerShell.build.ps1" />
+        <item itemvalue="Python tests.Python tests in tests" />
       </list>
     </recent_temporary>
   </component>
@@ -533,7 +531,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790062368213</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL-00035" summary="Add `DamageReportPanel` for reporting damaged serials and related database logic&#10;&#10;Introduce `DamageReportPanel` to enable operators to flag serials as damaged, ensuring inactive status prior to reporting. Update database logic with `report_damage` and `serial_level` support, handling conflicts like active or unknown serials. Add tests for panel interactions, backend validation, and roll_no syncing in `serial_store_aio`.">
+      <option name="closed" value="true" />
+      <created>1790067144219</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1790067144219</updated>
+    </task>
+    <option name="localTasksCounter" value="36" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -551,7 +557,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="update to pc" />
     <MESSAGE value="before change" />
     <MESSAGE value="update_staging_serial, set_staging_serial optimization" />
     <MESSAGE value="Implement new build system for DataRework and SerialStoreSync executables&#10;&#10;Add `build.ps1` script for streamlined builds with service management, PyInstaller specification, and asset bundling. Introduce custom service management via NSSM and build-time icon generation. Update `.gitignore` to exclude build outputs and sensitive files. Refactor dotenv loading for better compatibility with frozen applications." />
@@ -576,6 +581,7 @@
     <MESSAGE value="Expand container deletion logic to handle serials at all levels&#10;&#10;Refine `delete_container` to deactivate serials for containers, sub-containers, and emptied ancestors. Update tests to validate multi-level serial deactivation and adjust SQL logic for comprehensive container clean-up. Ensure robust handling of `tag_name` for better traceability." />
     <MESSAGE value="Introduce `db_worker.py` for async DB operations and integrate off-thread execution&#10;&#10;Implement `db_worker.py` to offload database calls from the Qt UI thread, preventing UI freezing during network round trips. Refactor related calls in `MainWindow` and `ContainerPanel` to run asynchronously. Introduce caching for repeated column and primary key lookups in `db/schema.py`. Update tests to validate async behavior, caching, and UI-thread result handling." />
     <MESSAGE value="Tag serial changing with roll_no staging_serial_data" />
-    <option name="LAST_COMMIT_MESSAGE" value="Tag serial changing with roll_no staging_serial_data" />
+    <MESSAGE value="Add `DamageReportPanel` for reporting damaged serials and related database logic&#10;&#10;Introduce `DamageReportPanel` to enable operators to flag serials as damaged, ensuring inactive status prior to reporting. Update database logic with `report_damage` and `serial_level` support, handling conflicts like active or unknown serials. Add tests for panel interactions, backend validation, and roll_no syncing in `serial_store_aio`." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add `DamageReportPanel` for reporting damaged serials and related database logic&#10;&#10;Introduce `DamageReportPanel` to enable operators to flag serials as damaged, ensuring inactive status prior to reporting. Update database logic with `report_damage` and `serial_level` support, handling conflicts like active or unknown serials. Add tests for panel interactions, backend validation, and roll_no syncing in `serial_store_aio`." />
   </component>
 </project>

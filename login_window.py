@@ -44,7 +44,7 @@ class LoginWindow(QWidget):
         mark.setFixedSize(46, 46)
         form.addWidget(mark)
         form.addSpacing(20)
-        title = QLabel(tr('Welcome back'))
+        title = QLabel(tr('Production Rework'))
         title.setObjectName("loginTitle")
         form.addWidget(title)
         form.addSpacing(6)
@@ -120,9 +120,12 @@ class LoginWindow(QWidget):
             self._show_error(tr('Unable to reach the database'))
             return
 
-        if result is not None:
+        if result is not None and len(result) == 2:
             permission, tag_name = result
             self.login_succeeded.emit(username, permission, tag_name)
+        elif result == 'no_rework':
+            self._show_error(tr('This user does not have permission to rework.'))
+            self.password_input.clear()
         else:
             self._show_error(tr('Invalid username or password'))
             self.password_input.clear()
