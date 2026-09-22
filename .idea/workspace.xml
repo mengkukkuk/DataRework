@@ -4,16 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Expand container deletion logic to handle serials at all levels&#10;&#10;Refine `delete_container` to deactivate serials for containers, sub-containers, and emptied ancestors. Update tests to validate multi-level serial deactivation and adjust SQL logic for comprehensive container clean-up. Ensure robust handling of `tag_name` for better traceability.">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Introduce `db_worker.py` for async DB operations and integrate off-thread execution&#10;&#10;Implement `db_worker.py` to offload database calls from the Qt UI thread, preventing UI freezing during network round trips. Refactor related calls in `MainWindow` and `ContainerPanel` to run asynchronously. Introduce caching for repeated column and primary key lookups in `db/schema.py`. Update tests to validate async behavior, caching, and UI-thread result handling.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/container_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/connection.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/connection.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/schema.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_panel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/containers.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/containers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/edge_mirror.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/edge_mirror.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/serial_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/serial_state.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_db_package.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_db_package.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_delete_container_ui.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_delete_container_ui.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_identifier_values.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_identifier_values.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -518,7 +514,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790047730535</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="Introduce `db_worker.py` for async DB operations and integrate off-thread execution&#10;&#10;Implement `db_worker.py` to offload database calls from the Qt UI thread, preventing UI freezing during network round trips. Refactor related calls in `MainWindow` and `ContainerPanel` to run asynchronously. Introduce caching for repeated column and primary key lookups in `db/schema.py`. Update tests to validate async behavior, caching, and UI-thread result handling.">
+      <option name="closed" value="true" />
+      <created>1790057735789</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1790057735789</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -536,7 +540,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="style.css added" />
     <MESSAGE value="Add product name filter, region category/tag search, and Python bcrypt hash verification tool" />
     <MESSAGE value="update to pc" />
     <MESSAGE value="before change" />
@@ -561,6 +564,7 @@
     <MESSAGE value="Add level marks for containers and navigation history in `ContainerPanel`&#10;&#10;Introduce visual &quot;level marks&quot; for each packaging level to enhance clarity. Add navigation history with breadcrumbs and Back/Forward controls for improved user navigation. Update styles, translations, and tests to support these enhancements." />
     <MESSAGE value="Add analytics for mismatched container data and enhance container deletion logic&#10;&#10;Introduce `link_table_mismatch.sql` for diagnosing data discrepancies between saved rows and the link table. Update `container_delete` logic to handle levels with missing links by listing saved contents for user clarity. Expand PostgreSQL tests to validate these scenarios. Improve filter syncing behavior in the main window and adjust `.idea` settings for database object filtering." />
     <MESSAGE value="Expand container deletion logic to handle serials at all levels&#10;&#10;Refine `delete_container` to deactivate serials for containers, sub-containers, and emptied ancestors. Update tests to validate multi-level serial deactivation and adjust SQL logic for comprehensive container clean-up. Ensure robust handling of `tag_name` for better traceability." />
-    <option name="LAST_COMMIT_MESSAGE" value="Expand container deletion logic to handle serials at all levels&#10;&#10;Refine `delete_container` to deactivate serials for containers, sub-containers, and emptied ancestors. Update tests to validate multi-level serial deactivation and adjust SQL logic for comprehensive container clean-up. Ensure robust handling of `tag_name` for better traceability." />
+    <MESSAGE value="Introduce `db_worker.py` for async DB operations and integrate off-thread execution&#10;&#10;Implement `db_worker.py` to offload database calls from the Qt UI thread, preventing UI freezing during network round trips. Refactor related calls in `MainWindow` and `ContainerPanel` to run asynchronously. Introduce caching for repeated column and primary key lookups in `db/schema.py`. Update tests to validate async behavior, caching, and UI-thread result handling." />
+    <option name="LAST_COMMIT_MESSAGE" value="Introduce `db_worker.py` for async DB operations and integrate off-thread execution&#10;&#10;Implement `db_worker.py` to offload database calls from the Qt UI thread, preventing UI freezing during network round trips. Refactor related calls in `MainWindow` and `ContainerPanel` to run asynchronously. Introduce caching for repeated column and primary key lookups in `db/schema.py`. Update tests to validate async behavior, caching, and UI-thread result handling." />
   </component>
 </project>

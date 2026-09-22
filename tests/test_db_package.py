@@ -53,13 +53,15 @@ def _make_realistic_cur():
     Call order through _update_staging_serial_data + _save_changes:
       execute #1  _fetch_rows_by_pk          SELECT *
       execute #2  _count_edge_siblings        SELECT COUNT(*)
-      execute #3  _apply_edge_change          UPDATE staging_product_logs  (child_edge=99)
-      execute #4  _set_serial_active OLD      UPDATE staging_serial_data   (False)
-      execute #5  _set_serial_active NEW      UPDATE staging_serial_data   (True)
-      execute #6  _save_changes               UPDATE filling_product_logs
+      execute #3  _roll_no_for_serial         SELECT roll_no  (no roll edit, so it is looked up)
+      execute #4  _apply_edge_change          UPDATE staging_product_logs  (child_edge=99)
+      execute #5  _set_serial_active OLD      UPDATE staging_serial_data   (False)
+      execute #6  _set_serial_active NEW      UPDATE staging_serial_data   (True)
+      execute #7  _save_changes               UPDATE filling_product_logs
 
     fetchall is called once (after execute #1).
-    fetchone  is called once (after execute #2).
+    fetchone  is called twice: the sibling count (0, not shared) after
+    execute #2, then the looked-up roll_no ("NEW_ROLL") after execute #3.
     """
     cur = MagicMock(name="cur")
 
@@ -84,8 +86,9 @@ def _make_realistic_cur():
     # fetchall returns the single row; only called once
     cur.fetchall.return_value = [db_row]
 
-    # fetchone returns the sibling count; only called once (0 → not shared → no error)
-    cur.fetchone.return_value = (0,)
+    # fetchone: sibling count first (0 → not shared → no error), then the
+    # roll_no _roll_no_for_serial looks up for the new serial.
+    cur.fetchone.side_effect = [(0,), ("NEW_ROLL",)]
 
     # A real cursor reports an int here. _set_serial_active(required=True) treats
     # anything but 1 as a missing inventory row, so the MagicMock default raises.
@@ -359,6 +362,22 @@ class TestSaveGridChangesSuccess(unittest.TestCase):
             grid_writes,
             f"Expected an UPDATE on filling_product_logs from _save_changes; got: {sqls}"
         )
+
+        # unit_serial_no changed with no matching unit_roll_no edit, so the new
+        # serial's roll_no is looked up from staging_serial_data (btrim-matched,
+        # same convention as every other lookup against that table) and carried
+        # onto both the edge write and the grid write, not just the serial itself.
+        roll_lookup = [s for s in sqls if "staging_serial_data" in s and "SELECT" in s]
+        self.assertTrue(roll_lookup, f"Expected a roll_no lookup for NEW_SERIAL; got: {sqls}")
+        self.assertTrue(all("btrim" in s for s in roll_lookup))
+        self.assertIn("source_roll_no", mirror_edge_writes[0])
+        self.assertIn("unit_roll_no", grid_writes[0])
+
+        grid_params = [
+            call.args[1] for statement, call in zip(sqls, cur.execute.call_args_list)
+            if "filling_product_logs" in statement and "UPDATE" in statement
+        ][0]
+        self.assertIn("NEW_ROLL", grid_params)
 
         # The same cursor object served both phases — the fixture cur is the one
         # that received all execute calls, so simply check it was used at all.

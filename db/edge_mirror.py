@@ -8,7 +8,7 @@ from . import queries
 from .hierarchy import (LEVELS, STAGING_EDGE_TABLE,
                         SharedEdgeError, SerialConflictError)
 from .deletion import remove_row_links
-from .serial_state import _set_serial_active
+from .serial_state import _set_serial_active, _roll_no_for_serial
 
 
 def _edge_id_column(level):
@@ -132,6 +132,16 @@ def _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table
         if not row:
             continue
         for level, new in _changed_levels(changes).items():
+            # A serial edit with no matching roll_no edit still has to carry
+            # its roll_no along: look it up from staging_serial_data and
+            # apply it everywhere the serial itself lands (both edges here,
+            # and the flat table via `changes`, which _save_changes reads
+            # after this). An explicitly-typed roll_no is left alone.
+            if "serial" in new and "roll" not in new:
+                looked_up = _roll_no_for_serial(cur, schema, new["serial"])
+                if looked_up is not None:
+                    new["roll"] = looked_up
+                    changes[f"{level}_roll_no"] = looked_up
             _apply_edge_change(cur, schema, row, level, new)
         if "unit_serial_no" in changes:
             _set_serial_active(cur, schema, row.get("unit_serial_no"), False, tag_name)

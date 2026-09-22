@@ -39,16 +39,26 @@ def _set_serial_active(cur, schema, serial_no, active, tag_name=None, required=F
     return cur.rowcount
 
 
-def _set_serials_inactive(cur, schema, serial_nos, tag_name=None):
-    """Deactivate many serials in one statement (unit or container -- level is not
-    part of the match).
+def _roll_no_for_serial(cur, schema, serial_no):
+    """The roll_no staging_serial_data has on file for `serial_no`, or None"""
+    if not serial_no:
+        return None
+    cur.execute(
+        sql.SQL(
+            "SELECT roll_no FROM {schema}.{tbl} WHERE btrim(serial_no) = btrim(%s) LIMIT 1"
+        ).format(
+            schema=sql.Identifier(schema),
+            tbl=sql.Identifier(SERIAL_DATA_TABLE),
+        ),
+        (serial_no,),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None
 
-    Same trimmed match and same `activate_by` rule as _set_serial_active, but one
-    pass over staging_serial_data instead of one per serial: the trimmed match is
-    not index-friendly, so a carton of ~130 units would otherwise cost ~130 scans.
-    A serial with no inventory row is simply not counted, as with a single
-    deactivation. Returns the number of inventory rows updated.
-    """
+
+def _set_serials_inactive(cur, schema, serial_nos, tag_name=None):
+    """ Deactivate many serials in one statement (unit or container -- level is not
+    part of the match) """
     wanted = sorted({str(serial).strip() for serial in serial_nos
                      if serial is not None and str(serial).strip()})
     if not wanted:

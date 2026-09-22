@@ -5,7 +5,7 @@ from psycopg2 import sql
 from . import connection
 from .hierarchy import (LEVELS, CONTAINER_LEVELS, STAGING_EDGE_TABLE,
                         SerialConflictError)
-from .serial_state import _set_serial_active
+from .serial_state import _set_serial_active, _roll_no_for_serial
 
 
 # --- whole-container rename --------------------------------------------------
@@ -58,36 +58,58 @@ def _serial_in_use(cur, level, serial_no, schema, table):
 
 
 def _apply_serial_rename(cur, level, old_serial, new_serial, schema, table):
-    """Rewrite every mention of one serial at one level. Returns the row count.
+    """Rewrite every mention of one serial at one level, and its roll_no along
+    with it. Returns the row count.
 
     Works for `unit` too: a unit is a leaf, so the parent_serial_label_code =
     'unit' predicate simply matches nothing. The label-code predicate is what
     keeps a display rename from touching a unit that happens to share the string.
+
+    new_serial's roll_no is looked up from staging_serial_data once and carried
+    onto every mention of the serial -- both edges (source_roll_no/target_roll_no)
+    and the flat table's <level>_roll_no -- so a rename never leaves the old
+    serial's roll_no attached to the new serial. A new_serial with no inventory
+    row (roll_no unknown) leaves every roll_no column untouched rather than
+    blanking it.
     """
-    for serial_col, code_col in (
-        ("serial_no", "serial_label_code"),
-        ("parent_serial_no", "parent_serial_label_code"),
+    new_roll = _roll_no_for_serial(cur, schema, new_serial)
+
+    for serial_col, code_col, roll_col in (
+        ("serial_no", "serial_label_code", "source_roll_no"),
+        ("parent_serial_no", "parent_serial_label_code", "target_roll_no"),
     ):
+        assignments = [sql.SQL("{} = %s").format(sql.Identifier(serial_col))]
+        params = [new_serial]
+        if new_roll is not None:
+            assignments.append(sql.SQL("{} = %s").format(sql.Identifier(roll_col)))
+            params.append(new_roll)
         cur.execute(
             sql.SQL(
-                "UPDATE {schema}.{edges} SET {serial_col} = %s "
+                "UPDATE {schema}.{edges} SET {sets} "
                 "WHERE {serial_col} = %s AND {code_col} = %s"
             ).format(
                 schema=sql.Identifier(schema),
                 edges=sql.Identifier(STAGING_EDGE_TABLE),
+                sets=sql.SQL(", ").join(assignments),
                 serial_col=sql.Identifier(serial_col),
                 code_col=sql.Identifier(code_col),
             ),
-            (new_serial, old_serial, level),
+            params + [old_serial, level],
         )
 
+    flat_assignments = [sql.SQL("{} = %s").format(sql.Identifier(f"{level}_serial_no"))]
+    flat_params = [new_serial]
+    if new_roll is not None:
+        flat_assignments.append(sql.SQL("{} = %s").format(sql.Identifier(f"{level}_roll_no")))
+        flat_params.append(new_roll)
     cur.execute(
-        sql.SQL("UPDATE {schema}.{table} SET {col} = %s WHERE {col} = %s").format(
+        sql.SQL("UPDATE {schema}.{table} SET {sets} WHERE {col} = %s").format(
             schema=sql.Identifier(schema),
             table=sql.Identifier(table),
+            sets=sql.SQL(", ").join(flat_assignments),
             col=sql.Identifier(f"{level}_serial_no"),
         ),
-        (new_serial, old_serial),
+        flat_params + [old_serial],
     )
     return cur.rowcount
 
