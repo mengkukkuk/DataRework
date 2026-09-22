@@ -190,7 +190,9 @@ def remove_row_links(cur, schema, table, pk_column, rows, tag_name=None):
     caller in the same transaction. Each row's own unit link is removed and its
     serial released, as it always was. A display or inner link goes too, but only
     when the whole batch leaves nothing inside that container; a sibling unit, or
-    any other link naming it as parent, keeps the link alive.
+    any other link naming it as parent, keeps the link alive. A container whose
+    link goes this way has been deleted just as surely as one removed through
+    delete_container, so its own serial is released as well.
 
     Returns the containers that were left empty and removed.
     """
@@ -213,6 +215,8 @@ def remove_row_links(cur, schema, table, pk_column, rows, tag_name=None):
                  ([row[pk_column] for row in rows],))
     emptied, _removed = _prune_empty(cur, schema, table, candidates, unit_links,
                                      survivors, apply=True)
+    if emptied:
+        _set_serials_inactive(cur, schema, (item["serial_no"] for item in emptied), tag_name)
     return emptied
 
 
@@ -394,7 +398,9 @@ def delete_container(level, serial_no, schema="public", table="filling_product_l
 
     Removes the container's saved rows, its own link, every link below it, and any
     parent left with nothing inside; releases the serial of every unit that was in
-    it (recording `tag_name`) so the roll totals fall back.
+    it, of the container itself, of every container removed beneath it, and of any
+    ancestor emptied by this delete (recording `tag_name`) so the roll totals fall
+    back and none of those serials still reads as active.
 
     `expected` is a container_delete_preview() result the user confirmed. If the
     contents no longer match its counts, or the database deletes a different number
@@ -418,7 +424,12 @@ def delete_container(level, serial_no, schema="public", table="filling_product_l
                         "delete again to see what is in it now."
                     )
 
-                _set_serials_inactive(cur, schema, plan["units"], tag_name)
+                container_serials = {plan["serial_no"],
+                                     *(child["serial_no"] for child in plan["children"]
+                                       if child["level"] != "unit"),
+                                     *(item["serial_no"] for item in plan["emptied"])}
+                _set_serials_inactive(cur, schema,
+                                      [*plan["units"], *container_serials], tag_name)
                 links = sorted(plan["links"] + plan["pruned"])
                 lost = sorted(set(links) - set(_delete_links(cur, schema, links)))
                 if lost:

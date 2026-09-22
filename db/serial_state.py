@@ -40,7 +40,8 @@ def _set_serial_active(cur, schema, serial_no, active, tag_name=None, required=F
 
 
 def _set_serials_inactive(cur, schema, serial_nos, tag_name=None):
-    """Deactivate many unit serials in one statement.
+    """Deactivate many serials in one statement (unit or container -- level is not
+    part of the match).
 
     Same trimmed match and same `activate_by` rule as _set_serial_active, but one
     pass over staging_serial_data instead of one per serial: the trimmed match is

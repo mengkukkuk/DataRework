@@ -347,12 +347,12 @@ class DeleteContainerTests(unittest.TestCase):
             result = db.delete_container("display", "D1", **kwargs)
         return result, conn
 
-    def test_deletes_links_rows_and_releases_unit_serials_in_one_transaction(self):
+    def test_deletes_links_rows_and_releases_unit_and_container_serials_in_one_transaction(self):
         result, conn = self.delete(tag_name="OP-1")
         writes = {target(text): params for text, params in conn.writes()}
         self.assertEqual(len(conn.writes()), 3)
         self.assertEqual(writes["staging_serial_data"],
-                         ("OP-1", ["U1", "U2", "U3", "U4", "U5", "U6"]))
+                         ("OP-1", ["D1", "U1", "U2", "U3", "U4", "U5", "U6"]))
         self.assertEqual(writes["staging_product_logs"], ([10, 11, 12, 13, 14, 15, 16],))
         self.assertEqual(writes["flat"], ("D1",))
         self.assertEqual((conn.commits, conn.rollbacks), (1, 0))
@@ -366,6 +366,8 @@ class DeleteContainerTests(unittest.TestCase):
         links = [p for t, p in conn.writes() if target(t) == "staging_product_logs"]
         self.assertEqual(links, [([5, 10, 11, 12, 13, 14, 15, 16],)])
         self.assertEqual(result["emptied"], [{"level": "inner", "serial_no": "I1"}])
+        writes = {target(text): params for text, params in conn.writes()}
+        self.assertEqual(writes["staging_serial_data"][1][:2], ["D1", "I1"])
 
     def test_children_without_a_saved_row_are_deleted_and_released_too(self):
         stray = UNIT_LINKS + [(17, "U7", "unit", "D1", "display", 1)]
@@ -375,10 +377,11 @@ class DeleteContainerTests(unittest.TestCase):
         self.assertIn(17, writes["staging_product_logs"][0])
         self.assertEqual((result["units"], result["edges"]), (7, 8))
 
-    def test_an_empty_container_releases_no_serials(self):
+    def test_an_empty_container_still_releases_its_own_serial(self):
         result, conn = self.delete(world={"inside": [], "flat": []})
-        self.assertEqual({target(text) for text, _ in conn.writes()},
-                         {"staging_product_logs", "flat"})
+        writes = {target(text): params for text, params in conn.writes()}
+        self.assertEqual(set(writes), {"staging_serial_data", "staging_product_logs", "flat"})
+        self.assertEqual(writes["staging_serial_data"], (None, ["D1"]))
         self.assertEqual((result["rows"], result["edges"], result["units"]), (0, 1, 0))
         self.assertEqual(conn.commits, 1)
 
