@@ -1,15 +1,16 @@
 import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+import time
 import unittest
 from unittest.mock import MagicMock, patch
 
-from PySide6.QtCore import QEventLoop, QTimer
 from PySide6.QtWidgets import QApplication
 from psycopg2 import sql
 import db
 from container_panel import (ContainerPanel, build_hierarchy, CARD_HEIGHT, GRID_GAP,
-                             SHIFT, TRANSITION_MS)
+                             SHIFT)
+from i18n import language
 from i18n_widgets import QLabel, QPushButton
 from level_marks import LEVEL_COLORS, level_mark
 from main_window import MainWindow
@@ -62,6 +63,14 @@ class ContainerPanelTests(unittest.TestCase):
         patcher = patch("db_worker.run_async", side_effect=_run_worker_synchronously)
         patcher.start()
         self.addCleanup(patcher.stop)
+        # Panel/window text renders through tr(), so it must not depend on
+        # whatever language this machine's real app settings last saved.
+        saved = language.code
+        settings = patch("i18n.QSettings")
+        settings.start()
+        self.addCleanup(settings.stop)
+        self.addCleanup(language.set, saved)
+        language.set("en")
 
     def test_paths_do_not_merge_shared_serials_or_lose_missing_parents(self):
         root = build_hierarchy(GROUPS)
@@ -581,10 +590,17 @@ class ContainerPanelTests(unittest.TestCase):
         return panel
 
     def _wait_out(self, panel):
-        """Let the transition finish, the way the event loop would."""
-        loop = QEventLoop()
-        QTimer.singleShot(TRANSITION_MS + 150, loop.quit)
-        loop.exec()
+        """Let the transition finish, the way the event loop would.
+
+        Polls instead of sleeping a fixed TRANSITION_MS-based window: under
+        load (e.g. a debugger-attached test runner) the animation's real
+        "finished" signal can land later than any fixed margin would predict,
+        which made this flaky rather than actually broken.
+        """
+        deadline = time.time() + 3.0
+        while self._ghosts(panel) and time.time() < deadline:
+            self.app.processEvents()
+            time.sleep(0.005)
 
     def _ghosts(self, panel):
         return [child for child in panel.inner.children()

@@ -4,13 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add `DamageReportPanel` for reporting damaged serials and related database logic&#10;&#10;Introduce `DamageReportPanel` to enable operators to flag serials as damaged, ensuring inactive status prior to reporting. Update database logic with `report_damage` and `serial_level` support, handling conflicts like active or unknown serials. Add tests for panel interactions, backend validation, and roll_no syncing in `serial_store_aio`.">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add `rework` permission check and update related user experience&#10;&#10;Introduce an additional `rework` permission check in `authenticate` function and adjust error handling for restricted users. Update translations and modify UI labels in login and main windows to improve clarity.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/auth.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/login_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/login_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_panel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_damage_report_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_damage_report_panel.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -193,7 +191,7 @@
       <recent name="G:\Code\DataRework\tests" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.main">
+  <component name="RunManager" selected="Python tests.Python tests in tests">
     <configuration name="build.ps1" type="PowerShellRunType" factoryName="PowerShell" temporary="true" scriptUrl="$PROJECT_DIR$/build.ps1" executablePath="$PROJECT_DIR$/../../../../../windows/System32/WindowsPowerShell/v1.0/powershell.exe">
       <envs />
       <method v="2" />
@@ -237,9 +235,9 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main" />
-        <item itemvalue="PowerShell.build.ps1" />
         <item itemvalue="Python tests.Python tests in tests" />
+        <item itemvalue="PowerShell.build.ps1" />
+        <item itemvalue="Python.main" />
       </list>
     </recent_temporary>
   </component>
@@ -539,7 +537,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790067144219</updated>
     </task>
-    <option name="localTasksCounter" value="36" />
+    <task id="LOCAL-00036" summary="Add `rework` permission check and update related user experience&#10;&#10;Introduce an additional `rework` permission check in `authenticate` function and adjust error handling for restricted users. Update translations and modify UI labels in login and main windows to improve clarity.">
+      <option name="closed" value="true" />
+      <created>1790090151595</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1790090151595</updated>
+    </task>
+    <option name="localTasksCounter" value="37" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -557,7 +563,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="before change" />
     <MESSAGE value="update_staging_serial, set_staging_serial optimization" />
     <MESSAGE value="Implement new build system for DataRework and SerialStoreSync executables&#10;&#10;Add `build.ps1` script for streamlined builds with service management, PyInstaller specification, and asset bundling. Introduce custom service management via NSSM and build-time icon generation. Update `.gitignore` to exclude build outputs and sensitive files. Refactor dotenv loading for better compatibility with frozen applications." />
     <MESSAGE value="Add comprehensive tests for container rename functionality&#10;&#10;Introduce `tests/_test_container_rename.py` with 49 tests covering edge cases and validation for container renaming logic. Ensure renamed containers propagate changes consistently across database tables and UI." />
@@ -582,6 +587,7 @@
     <MESSAGE value="Introduce `db_worker.py` for async DB operations and integrate off-thread execution&#10;&#10;Implement `db_worker.py` to offload database calls from the Qt UI thread, preventing UI freezing during network round trips. Refactor related calls in `MainWindow` and `ContainerPanel` to run asynchronously. Introduce caching for repeated column and primary key lookups in `db/schema.py`. Update tests to validate async behavior, caching, and UI-thread result handling." />
     <MESSAGE value="Tag serial changing with roll_no staging_serial_data" />
     <MESSAGE value="Add `DamageReportPanel` for reporting damaged serials and related database logic&#10;&#10;Introduce `DamageReportPanel` to enable operators to flag serials as damaged, ensuring inactive status prior to reporting. Update database logic with `report_damage` and `serial_level` support, handling conflicts like active or unknown serials. Add tests for panel interactions, backend validation, and roll_no syncing in `serial_store_aio`." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add `DamageReportPanel` for reporting damaged serials and related database logic&#10;&#10;Introduce `DamageReportPanel` to enable operators to flag serials as damaged, ensuring inactive status prior to reporting. Update database logic with `report_damage` and `serial_level` support, handling conflicts like active or unknown serials. Add tests for panel interactions, backend validation, and roll_no syncing in `serial_store_aio`." />
+    <MESSAGE value="Add `rework` permission check and update related user experience&#10;&#10;Introduce an additional `rework` permission check in `authenticate` function and adjust error handling for restricted users. Update translations and modify UI labels in login and main windows to improve clarity." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add `rework` permission check and update related user experience&#10;&#10;Introduce an additional `rework` permission check in `authenticate` function and adjust error handling for restricted users. Update translations and modify UI labels in login and main windows to improve clarity." />
   </component>
 </project>

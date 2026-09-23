@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QApplication
 
 import db
 from damage_report_panel import DamageReportPanel
+from i18n import language
 from i18n_widgets import QMessageBox
 
 
@@ -21,6 +22,16 @@ class DamageReportPanelTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
+
+    def setUp(self):
+        # The panel renders through tr(), so it must not depend on whatever
+        # language this machine's real app settings last saved.
+        saved = language.code
+        settings = patch("i18n.QSettings")
+        settings.start()
+        self.addCleanup(settings.stop)
+        self.addCleanup(language.set, saved)
+        language.set("en")
 
     def test_reporting_an_inactive_serial_clears_the_field_and_shows_success(self):
         panel = DamageReportPanel()

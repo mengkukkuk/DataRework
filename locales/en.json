@@ -4,6 +4,7 @@
   "Password": "Password",
   "Unable to reach the database": "Unable to reach the database",
   "Invalid username or password": "Invalid username or password",
+  "This user does not have permission to rework.": "This user does not have permission to rework.",
   "Production Rework": "Production Rework",
   "Dark": "Dark",
   "Light": "Light",
