@@ -5,6 +5,7 @@
   "Unable to reach the database": "ไม่สามารถเชื่อมต่อฐานข้อมูลได้",
   "Invalid username or password": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
   "This user does not have permission to rework.": "User นี้ไม่สามารถใช้งาน rework ได้",
+  "This user does not have permission to Log in.": "User นี้ไม่สามารถ Log in ได้",
   "Production Rework": "Production Rework",
   "Dark": "มืด",
   "Light": "สว่าง",

@@ -6,6 +6,10 @@ is installed, NSSM keeps dist\SerialStoreSync.exe open, and PyInstaller fails
 with "WinError 5: Access is denied" when it tries to overwrite it. This stops
 the service first and restarts it afterwards (only if it was running before).
 
+nssm.exe is copied into dist\ next to the exes (from the repo root, else from
+PATH), because service_manager.py registers the service against the nssm.exe in
+the app folder. Copy the whole dist\ folder when deploying to another device.
+
 .env is bundled into both exes by the spec, so dist\ ships without a plaintext
 credentials file. That is obfuscation, NOT encryption -- the onefile archive can
 be unpacked to recover .env. Treat dist\*.exe as secret material.
@@ -41,6 +45,15 @@ if (-not (Test-Path -LiteralPath $Python)) {
     throw "Virtualenv interpreter not found at $Python."
 }
 
+# Prefer a copy pinned in the repo root; fall back to a system-wide install.
+$NssmSource = Join-Path $PSScriptRoot 'nssm.exe'
+if (-not (Test-Path -LiteralPath $NssmSource)) {
+    $NssmSource = (Get-Command nssm.exe -ErrorAction SilentlyContinue | Select-Object -First 1).Source
+}
+if (-not $NssmSource) {
+    throw "nssm.exe not found in $PSScriptRoot or on PATH. dist\ needs it next to the exes to register the sync service."
+}
+
 $wasRunning = $false
 
 if (-not $SkipService -and (Get-ServiceStateOrNull) -eq 'Running') {
@@ -73,6 +86,15 @@ try {
     if ($LASTEXITCODE -ne 0) {
         throw "PyInstaller failed with exit code $LASTEXITCODE."
     }
+
+    # Before the finally restarts the service: a service registered against
+    # dist\nssm.exe holds it open while running. Skip an identical copy.
+    $NssmTarget = Join-Path $PSScriptRoot 'dist\nssm.exe'
+    if (-not (Test-Path -LiteralPath $NssmTarget) -or
+        (Get-FileHash -LiteralPath $NssmSource).Hash -ne (Get-FileHash -LiteralPath $NssmTarget).Hash) {
+        Write-Host "Copying nssm.exe from $NssmSource ..." -ForegroundColor Cyan
+        Copy-Item -LiteralPath $NssmSource -Destination $NssmTarget -Force
+    }
 }
 finally {
     # Restart even if the build failed, so a broken build never leaves the sync
@@ -98,3 +120,4 @@ Get-ChildItem -LiteralPath 'dist' -Filter '*.exe' |
     Format-Table -AutoSize
 
 Write-Host 'Reminder: dist\*.exe embed .env. Do not commit or publish them.' -ForegroundColor Yellow
+Write-Host 'Deploy: copy the whole dist\ folder (DataRework.exe, SerialStoreSync.exe, nssm.exe) to the target device.' -ForegroundColor Yellow

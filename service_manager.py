@@ -1,8 +1,9 @@
 """Registers the serial-store sync loop as a Windows Service via NSSM, so it
 keeps running after the DataRework GUI is closed.
 
-NSSM (nssm.exe, installed in System32) is itself the registered service binary
-and handles the Service Control Manager protocol; it then supervises our plain
+NSSM (nssm.exe, shipped next to the exes in the app folder -- see _nssm_path)
+is itself the registered service binary and handles the Service Control
+Manager protocol; it then supervises our plain
 console program as a child process. That sidesteps the pywin32 approach, where
 pythonservice.exe resolved the Python runtime through the interactive shell's
 PATH/VIRTUAL_ENV and therefore failed to start under the LocalSystem account.
@@ -13,6 +14,7 @@ so a service problem never stops the app from running.
 import ctypes
 import logging
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -26,7 +28,7 @@ DESCRIPTION = (
     "activate counts for the DataRework app."
 )
 
-NSSM = "C:\\Windows\\System32\\nssm.exe"
+NSSM_EXE = "nssm.exe"
 _CREATE_NO_WINDOW = 0x08000000
 _INSTALL_FLAG = "--install-service"
 
@@ -34,6 +36,24 @@ _INSTALL_FLAG = "--install-service"
 def _base_dir():
     return Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) \
         else Path(__file__).resolve().parent
+
+
+def _nssm_path():
+    """nssm.exe from the app folder (dist\\ when frozen, the repo root from
+    source), so a deployed folder is self-contained. Falls back to PATH for
+    machines that still have NSSM installed system-wide.
+
+    It must be a real file on disk, not bundled into the onefile exe: the
+    service is registered against this exact path and runs it after the GUI
+    has exited and its temp extraction folder is gone.
+    """
+    local = _base_dir() / NSSM_EXE
+    if local.is_file():
+        return str(local)
+    found = shutil.which(NSSM_EXE)
+    if found:
+        return found
+    raise FileNotFoundError(f"{NSSM_EXE} not found in {_base_dir()} or on PATH")
 
 
 def _payload_command():
@@ -57,7 +77,7 @@ def _run(args):
 def _run_nssm(*args):
     """Run an nssm command, raising with nssm's (UTF-16) message on failure."""
     proc = subprocess.run(
-        [NSSM, *args],
+        [_nssm_path(), *args],
         capture_output=True,
         creationflags=_CREATE_NO_WINDOW,
     )
@@ -148,6 +168,8 @@ def ensure_service_running():
     try:
         if is_service_running() and _is_nssm_managed():
             return
+        # Fail here, before the UAC prompt, rather than in the elevated child.
+        _nssm_path()
         if _is_elevated():
             install_service()
         else:

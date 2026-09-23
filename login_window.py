@@ -123,8 +123,11 @@ class LoginWindow(QWidget):
         if result is not None and len(result) == 2:
             permission, tag_name = result
             self.login_succeeded.emit(username, permission, tag_name)
+        elif result == 'not_active':
+            self._show_error(tr('This user does not have permission to Log in.'))
         elif result == 'no_rework':
             self._show_error(tr('This user does not have permission to rework.'))
+            self.password_input.clear()
             self.password_input.clear()
         else:
             self._show_error(tr('Invalid username or password'))

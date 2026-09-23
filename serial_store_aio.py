@@ -81,7 +81,7 @@ async def sync_serial_counts_once(schema="public"):
     in the same pass. Returns {roll_no: (used_count, damaged_count)}."""
     counts = await asyncio.to_thread(_fetch_counts, schema)
     await asyncio.to_thread(_apply_counts, counts, schema)
-    logger.info("Synced used/damaged serials for %d roll_no(s): %s", len(counts), counts)
+    #logger.info("Synced used/damaged serials for %d roll_no(s): %s", len(counts), counts)
     return counts
 
 
