@@ -6,7 +6,7 @@ from .connection import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, get_connection
 from .hierarchy import (LEVELS, CONTAINER_LEVELS, STAGING_EDGE_TABLE,
                         SERIAL_DATA_TABLE, SharedEdgeError, SerialConflictError,
                         SerialInventoryError, SerialInUseError, ContainerDeleteError)
-from .auth import authenticate
+from .auth import authenticate, is_admin_role
 from .schema import get_columns, get_primary_key_columns
 from .queries import fetch_distinct_values, query_rows, save_changes, container_groups
 from .edge_mirror import update_staging_serial_data, save_grid_changes
@@ -32,6 +32,7 @@ __all__ = [
     "SerialInUseError",
     "ContainerDeleteError",
     "authenticate",
+    "is_admin_role",
     "get_columns",
     "get_primary_key_columns",
     "fetch_distinct_values",

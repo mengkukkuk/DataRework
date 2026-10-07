@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.username = username
         self.permission = permission
-        self.is_admin = permission == "admin"
+        self.is_admin = db.is_admin_role(permission)
         self.tag_name = tag_name
 
         self._columns = []

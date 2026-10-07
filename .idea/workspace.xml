@@ -4,13 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="nssm root path on build.ps1">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Auth adjustment + user management">
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_9_21_2026_9_40_AM_[Changes]/shelved.patch" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/auth.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/auth.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/datarework-workflow.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/datarework-workflow.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/login_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/login_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/serial_store_aio.py" beforeDir="false" afterPath="$PROJECT_DIR$/serial_store_aio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -563,7 +566,15 @@
       <option name="project" value="LOCAL" />
       <updated>1790157991353</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="Auth adjustment + user management">
+      <option name="closed" value="true" />
+      <created>1790325790402</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1790325790402</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -581,7 +592,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Add comprehensive tests for container rename functionality&#10;&#10;Introduce `tests/_test_container_rename.py` with 49 tests covering edge cases and validation for container renaming logic. Ensure renamed containers propagate changes consistently across database tables and UI." />
     <MESSAGE value="Add i18n support with EN/TH toggle&#10;&#10;Introduce English and Thai translations for the application, including language toggle via `LanguageToggle` widget. Add JSON-based i18n catalogs (`locales/en.json`, `locales/th.json`) and a dynamic translation mechanism (`i18n.py`, `i18n_widgets.py`). Update UI components for language adaptability and include unit tests to validate translation functionality." />
     <MESSAGE value="minor adjustment" />
     <MESSAGE value="Enhance login UI and streamline theme handling&#10;&#10;Introduce a responsive login window with improved styling via `login.css` and QSS updates. Consolidate theme-related logic into `theme.py`, retiring duplicate code from `main_window.py`. Enable server-side distinct value fetching for enhanced tag filtering and update filters UI behavior accordingly. Add new translations to support login-related text in EN/TH (`locales/en.json`, `locales/th.json`)." />
@@ -606,6 +616,7 @@
     <MESSAGE value="Add `rework` permission check and update related user experience&#10;&#10;Introduce an additional `rework` permission check in `authenticate` function and adjust error handling for restricted users. Update translations and modify UI labels in login and main windows to improve clarity." />
     <MESSAGE value="tests adjustment" />
     <MESSAGE value="nssm root path on build.ps1" />
-    <option name="LAST_COMMIT_MESSAGE" value="nssm root path on build.ps1" />
+    <MESSAGE value="Auth adjustment + user management" />
+    <option name="LAST_COMMIT_MESSAGE" value="Auth adjustment + user management" />
   </component>
 </project>

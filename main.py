@@ -33,7 +33,7 @@ class App:
         if DEV_MODE:
             # Skip the login screen entirely and open straight into Production
             # Rework as an admin, for local UI development.
-            self._on_login_succeeded("admin", "admin","vm000")
+            self._on_login_succeeded("admin", "admin", "ADMIN")
         else:
             self.login_window = LoginWindow()
             self.login_window.login_succeeded.connect(self._on_login_succeeded)

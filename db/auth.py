@@ -2,6 +2,15 @@ import contextlib
 import bcrypt
 from . import connection
 
+# Roles that may edit, rename and delete. "super admin" has the same power as
+# "admin"; spellings such as "Super_Admin" or "super-admin" are treated alike.
+ADMIN_ROLES = frozenset({"admin", "super admin"})
+
+
+def is_admin_role(role):
+    normalized = " ".join(str(role or "").lower().replace("_", " ").replace("-", " ").split())
+    return normalized in ADMIN_ROLES
+
 def authenticate(username, password):
     with contextlib.closing(connection.get_connection()) as conn:
         with conn.cursor() as cur:
