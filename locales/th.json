@@ -211,5 +211,7 @@
   "Stop showing only this container": "เลิกแสดงเฉพาะบรรจุภัณฑ์นี้",
   "Show all": "แสดงทั้งหมด",
   "Clear these filters and show every container": "ล้างตัวกรองเหล่านี้และแสดงบรรจุภัณฑ์ทั้งหมด",
-  "{p0} {p1}": "{p0} {p1}"
+  "{p0} {p1}": "{p0} {p1}",
+  "Nothing was saved: {p0} row(s) are already transferred.": "ไม่มีการบันทึก: {p0} แถวถูกโอนย้ายแล้ว",
+  "Changes saved. {p0} row(s) skipped: already transferred.": "บันทึกการเปลี่ยนแปลงแล้ว ข้าม {p0} แถวที่โอนย้ายแล้ว"
 }

@@ -1323,10 +1323,12 @@ class MainWindow(QMainWindow):
         try:
             # One transaction: the mirror refuses a shared container before
             # filling_product_logs is touched, and a later failure rolls both back.
-            db.save_grid_changes(
+            # Rows already transferred are skipped by the database layer, which
+            # hands back their keys so the user is told what was not saved.
+            skipped = list(db.save_grid_changes(
                 STAGING_TABLE, self._pk_columns, updates, deletes,
                 tag_name=self.tag_name,
-            )
+            ) or [])
         except psycopg2.OperationalError as exc:
             self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
             return
@@ -1338,9 +1340,17 @@ class MainWindow(QMainWindow):
             self._show_status(tr('Save failed: {p0}', p0=exc), error=True, exc=exc)
             return
 
-        self._show_status(tr('Changes saved.'))
+        if len(skipped) >= len(updates) + len(deletes):
+            message = tr('Nothing was saved: {p0} row(s) are already transferred.', p0=len(skipped))
+        elif skipped:
+            message = tr('Changes saved. {p0} row(s) skipped: already transferred.', p0=len(skipped))
+        else:
+            message = tr('Changes saved.')
+        self._show_status(message)
         # Still the same view the user was in, one container's rows or all of them.
-        self._on_search(container_path=self._record_scope)
+        # The reload would otherwise replace a skipped-rows notice with "N row(s) loaded.".
+        self._on_search(container_path=self._record_scope,
+                        success_message=message if skipped else None)
 
     def _on_table_context_menu(self, pos):
         """Offer "Rename this <level>..." and "Delete this <level>..." on a container serial."""
@@ -1420,7 +1430,8 @@ class MainWindow(QMainWindow):
         except psycopg2.OperationalError as exc:
             self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
             return
-        except (db.SerialConflictError, db.SerialInventoryError) as exc:
+        except (db.SerialConflictError, db.SerialInventoryError,
+                db.TransferLockedError) as exc:
             self._show_status(str(exc), error=True, exc=exc)
             return
         except Exception as exc:

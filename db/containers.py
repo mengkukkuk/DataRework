@@ -6,6 +6,7 @@ from . import connection
 from .hierarchy import (LEVELS, CONTAINER_LEVELS, STAGING_EDGE_TABLE,
                         SerialConflictError)
 from .serial_state import _set_serial_active, _roll_no_for_serial
+from .transfer import refuse_transferred
 
 
 # --- whole-container rename --------------------------------------------------
@@ -242,6 +243,7 @@ def rename_children(renames, schema="public", table="filling_product_logs"):
                     )
                 if _serial_in_use(cur, level, new, schema, table):
                     raise SerialConflictError(f'Serial "{new}" is already in use — pick another.')
+                refuse_transferred(cur, schema, table, level, old, "rename")
                 total_edges += as_child + as_parent
 
             for level, old, new in renames:
@@ -262,6 +264,8 @@ def container_rename_preview(level, serial_no, schema="public", table="filling_p
     with contextlib.closing(connection.get_connection()) as conn:
         with conn.cursor() as cur:
             as_child, as_parent = _container_edge_counts(cur, level, serial_no, schema)
+            # Refused here too, so the user hears it before confirming, not after.
+            refuse_transferred(cur, schema, table, level, serial_no, "rename")
             cur.execute(
                 sql.SQL("SELECT count(*) FROM {schema}.{table} WHERE {col} = %s").format(
                     schema=sql.Identifier(schema),
@@ -306,6 +310,7 @@ def rename_container(level, old_serial, new_serial, schema="public",
                 raise SerialConflictError(
                     f'No {level} named "{old_serial}" exists in {STAGING_EDGE_TABLE}.'
                 )
+            refuse_transferred(cur, schema, table, level, old_serial, "rename")
 
             rows = _apply_serial_rename(cur, level, old_serial, new_serial, schema, table)
             _set_serial_active(cur, schema, old_serial, False)

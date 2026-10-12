@@ -9,6 +9,7 @@ from .hierarchy import (LEVELS, STAGING_EDGE_TABLE,
                         SharedEdgeError, SerialConflictError)
 from .deletion import remove_row_links
 from .serial_state import _set_serial_active, _roll_no_for_serial
+from .transfer import split_transferred
 
 
 def _edge_id_column(level):
@@ -93,12 +94,19 @@ def _apply_edge_change(cur, schema, row, level, new):
 
 
 def _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table,tag_name):
+    """Mirror the edits into the edge table; returns (updates, deletes, skipped).
+
+    Edits aimed at rows already transferred are dropped before anything is
+    checked or written. The caller must write the returned updates/deletes, not
+    the ones it passed in, so the grid and the edge table stay in step.
+    """
     pk_column = pk_columns[0] if pk_columns else "id"
 
     originals = _fetch_rows_by_pk(
         cur, schema, table, pk_column,
         [pk for pk, _ in updates] + list(deletes),
     )
+    updates, deletes, skipped = split_transferred(originals, updates, deletes)
 
     # Pass 1: refuse the whole save if any edit lands on a shared edge.
     blocked = []
@@ -153,6 +161,7 @@ def _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table
     # inside that container -- judged on the batch, never row by row.
     doomed = [originals[pk_values[0]] for pk_values in deletes if pk_values[0] in originals]
     remove_row_links(cur, schema, table, pk_column, doomed, tag_name)
+    return updates, deletes, skipped
 
 
 def update_staging_serial_data(updates, deletes, pk_columns=("id",), schema="public",
@@ -191,6 +200,10 @@ def save_grid_changes(table, pk_columns, updates, deletes, schema="public",tag_n
     back the mirror writes rather than leaving the edge table and filling table
     inconsistent.
 
+    Rows whose is_transfer flag is true are never updated or deleted: they are
+    dropped from both phases and their pk tuples are returned as the skipped list
+    (empty when nothing was skipped), so the caller can tell the user.
+
     Returns None immediately when both `updates` and `deletes` are empty, without
     opening a connection.
 
@@ -211,9 +224,11 @@ def save_grid_changes(table, pk_columns, updates, deletes, schema="public",tag_n
     with contextlib.closing(connection.get_connection()) as conn:
         with conn.cursor() as cur:
             try:
-                _update_staging_serial_data(cur, updates, deletes, pk_columns, schema, table, tag_name)
+                updates, deletes, skipped = _update_staging_serial_data(
+                    cur, updates, deletes, pk_columns, schema, table, tag_name)
                 queries._save_changes(cur, table, pk_columns, updates, deletes, schema)
                 conn.commit()
+                return skipped
             except psycopg2.errors.UniqueViolation as exc:
                 with contextlib.suppress(Exception):
                     conn.rollback()
