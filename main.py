@@ -3,10 +3,9 @@ import logging
 import os
 import sys
 
-from dotenv import load_dotenv
-# Resolved against __file__ rather than cwd, so it finds the source-tree .env
-# when running from source and the bundled one inside _MEIPASS when frozen.
-load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+from env_config import load_env
+# Embedded .env, overridden by an external .env next to the exe (see env_config).
+load_env()
 
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIcon

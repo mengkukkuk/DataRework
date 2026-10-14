@@ -10,9 +10,12 @@ nssm.exe is copied into dist\ next to the exes (from the repo root, else from
 PATH), because service_manager.py registers the service against the nssm.exe in
 the app folder. Copy the whole dist\ folder when deploying to another device.
 
-.env is bundled into both exes by the spec, so dist\ ships without a plaintext
-credentials file. That is obfuscation, NOT encryption -- the onefile archive can
-be unpacked to recover .env. Treat dist\*.exe as secret material.
+.env is bundled into both exes by the spec as the default config. An optional
+dist\.env next to the exes overrides it key by key, so changing the database
+needs an edit + restart (GUI relaunch, Restart-Service for the sync service),
+not a rebuild. DB_PASSWORD may be an enc:... string from encrypt_password.py.
+The embedded copy and secret.key are obfuscation, NOT encryption -- the onefile
+archive can be unpacked to recover them. Treat dist\*.exe as secret material.
 
 Usage (elevated prompt, for the service stop/start):
     powershell -ExecutionPolicy Bypass -File build.ps1
@@ -40,6 +43,13 @@ function Get-ServiceStateOrNull {
 # --- preflight ---------------------------------------------------------------
 if (-not (Test-Path -LiteralPath '.env')) {
     throw ".env not found in $PSScriptRoot. The spec bundles it into both exes, so the build cannot proceed without it."
+}
+# Fernet key for enc: values. Created once and kept: a new key would orphan
+# every enc: string already pasted into a deployed .env.
+if (-not (Test-Path -LiteralPath 'secret.key')) {
+    Write-Host 'Creating secret.key (first build) ...' -ForegroundColor Cyan
+    & (Join-Path $PSScriptRoot '.venv\Scripts\python.exe') -c "import envcrypt; envcrypt.ensure_key()"
+    if ($LASTEXITCODE -ne 0) { throw 'Could not create secret.key.' }
 }
 if (-not (Test-Path -LiteralPath $Python)) {
     throw "Virtualenv interpreter not found at $Python."
@@ -106,11 +116,11 @@ finally {
 }
 
 # --- verify ------------------------------------------------------------------
-# A .env left over in dist/ from an earlier deploy would defeat the whole point
-# of bundling it, and nothing else would ever flag it.
-$strayEnv = Join-Path $PSScriptRoot 'dist\.env'
-if (Test-Path -LiteralPath $strayEnv) {
-    Write-Warning "dist\.env still exists from an earlier build. The exes now carry their own copy; delete it before deploying."
+# dist\.env is the deployed override and is never touched by the build. Ship a
+# template beside the exes so the option is discoverable.
+Copy-Item -LiteralPath '.env.example' -Destination (Join-Path $PSScriptRoot 'dist\.env.example') -Force
+if (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'dist\.env')) {
+    Write-Host 'dist\.env found: it overrides the embedded settings (kept as is).' -ForegroundColor Cyan
 }
 
 Write-Host ''
@@ -119,5 +129,5 @@ Get-ChildItem -LiteralPath 'dist' -Filter '*.exe' |
     Select-Object Name, @{n = 'MB'; e = { [math]::Round($_.Length / 1MB, 1) } }, LastWriteTime |
     Format-Table -AutoSize
 
-Write-Host 'Reminder: dist\*.exe embed .env. Do not commit or publish them.' -ForegroundColor Yellow
+Write-Host 'Reminder: dist\*.exe embed .env and secret.key. Do not commit or publish them.' -ForegroundColor Yellow
 Write-Host 'Deploy: copy the whole dist\ folder (DataRework.exe, SerialStoreSync.exe, nssm.exe) to the target device.' -ForegroundColor Yellow

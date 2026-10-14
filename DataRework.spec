@@ -4,10 +4,13 @@
 #                         program; NSSM supervises it as the Windows Service, so
 #                         it needs no service framework of its own.
 #
-# .env IS bundled into both exes, so the deployed dist/ folder contains no
-# plaintext credentials file. Note this is obfuscation, not encryption: the
-# onefile archive can be unpacked (e.g. pyinstxtractor) to recover .env. Treat
-# the exes themselves as secrets -- never commit or publish them.
+# .env IS bundled into both exes as the default config. An optional external
+# .env next to the exe overrides it key by key (see env_config.py), so a DB
+# change needs only an edit + restart, not a rebuild. DB_PASSWORD may be an
+# enc:... Fernet string (encrypt_password.py); the key, secret.key, is bundled
+# too. This is obfuscation, not real encryption: the onefile archive can be
+# unpacked (e.g. pyinstxtractor) to recover .env and the key. Treat the exes
+# themselves as secrets -- never commit or publish them.
 #
 # Build with build.ps1, not pyinstaller directly: the running sync service holds
 # an open handle on dist/SerialStoreSync.exe and PyInstaller cannot overwrite it
@@ -21,7 +24,7 @@ gui_a = Analysis(
     # app_icon.ico is needed twice: bundled here so main.py can load it at
     # runtime (title bar / taskbar), and passed to EXE() below to embed it as
     # the file's Explorer icon.
-    datas=[('style.css', '.'), ('login.css', '.'), ('locales/*.json', 'locales'), ('images', 'images'), ('assets/app_icon.ico', 'assets'), ('.env', '.')],
+    datas=[('style.css', '.'), ('login.css', '.'), ('locales/*.json', 'locales'), ('images', 'images'), ('assets/app_icon.ico', 'assets'), ('.env', '.'), ('secret.key', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -44,7 +47,7 @@ gui_exe = EXE(
 sync_a = Analysis(
     ['serial_store_aio.py'],
     pathex=[],
-    datas=[('.env', '.')],
+    datas=[('.env', '.'), ('secret.key', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

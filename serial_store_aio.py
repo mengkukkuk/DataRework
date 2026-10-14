@@ -1,16 +1,13 @@
 import asyncio
 import contextlib
 import logging
-from pathlib import Path
 
-from dotenv import load_dotenv
+from env_config import load_env
 
-# When run by the Windows Service Control Manager (or as a frozen exe), the
-# working directory is unpredictable, so never rely on cwd. Resolving against
-# __file__ covers both cases: the source tree when running from source, and the
-# _MEIPASS extraction dir when frozen -- where .env is bundled by DataRework.spec
-# so the deployed dist/ folder carries no plaintext credentials.
-load_dotenv(Path(__file__).resolve().parent / ".env")
+# Under the Windows Service Control Manager the working directory is
+# unpredictable, so env_config never relies on cwd: it reads the .env bundled by
+# DataRework.spec plus an optional external .env next to the exe.
+load_env()
 
 from psycopg2 import sql
 from psycopg2.extras import execute_values
@@ -95,5 +92,7 @@ async def run_forever(interval: float = 10.0, schema="public"):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    # ERROR only: NSSM redirects stderr to logs/serial_store_sync.log, and INFO
+    # records from every 10s cycle (including from db/) grew it without bound.
+    logging.basicConfig(level=logging.ERROR)
     asyncio.run(run_forever())
