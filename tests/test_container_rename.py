@@ -98,5 +98,58 @@ class RenameSerialStateTests(unittest.TestCase):
         ))
 
 
+class SetSerialActiveGuardTests(unittest.TestCase):
+    """Activating a serial never touches a row already damaged or in use."""
+
+    def test_activation_update_excludes_damaged_and_in_use_rows(self):
+        from db.serial_state import _set_serial_active
+        cur = MagicMock()
+        cur.rowcount = 1
+        _set_serial_active(cur, "public", "S1", True, required=True)
+        text = _sql_strings(cur)[0]
+        self.assertIn("is_damaged", text)
+        self.assertIn("is_use", text)
+
+    def test_deactivation_is_not_guarded(self):
+        from db.serial_state import _set_serial_active
+        cur = MagicMock()
+        cur.rowcount = 1
+        _set_serial_active(cur, "public", "S1", False)
+        self.assertNotIn("<>", _sql_strings(cur)[0])
+
+    def test_damaged_row_is_refused_and_says_so(self):
+        from db.serial_state import _set_serial_active
+        cur = MagicMock()
+        cur.rowcount = 0                          # guard excluded the row
+        cur.fetchall.return_value = [("true", "false")]
+        with self.assertRaises(db.hierarchy.SerialUnavailableError) as ctx:
+            _set_serial_active(cur, "public", "S1", True, required=True)
+        self.assertIn("damaged", str(ctx.exception))
+        self.assertIsInstance(ctx.exception, db.SerialInventoryError)
+
+    def test_in_use_row_is_refused_and_says_so(self):
+        from db.serial_state import _set_serial_active
+        cur = MagicMock()
+        cur.rowcount = 0
+        cur.fetchall.return_value = [("", "true")]
+        with self.assertRaises(db.hierarchy.SerialUnavailableError) as ctx:
+            _set_serial_active(cur, "public", "S1", True, required=True)
+        self.assertIn("already in use", str(ctx.exception))
+
+    def test_not_required_activation_just_skips_a_blocked_row(self):
+        from db.serial_state import _set_serial_active
+        cur = MagicMock()
+        cur.rowcount = 0
+        self.assertEqual(_set_serial_active(cur, "public", "S1", True), 0)
+
+    def test_missing_row_still_raises_when_required(self):
+        from db.serial_state import _set_serial_active
+        cur = MagicMock()
+        cur.rowcount = 0
+        cur.fetchall.return_value = []
+        with self.assertRaises(db.SerialInventoryError) as ctx:
+            _set_serial_active(cur, "public", "S1", True, required=True)
+
+
 if __name__ == "__main__":
     unittest.main()

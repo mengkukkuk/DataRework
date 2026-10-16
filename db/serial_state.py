@@ -3,44 +3,72 @@ import contextlib
 from psycopg2 import sql
 
 from . import connection
-from .hierarchy import SERIAL_DATA_TABLE, SerialInventoryError, SerialInUseError
+from .hierarchy import (SERIAL_DATA_TABLE, SerialInventoryError, SerialInUseError,
+                        SerialUnavailableError)
+
+
+# Activating a serial leaves alone a row that is already damaged or already in
+# use. Text comparison because it also holds if is_use is not a boolean column.
+_NOT_DAMAGED_OR_IN_USE = sql.SQL(
+    " AND COALESCE(is_damaged::text, '') <> 'true'"
+    " AND COALESCE(is_use::text, '') <> 'true'"
+)
 
 
 def _set_serial_active(cur, schema, serial_no, active, tag_name=None, required=False):
-    """Flip one serial's activate flag (unit or container -- level is not part
-    of the match); the serial_store sync picks this up.
+    is_use = "true" if active else "false"
 
-    Matched on the *trimmed* serial: staging_serial_data stores a trailing space
-    ('260800000001 ') while the logs and edge table store it clean, and varchar
-    comparison is not blank-padded.
-
-    `required=True` refuses the write when the serial has no inventory row,
-    since used_serials is derived by counting those rows -- activating a serial
-    that is not in the pool would undercount it silently. Deactivations pass
-    required=False: a serial already absent is already not counted.
-
-    Returns the number of inventory rows updated.
-    """
     if not serial_no:
         return 0
     cur.execute(
         sql.SQL(
-            "UPDATE {schema}.{tbl} SET activate = %s, "
+            "UPDATE {schema}.{tbl} SET activate = %s, is_use = %s, "
             "activate_by = COALESCE(%s, activate_by) "
             "WHERE btrim(serial_no) = btrim(%s)"
         ).format(
             schema=sql.Identifier(schema),
             tbl=sql.Identifier(SERIAL_DATA_TABLE),
-        ),
-        (active, tag_name, serial_no),
+        ) + (_NOT_DAMAGED_OR_IN_USE if active else sql.SQL("")),
+        (active, is_use, tag_name, serial_no),
     )
-    if required and cur.rowcount != 1:
+    updated = cur.rowcount
+    if required and updated != 1:
+        if updated == 0 and active:
+            _refuse_unavailable(cur, schema, serial_no)
         raise SerialInventoryError(
-            f'Serial "{serial_no}" matches {cur.rowcount} row(s) in '
+            f'Serial "{serial_no}" matches {updated} row(s) in '
             f"{SERIAL_DATA_TABLE}; expected exactly 1. "
             "Usage totals would be wrong, so nothing was changed."
         )
-    return cur.rowcount
+    return updated
+
+
+def _refuse_unavailable(cur, schema, serial_no):
+    """Raise SerialUnavailableError if the one row for `serial_no` is damaged or
+    in use; return quietly (so the caller reports a missing/duplicate row) if not."""
+    cur.execute(
+        sql.SQL(
+            "SELECT COALESCE(is_damaged::text, ''), COALESCE(is_use::text, '') "
+            "FROM {schema}.{tbl} WHERE btrim(serial_no) = btrim(%s) LIMIT 2"
+        ).format(
+            schema=sql.Identifier(schema),
+            tbl=sql.Identifier(SERIAL_DATA_TABLE),
+        ),
+        (serial_no,),
+    )
+    rows = cur.fetchall()
+    if len(rows) != 1:
+        return
+    damaged, in_use = rows[0]
+    if damaged == "true":
+        raise SerialUnavailableError(
+            f'Serial "{serial_no}" is damaged and cannot be used. '
+            "Nothing was changed."
+        )
+    if in_use == "true":
+        raise SerialUnavailableError(
+            f'Serial "{serial_no}" is already in use. Nothing was changed.'
+        )
 
 
 def _roll_no_for_serial(cur, schema, serial_no):

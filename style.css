@@ -434,6 +434,20 @@ QDialog {
 #primaryBtn:disabled { background-color: __save_disabled_bg__; color: __save_disabled_text__; }
 #ghostBtn { background-color: #2a3a4f; color: #cddbea; }
 #ghostBtn:hover { background-color: #37516f; }
+#ghostBtn:disabled { background-color: __badge_bg__; color: __subtitle__; }
+#historyBtn {
+    background-color: #2f6fb5;
+    color: #ffffff;
+    /* Windows' own icon fonts carry proper undo/redo arrows (U+E7A7/E7A6);
+       Fluent on Windows 11, MDL2 on Windows 10. */
+    font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+    font-size: 16px;
+    min-width: 40px;
+    padding: 4px 12px;
+}
+#historyBtn:hover { background-color: #3d84d1; }
+#historyBtn:pressed { background-color: #275d98; }
+#historyBtn:disabled { background-color: __badge_bg__; color: __subtitle__; }
 #linkBtn {
     background-color: transparent;
     color: #5b9bd5;

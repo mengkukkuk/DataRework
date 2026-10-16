@@ -177,8 +177,9 @@
   "Log": "Log",
   "Show full error details for debugging": "Show full error details for debugging",
   "Error log": "Error log",
-  "Full details of the most recent errors. Newest last.": "Full details of the most recent errors. Newest last.",
   "No errors recorded yet.": "No errors recorded yet.",
+  "The most recent errors. Newest last.": "The most recent errors. Newest last.",
+  "Show technical details": "Show technical details",
   "Copy": "Copy",
   "Delete container…": "Delete container…",
   "Delete container": "Delete container",
@@ -213,5 +214,12 @@
   "Clear these filters and show every container": "Clear these filters and show every container",
   "{p0} {p1}": "{p0} {p1}",
   "Nothing was saved: {p0} row(s) are already transferred.": "Nothing was saved: {p0} row(s) are already transferred.",
-  "Changes saved. {p0} row(s) skipped: already transferred.": "Changes saved. {p0} row(s) skipped: already transferred."
+  "Changes saved. {p0} row(s) skipped: already transferred.": "Changes saved. {p0} row(s) skipped: already transferred.",
+  "Undo": "Undo",
+  "Redo": "Redo",
+  "Undo the last unsaved edit (Ctrl+Z)": "Undo the last unsaved edit (Ctrl+Z)",
+  "Redo the edit you just undid (Ctrl+Y)": "Redo the edit you just undid (Ctrl+Y)",
+  "Undid {p0} change(s).": "Undid {p0} change(s).",
+  "Redid {p0} change(s).": "Redid {p0} change(s).",
+  "Reverted to the saved values. Undo brings your edits back.": "Reverted to the saved values. Undo brings your edits back."
 }

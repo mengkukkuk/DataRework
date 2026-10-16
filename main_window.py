@@ -1,11 +1,12 @@
 import calendar
+import contextlib
 import datetime
 import os
 
 import psycopg2
 from psycopg2 import sql
 from PySide6.QtCore import Qt, QSettings, QTimer
-from PySide6.QtGui import QBrush, QColor
+from PySide6.QtGui import QBrush, QColor, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QButtonGroup,
@@ -86,6 +87,10 @@ EDITED_CELL_FG = QColor("#06301c")
 DELETED_ROW_BG = QColor("#f28b8b")
 DELETED_ROW_FG = QColor("#3d0606")
 
+# Undo/redo history key for a row's Del checkbox; every other key is a column name.
+HISTORY_DEL = "\0del"
+HISTORY_LIMIT = 200
+
 def _sortable_key(text):
     try:
         return (0, float(text))
@@ -122,6 +127,15 @@ class MainWindow(QMainWindow):
         self._sort_column = None
         self._sort_order = Qt.AscendingOrder
         self._log_window = None
+        # Undo/redo of unsaved grid edits. An entry is one user action: a list of
+        # (row pk, column or HISTORY_DEL, old, new). Rows are found by pk, never by
+        # position, because sorting moves them. `_cell_shadow` holds each cell's
+        # last known value, since itemChanged only reports the new one.
+        self._history_undo = []
+        self._history_redo = []
+        self._history_group = None
+        self._history_paused = 0
+        self._cell_shadow = {}
         # The container whose records the grid is showing, if the user opened it
         # from a card. It narrows the grid only -- never the filter bar, and never
         # the container manager, so going back to the cards shows the whole level.
@@ -177,6 +191,12 @@ class MainWindow(QMainWindow):
         root.addWidget(self.views, stretch=1)
         root.addLayout(self._build_footer())
 
+        # A focused cell editor keeps its own Ctrl+Z for the text being typed.
+        for keys, slot in ((QKeySequence.Undo, self._undo),
+                           (QKeySequence.Redo, self._redo),
+                           (QKeySequence("Ctrl+Shift+Z"), self._redo)):
+            QShortcut(keys, self, activated=slot)
+
         self._refresh_dependent_combos()
         language.changed.connect(self._retranslate_table)
         language.changed.connect(self._sync_filter_summary)
@@ -190,6 +210,7 @@ class MainWindow(QMainWindow):
 
     def _view_changed(self, index):
         self._update_delete_button()
+        self._update_history_buttons()
         self._apply_filter_collapse(self._filters_collapsed(index))
         if index == 1:
             self._refresh_containers()
@@ -813,6 +834,23 @@ class MainWindow(QMainWindow):
 
         row.addStretch(1)
 
+        # Steps back through unsaved grid edits (cell text and Del ticks). Nothing
+        # here touches the database: Save is still what writes.
+        self.undo_btn = QPushButton("")  # Undo glyph in the Segoe icon fonts
+        self.undo_btn.setObjectName("historyBtn")
+        self.undo_btn.setAccessibleName(str(tr('Undo')))
+        self.undo_btn.setToolTip(tr('Undo the last unsaved edit (Ctrl+Z)'))
+        self.undo_btn.clicked.connect(self._undo)
+        row.addWidget(self.undo_btn)
+
+        self.redo_btn = QPushButton("")  # Redo glyph
+        self.redo_btn.setObjectName("historyBtn")
+        self.redo_btn.setAccessibleName(str(tr('Redo')))
+        self.redo_btn.setToolTip(tr('Redo the edit you just undid (Ctrl+Y)'))
+        self.redo_btn.clicked.connect(self._redo)
+        row.addWidget(self.redo_btn)
+        self._update_history_buttons()
+
         # Sits outside the grid because a rename is not a cell edit: it rewrites
         # one container across every row that names it, so it neither queues up
         # with the pending edits nor waits for Save.
@@ -874,8 +912,9 @@ class MainWindow(QMainWindow):
         rows = [index.row() for index in self.table.selectionModel().selectedRows()]
         if not rows:
             return
-        for row in rows:
-            self.table.item(row, 0).setCheckState(Qt.Checked)
+        with self._grouped_edit():  # one Undo takes the whole batch back
+            for row in rows:
+                self.table.item(row, 0).setCheckState(Qt.Checked)
         # Reveal the existing red deletion highlight underneath the selection.
         self.table.clearSelection()
         self._show_status(tr('{p0} row(s) marked for deletion. Save to apply, or uncheck Del to undo.', p0=len(rows)))
@@ -1103,6 +1142,8 @@ class MainWindow(QMainWindow):
 
         self._row_pks = []
         self._row_originals = []
+        # Freshly loaded rows are the new baseline: nothing left to undo.
+        self._reset_history()
 
         # Loading fresh rows sets every item's text, which would otherwise
         # fire itemChanged (and thus the edited-cell highlight check) once
@@ -1113,6 +1154,11 @@ class MainWindow(QMainWindow):
             pk_values = tuple(row_dict[c] for c in pk_columns) if pk_columns else None
             self._row_pks.append(pk_values)
             self._row_originals.append(row_dict)
+            if pk_values is not None:
+                self._cell_shadow[(pk_values, HISTORY_DEL)] = False
+                for col in columns:
+                    value = row_dict[col]
+                    self._cell_shadow[(pk_values, col)] = "" if value is None else str(value)
 
             if self._show_delete_col:
                 chk_item = QTableWidgetItem()
@@ -1205,11 +1251,17 @@ class MainWindow(QMainWindow):
         self._row_pks = [b["pk"] for b in bundles]
         self._row_originals = [b["original"] for b in bundles]
 
-        for r, b in enumerate(bundles):
-            if self._show_delete_col:
-                self.table.item(r, 0).setCheckState(Qt.Checked if b["deleted"] else Qt.Unchecked)
-            for c, text in enumerate(b["cells"]):
-                self.table.item(r, c + offset).setText(text)
+        # Rows only change places here; their values do not change, so this
+        # re-seating is not an edit and must not reach the undo history.
+        self._history_paused += 1
+        try:
+            for r, b in enumerate(bundles):
+                if self._show_delete_col:
+                    self.table.item(r, 0).setCheckState(Qt.Checked if b["deleted"] else Qt.Unchecked)
+                for c, text in enumerate(b["cells"]):
+                    self.table.item(r, c + offset).setText(text)
+        finally:
+            self._history_paused -= 1
 
     def _update_header_labels(self):
         offset = 1 if self._show_delete_col else 0
@@ -1248,6 +1300,7 @@ class MainWindow(QMainWindow):
         self._pk_columns = []
         self._row_pks = []
         self._row_originals = []
+        self._reset_history()
         self._show_delete_col = False
         self._sort_column = None
         self._sort_order = Qt.AscendingOrder
@@ -1334,7 +1387,14 @@ class MainWindow(QMainWindow):
             return
         except (db.SharedEdgeError, db.SerialConflictError,
                 db.SerialInventoryError) as exc:
-            self._show_status(str(exc), error=True, exc=exc)
+            # The save was refused whole and rolled back, so the database still holds
+            # the old values. Show them again rather than leave the refused ones
+            # sitting in the grid looking placed; Undo brings the edits back.
+            self._revert_pending_edits()
+            self._show_status(
+                tr('{p0} {p1}', p0=str(exc),
+                   p1=tr('Reverted to the saved values. Undo brings your edits back.')),
+                error=True, exc=exc)
             return
         except Exception as exc:
             self._show_status(tr('Save failed: {p0}', p0=exc), error=True, exc=exc)
@@ -1566,12 +1626,14 @@ class MainWindow(QMainWindow):
         offset = 1 if self._show_delete_col else 0
 
         if self._show_delete_col and col == 0:
+            self._record_history(row, HISTORY_DEL, item.checkState() == Qt.Checked)
             self._apply_row_delete_highlight(row, item.checkState() == Qt.Checked)
             return  # Del checkbox, not an editable data cell
 
         data_col = col - offset
         if row >= len(self._row_originals) or not (0 <= data_col < len(self._columns)):
             return
+        self._record_history(row, self._columns[data_col], item.text())
 
         if self._is_row_marked_deleted(row):
             # Row is already slated for deletion — keep it red rather than
@@ -1590,6 +1652,120 @@ class MainWindow(QMainWindow):
         else:
             item.setBackground(QBrush())
             item.setForeground(QBrush())
+
+    # -- undo / redo of unsaved edits ---------------------------------------
+
+    def _reset_history(self):
+        self._history_undo = []
+        self._history_redo = []
+        self._history_group = None
+        self._cell_shadow = {}
+        self._update_history_buttons()
+
+    def _record_history(self, row, key, new):
+        """Note one cell/Del change for Undo. Ignored while history itself, a
+        sort or a load is moving values around (those are not user edits)."""
+        if self._history_paused or row >= len(self._row_pks):
+            return
+        pk = self._row_pks[row]
+        if pk is None:
+            return
+        old = self._cell_shadow.get((pk, key))
+        if old == new:
+            return
+        self._cell_shadow[(pk, key)] = new
+        step = (pk, key, old, new)
+        if self._history_group is not None:
+            self._history_group.append(step)
+        else:
+            self._push_history([step])
+
+    def _push_history(self, entry):
+        self._history_undo.append(entry)
+        del self._history_undo[:-HISTORY_LIMIT]
+        self._history_redo.clear()  # a new edit forks the timeline
+        self._update_history_buttons()
+
+    @contextlib.contextmanager
+    def _grouped_edit(self):
+        """Everything changed inside the block undoes as one step."""
+        outer = self._history_group
+        if outer is None:
+            self._history_group = []
+        try:
+            yield
+        finally:
+            if outer is None:
+                group, self._history_group = self._history_group, None
+                if group:
+                    self._push_history(group)
+
+    def _set_history_value(self, pk, key, value):
+        if pk not in self._row_pks:
+            return
+        row = self._row_pks.index(pk)
+        if key == HISTORY_DEL:
+            item = self.table.item(row, 0)
+            if item:
+                item.setCheckState(Qt.Checked if value else Qt.Unchecked)
+        elif key in self._columns:
+            offset = 1 if self._show_delete_col else 0
+            item = self.table.item(row, self._columns.index(key) + offset)
+            if item:
+                item.setText(value)
+        self._cell_shadow[(pk, key)] = value
+
+    def _apply_history(self, entry, forward):
+        steps = entry if forward else reversed(entry)
+        self._history_paused += 1
+        try:
+            for pk, key, old, new in steps:
+                self._set_history_value(pk, key, new if forward else old)
+        finally:
+            self._history_paused -= 1
+
+    def _undo(self):
+        if self.views.currentIndex() != 0 or not self._history_undo:
+            return
+        entry = self._history_undo.pop()
+        self._apply_history(entry, forward=False)
+        self._history_redo.append(entry)
+        self._update_history_buttons()
+        self._show_status(tr('Undid {p0} change(s).', p0=len(entry)))
+
+    def _redo(self):
+        if self.views.currentIndex() != 0 or not self._history_redo:
+            return
+        entry = self._history_redo.pop()
+        self._apply_history(entry, forward=True)
+        self._history_undo.append(entry)
+        self._update_history_buttons()
+        self._show_status(tr('Redid {p0} change(s).', p0=len(entry)))
+
+    def _update_history_buttons(self):
+        if not hasattr(self, "redo_btn"):
+            return
+        records_visible = self.views.currentIndex() == 0
+        for button, stack in ((self.undo_btn, self._history_undo),
+                              (self.redo_btn, self._history_redo)):
+            button.setVisible(records_visible)
+            button.setEnabled(records_visible and bool(stack))
+
+    def _revert_pending_edits(self):
+        """Put every unsaved edit back to what was loaded -- cell text and Del
+        ticks -- as one undoable step."""
+        offset = 1 if self._show_delete_col else 0
+        with self._grouped_edit():
+            for r in range(self.table.rowCount()):
+                if self._is_row_marked_deleted(r):
+                    self.table.item(r, 0).setCheckState(Qt.Unchecked)
+                original = self._row_originals[r]
+                for c, col in enumerate(self._columns):
+                    item = self.table.item(r, c + offset)
+                    value = original.get(col)
+                    text = "" if value is None else str(value)
+                    if item and item.text() != text:
+                        item.setText(text)
 
     def _is_row_marked_deleted(self, row):
         if not self._show_delete_col:

@@ -672,5 +672,67 @@ class ContainerPanelTests(unittest.TestCase):
         conn.commit.assert_not_called()
 
 
+class RenameOntoUnavailableSerialTests(unittest.TestCase):
+    """Renaming onto a damaged / in-use serial: the GUI says why, files it under
+    the Log button, and does not reload the grid as if something was placed."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def _window(self):
+        from PySide6.QtWidgets import QDialog
+        win = MainWindow("tester", "admin", "TEST-OPERATOR")
+        dialog = MagicMock()
+        dialog.exec.return_value = QDialog.Accepted
+        dialog.level = "unit"
+        dialog.values.return_value = ("U1", "U-DMG")
+        return win, dialog
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    def test_damaged_target_is_reported_in_status_and_log_and_grid_not_reloaded(self, *mocks):
+        from PySide6.QtWidgets import QMessageBox
+        from debug_log import LOG
+        win, dialog = self._window()
+        error = db.hierarchy.SerialUnavailableError(
+            'Serial "U-DMG" is damaged and cannot be used. Nothing was changed.')
+        before = len(LOG.entries)
+        with patch("main_window.RenameContainerDialog", return_value=dialog), \
+                patch("db.container_rename_preview", return_value={"rows": 1, "edges": 1}), \
+                patch("main_window.QMessageBox.question", return_value=QMessageBox.Yes), \
+                patch("db.rename_container", side_effect=error), \
+                patch.object(win, "_on_search") as search:
+            win._rename_container("unit", "U1")
+            search.assert_not_called()
+        self.assertIn("damaged", win.status_label.text())
+        self.assertEqual(win.status_label.property("state"), "error")
+        self.assertEqual(len(LOG.entries), before + 1)
+        entry = LOG.entries[-1]
+        self.assertEqual(entry["level"], "ERROR")
+        self.assertIn('"U-DMG" is damaged', entry["message"])
+        win.deleteLater()
+
+    @patch("db.get_columns", return_value=COLUMNS)
+    @patch("db.fetch_distinct_values", return_value=[])
+    def test_child_batch_refused_for_a_damaged_serial_is_logged(self, *mocks):
+        from debug_log import LOG
+        win, _ = self._window()
+        error = db.hierarchy.SerialUnavailableError('Serial "U-DMG" is damaged and cannot be used.')
+        dialog = MagicMock()
+        dialog.exec.return_value = 1
+        dialog.renames.return_value = [("unit", "U1", "U-DMG")]
+        before = len(LOG.entries)
+        with patch("main_window.ChildRelabelDialog", return_value=dialog), \
+                patch("db.container_children", return_value=[{"serial_no": "U1", "level": "unit",
+                                                              "children": 0}]), \
+                patch("db.rename_children", side_effect=error):
+            suffix = win._relabel_children("display", "D1", "D2")
+        self.assertIn("damaged", suffix)
+        self.assertEqual(len(LOG.entries), before + 1)
+        self.assertIn("damaged", LOG.entries[-1]["message"])
+        win.deleteLater()
+
+
 if __name__ == "__main__":
     unittest.main()

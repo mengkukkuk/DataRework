@@ -53,6 +53,17 @@ class SerialInventoryError(Exception):
     """
 
 
+class SerialUnavailableError(SerialInventoryError):
+    """A serial being activated is damaged or already in use.
+
+    Its staging_serial_data row (is_damaged / is_use true) is never updated, so
+    letting the rename through would put a serial on the grid and links that the
+    inventory never took. The whole transaction is rolled back instead. A
+    subclass of SerialInventoryError so every handler that already reports
+    inventory refusals (status line + log) reports this one too.
+    """
+
+
 class SerialInUseError(Exception):
     """A serial can't be reported damaged while it is still active.
 

@@ -345,8 +345,8 @@ class TestSaveGridChangesSuccess(unittest.TestCase):
             if "staging_serial_data" in statement and "UPDATE" in statement
         ]
         self.assertEqual(serial_params, [
-            (False, "TEST-OPERATOR", "OLD_SERIAL"),
-            (True, "TEST-OPERATOR", "NEW_SERIAL"),
+            (False, "false", "TEST-OPERATOR", "OLD_SERIAL"),
+            (True, "true", "TEST-OPERATOR", "NEW_SERIAL"),
         ])
         self.assertTrue(all("activate_by" in statement for statement in serial_data_writes))
         # Matched on the trimmed serial: staging_serial_data stores a trailing space.
