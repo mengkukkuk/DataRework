@@ -8,6 +8,7 @@ Windows fonts are loaded by hand because Qt's offscreen platform has none.
 import os, sys, tempfile
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
 os.environ["DB_HOST"] = "127.0.0.1"
+os.environ["DAMAGE_REPORT_DIR"] = r"C:\Reports"  # keep the real user folder out of the shots
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 OUT = os.path.join(HERE, "shots")
@@ -129,6 +130,13 @@ def shoot(lang):
     # damage
     win.views.setCurrentIndex(2); win.damage_panel.serial_edit.setText("U2608012345"); grab(win, "damage", lang)
     win.damage_panel._set_result('Reported "U2608012345" damaged.')
+    # export: range unticked, with a finished export's message
+    dp = win.damage_panel
+    dp.serial_edit.clear(); dp.any_time_check.setChecked(False)
+    dp._set_result(i18n.tr('Reported "{p0}" damaged.', p0="U2608012345"))
+    dp._set_result(i18n.tr("Exported {p0} damaged serial(s) to {p1}", p0=4, p1=r"C:\Reports\damage_report_20261019_145512.pdf"),
+                   label=dp.export_result_label)
+    grab(win, "damage_export", lang)
     win.views.setCurrentIndex(0)
     # read-only role
     ro = MainWindow("viewer01", "user", "VW01"); ro._set_theme("light"); ro.resize(1300, 760); ro.show()

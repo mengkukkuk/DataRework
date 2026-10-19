@@ -47,6 +47,7 @@ LABELS = {
     "source_id": ("Source ID", "รหัสต้นทาง"), "target_id": ("Target ID", "รหัสปลายทาง"),
     "admin": ("admin", "ผู้ดูแลระบบ"), "super_admin": ("super admin", "ผู้ดูแลระบบสูงสุด"), "user": ("user", "ผู้ใช้"),
     "error_log": ("Error log", "บันทึกข้อผิดพลาด"),
+    "export_pdf": ("Export PDF", "ส่งออก PDF"),
     "rename_children": ("Rename children", "เปลี่ยนรหัสรายการภายใน"),
 }
 
@@ -192,7 +193,7 @@ def build(lang):
 <h3>{t("Language and theme", "ภาษาและธีมสี")}</h3>
 <p>{t("Click the gear button at the top right to open <b>Settings</b>. Pick a language and a colour theme; each choice takes effect immediately and is remembered the next time you open DataRework. Click <b>Close</b> when done.", "คลิกปุ่มรูปเฟืองที่มุมขวาบนเพื่อเปิด<b>การตั้งค่า</b> เลือกภาษาและธีมสี แต่ละตัวเลือกมีผลทันทีและโปรแกรมจะจำไว้ในครั้งถัดไป คลิก<b>ปิด</b>เมื่อเสร็จ")}</p>
 {figure("settings_%s.png" % lang, t("The settings window.", "หน้าต่างการตั้งค่า"), narrow=True)}
-{callout("note", t("A few texts are always in English", "ข้อความบางส่วนเป็นภาษาอังกฤษเสมอ"), f"<p>{t('The Report damage tab, the <b>← Previous</b> / <b>Next →</b> card pager and the “Loading…” text have no Thai translation yet, so they stay in English even when TH is selected.', 'แท็บ Report damage ปุ่มเลื่อนหน้า <b>← Previous</b> / <b>Next →</b> ของการ์ด และข้อความ “Loading…” ยังไม่มีคำแปลภาษาไทย จึงแสดงเป็นภาษาอังกฤษแม้เลือก TH')}</p>")}
+{callout("note", t("A few texts are always in English", "ข้อความบางส่วนเป็นภาษาอังกฤษเสมอ"), f"<p>{t('The Report damage tab (apart from its export section), the <b>← Previous</b> / <b>Next →</b> card pager and the “Loading…” text have no Thai translation yet, so they stay in English even when TH is selected.', 'แท็บ Report damage (ยกเว้นส่วนส่งออก) ปุ่มเลื่อนหน้า <b>← Previous</b> / <b>Next →</b> ของการ์ด และข้อความ “Loading…” ยังไม่มีคำแปลภาษาไทย จึงแสดงเป็นภาษาอังกฤษแม้เลือก TH')}</p>")}
 {figure("readonly_%s.png" % lang, t("What a non-admin sees: the Del column is gone and Save, Rename container and Delete container are greyed out.", "สิ่งที่ผู้ใช้ที่ไม่ใช่ผู้ดูแลระบบเห็น: ไม่มีคอลัมน์ ลบ และปุ่มบันทึก เปลี่ยนรหัสบรรจุภัณฑ์ ลบบรรจุภัณฑ์ เป็นสีเทา"))}
 """)
 
@@ -390,7 +391,18 @@ def build(lang):
 <li>{t("If the serial is not in the serial inventory at all, you see", "หากรหัสไม่มีอยู่ในคลังรหัสเลย จะแสดง")} {M('No serial "X" found in staging_serial_data.')} {t("Check for a typing mistake.", "ให้ตรวจว่าพิมพ์ผิดหรือไม่")}</li>
 <li>{t("The damaged total for the roll updates within about 10 seconds (background service).", "ยอดเสียหายของม้วนจะอัปเดตภายในประมาณ 10 วินาที (บริการเบื้องหลัง)")}</li>
 </ul>
-{callout("warn", t("Immediate, with no confirmation and no undo", "ทันที ไม่มีการยืนยัน และไม่มีปุ่มย้อนกลับ"), f"<p>{t('Pressing <kbd>Enter</kbd> reports the serial at once. The app does not record who reported it or when, and offers no way to clear the flag. Double-check what you scanned. This tab does not delete or alter any records; it only flags the serial in the inventory.', 'การกด <kbd>Enter</kbd> จะรายงานรหัสทันที โปรแกรมไม่บันทึกว่าใครรายงานและเมื่อใด และไม่มีวิธีล้างเครื่องหมายนี้ โปรดตรวจรหัสที่สแกนให้ดี แท็บนี้ไม่ลบหรือแก้ไขข้อมูลใด ๆ เพียงทำเครื่องหมายรหัสในคลังเท่านั้น')}</p>")}
+{callout("warn", t("Immediate, with no confirmation and no undo", "ทันที ไม่มีการยืนยัน และไม่มีปุ่มย้อนกลับ"), f"<p>{t('Pressing <kbd>Enter</kbd> reports the serial at once. The time is recorded (and the activity log notes who did it), but the app offers no way to clear the flag. Double-check what you scanned. This tab does not delete or alter any records; it only flags the serial in the inventory.', 'การกด <kbd>Enter</kbd> จะรายงานรหัสทันที โปรแกรมบันทึกเวลา (และบันทึกกิจกรรมจะระบุว่าใครทำ) แต่ไม่มีวิธีล้างเครื่องหมายนี้ โปรดตรวจรหัสที่สแกนให้ดี แท็บนี้ไม่ลบหรือแก้ไขข้อมูลใด ๆ เพียงทำเครื่องหมายรหัสในคลังเท่านั้น')}</p>")}
+<h3>{t("Exporting a damage report (PDF)", "ส่งออกรายงานความเสียหาย (PDF)")}</h3>
+<p>{t("The lower half of the tab saves a PDF listing the serials that are damaged <b>right now</b>, read from the serial inventory (<code>staging_serial_data</code>).", "ครึ่งล่างของแท็บใช้บันทึกไฟล์ PDF แสดงรายการรหัสซีเรียลที่<b>เสียหายอยู่ในขณะนี้</b> โดยอ่านจากคลังรหัสซีเรียล (<code>staging_serial_data</code>)")}</p>
+{figure("damage_export_%s.png" % lang, t("Choosing a time range and exporting.", "เลือกช่วงเวลาและส่งออก"), narrow=False)}
+{steps([
+    t("Leave <b>Any time</b> ticked to list every damaged serial, or untick it and set <b>From</b> and <b>To</b> (date and time, to the minute; the <b>To</b> minute is included).", "ปล่อยให้ติ๊ก <b>ทุกช่วงเวลา</b> ไว้เพื่อแสดงทุกรหัสที่เสียหาย หรือเอาติ๊กออกแล้วตั้ง <b>ตั้งแต่</b> และ <b>ถึง</b> (วันที่และเวลา ละเอียดถึงนาที และรวมนาทีของ <b>ถึง</b> ด้วย)"),
+    t("Under <b>Columns</b>, untick <b>Type</b>, <b>Roll no</b> or <b>Box no</b> to leave that column out of the PDF. The serial, the damage time and who last used it always print.", "ใน <b>คอลัมน์</b> เอาติ๊ก <b>ประเภท</b> <b>เลขม้วน</b> หรือ <b>เลขกล่อง</b> ออกเพื่อไม่แสดงคอลัมน์นั้นใน PDF ส่วนรหัสซีเรียล เวลาที่เสียหาย และผู้ใช้งานล่าสุดจะแสดงเสมอ"),
+    t("<b>Save to</b> is the folder the file goes in. It starts at the folder set by <code>DAMAGE_REPORT_DIR</code> in <code>.env</code> (your Documents folder if that is not set). Type another folder or click <b>Browse...</b> to pick one; the folder must already exist.", "<b>บันทึกไปที่</b> คือโฟลเดอร์ที่จะบันทึกไฟล์ เริ่มต้นเป็นโฟลเดอร์ที่ตั้งไว้ใน <code>DAMAGE_REPORT_DIR</code> ของ <code>.env</code> (หรือโฟลเดอร์ Documents หากไม่ได้ตั้ง) พิมพ์โฟลเดอร์อื่นหรือคลิก <b>เลือก...</b> เพื่อเลือก โฟลเดอร์นั้นต้องมีอยู่แล้ว"),
+    t(f"Click {B('export_pdf', 'light')}. The file is saved straight away as <code>damage_report_YYYYMMDD_HHMMSS.pdf</code> and its full path is shown. If nothing matches you are told so and no file is made.", f"คลิก {B('export_pdf', 'light')} ไฟล์จะถูกบันทึกทันทีเป็น <code>damage_report_YYYYMMDD_HHMMSS.pdf</code> และแสดงตำแหน่งไฟล์ หากไม่มีรายการที่ตรงเงื่อนไข ระบบจะแจ้งและไม่สร้างไฟล์"),
+])}
+<p>{t("The PDF shows the time range, when it was made and by whom, then one row per serial: serial, the ticked columns (type, roll no, box no), when it was reported damaged, and who last used it. Long lists continue on further pages with the heading repeated and page numbers at the bottom. It follows the language chosen in Settings.", "PDF แสดงช่วงเวลา เวลาที่สร้างและผู้สร้าง จากนั้นหนึ่งแถวต่อหนึ่งรหัส: รหัสซีเรียล คอลัมน์ที่ติ๊กไว้ (ประเภท เลขม้วน เลขกล่อง) เวลาที่แจ้งเสียหาย และผู้ใช้งานล่าสุด รายการยาวจะต่อหน้าถัดไปโดยมีหัวตารางซ้ำและเลขหน้าที่ด้านล่าง และใช้ภาษาตามที่เลือกในการตั้งค่า")}</p>
+{callout("note", t("Serials reported before the time was recorded", "รหัสที่แจ้งก่อนที่ระบบจะบันทึกเวลา"), f"<p>{t('The reporting time is only stored for serials reported from now on. Serials flagged earlier show <b>Not recorded</b>. They appear when you choose Any time, but cannot be placed in a time range, so a range leaves them out.', 'เวลาที่แจ้งจะถูกเก็บเฉพาะรหัสที่แจ้งนับจากนี้ รหัสที่ถูกทำเครื่องหมายไว้ก่อนหน้านั้นจะแสดง <b>ไม่ได้บันทึก</b> รหัสเหล่านี้จะปรากฏเมื่อเลือกทุกช่วงเวลา แต่ไม่สามารถจัดอยู่ในช่วงเวลาใดได้ จึงถูกตัดออกเมื่อเลือกช่วงเวลา')}</p>")}
 """)
 
     # ------------------------------------------------------------------ 11
@@ -408,7 +420,7 @@ def build(lang):
 <p>{t("Separately from the error log, DataRework writes a permanent record of what was done, so it can later be checked who changed what and from which computer. You do not have to do anything — it is written automatically. It is a plain text file, not a window in the program.", "นอกจากบันทึกข้อผิดพลาดแล้ว DataRework ยังเขียนบันทึกถาวรว่ามีการทำอะไรไปบ้าง เพื่อให้ตรวจสอบย้อนหลังได้ว่าใครเปลี่ยนอะไรจากเครื่องไหน ไม่ต้องทำอะไรเพิ่ม ระบบเขียนให้อัตโนมัติ เป็นไฟล์ข้อความธรรมดา ไม่ใช่หน้าต่างในโปรแกรม")}</p>
 {bullets([
     t("<b>Where:</b> the <code>logs</code> folder next to <code>DataRework.exe</code>. A new file is started every day, named <code>audit-YYYY-MM-DD.log</code> (for example <code>audit-2026-10-19.log</code>). Old days are kept; nothing is deleted automatically.", "<b>อยู่ที่ไหน:</b> โฟลเดอร์ <code>logs</code> ข้างไฟล์ <code>DataRework.exe</code> ระบบสร้างไฟล์ใหม่ทุกวัน ตั้งชื่อเป็น <code>audit-YYYY-MM-DD.log</code> (เช่น <code>audit-2026-10-19.log</code>) ไฟล์ของวันก่อน ๆ จะเก็บไว้ ไม่มีการลบอัตโนมัติ"),
-    t("<b>What is recorded:</b> signing in, signing out (closing the main window), saving, changing a container, renaming, deleting and reporting damage. Only actions that <b>succeeded</b> are recorded; refused or failed ones appear in the error log instead.", "<b>บันทึกอะไรบ้าง:</b> การเข้าสู่ระบบ การออกจากระบบ (ปิดหน้าต่างหลัก) การบันทึก การเปลี่ยนบรรจุภัณฑ์ การเปลี่ยนรหัส การลบ และการแจ้งความเสียหาย บันทึกเฉพาะการกระทำที่ <b>สำเร็จ</b> ส่วนที่ถูกปฏิเสธหรือล้มเหลวจะอยู่ในบันทึกข้อผิดพลาดแทน"),
+    t("<b>What is recorded:</b> signing in, signing out (closing the main window), saving, changing a container, renaming, deleting and reporting damage and exporting the damage report. Only actions that <b>succeeded</b> are recorded; refused or failed ones appear in the error log instead.", "<b>บันทึกอะไรบ้าง:</b> การเข้าสู่ระบบ การออกจากระบบ (ปิดหน้าต่างหลัก) การบันทึก การเปลี่ยนบรรจุภัณฑ์ การเปลี่ยนรหัส การลบ การแจ้งความเสียหาย และการส่งออกรายงานความเสียหาย บันทึกเฉพาะการกระทำที่ <b>สำเร็จ</b> ส่วนที่ถูกปฏิเสธหรือล้มเหลวจะอยู่ในบันทึกข้อผิดพลาดแทน"),
     t("<b>Save</b> writes a summary line (how many rows were updated, deleted or skipped because they were already transferred) and then one line per row. If a save edits a container serial (display, inner or carton), that row also gets a <b>Change container</b> line.", "<b>การบันทึก</b>จะเขียนบรรทัดสรุป (จำนวนแถวที่แก้ไข ลบ หรือข้ามเพราะถูกโอนแล้ว) แล้วตามด้วยหนึ่งบรรทัดต่อหนึ่งแถว หากการบันทึกแก้ไขรหัสบรรจุภัณฑ์ (display, inner หรือ carton) แถวนั้นจะมีบรรทัด <b>Change container</b> เพิ่มด้วย"),
 ])}
 {table([t("Part of each line", "ส่วนของแต่ละบรรทัด"), t("Meaning", "ความหมาย")], [
@@ -498,6 +510,7 @@ def build(lang):
     [t("Search, filters, sort, hide columns", "ค้นหา ตัวกรอง จัดเรียง ซ่อนคอลัมน์"), ("✓", "yes"), ("✓", "yes")],
     [t("Browse Container manager, View records", "เรียกดูจัดการบรรจุภัณฑ์ ดูข้อมูล"), ("✓", "yes"), ("✓", "yes")],
     ["Report damage", ("✓", "yes"), ("✓", "yes")],
+    [t("Export damage report (PDF)", "ส่งออกรายงานความเสียหาย (PDF)"), ("✓", "yes"), ("✓", "yes")],
     [t("Error log", "บันทึกข้อผิดพลาด"), ("✓", "yes"), ("✓", "yes")],
     [t("Edit cells / mark rows for deletion / Save", "แก้ไขเซลล์ / ทำเครื่องหมายลบ / บันทึก"), ("✓", "yes"), ("✗", "no")],
     [t("Rename container", "เปลี่ยนรหัสบรรจุภัณฑ์"), ("✓", "yes"), ("✗", "no")],

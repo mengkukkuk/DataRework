@@ -80,6 +80,11 @@ def set_session(tag_name):
     _tag_name = "" if tag_name is None else str(tag_name)
 
 
+def session_tag():
+    """The tag_name of whoever is signed in ("" before login)."""
+    return _tag_name
+
+
 def format_entry(activity, tag_name=None, when=None):
     when = when or datetime.datetime.now()
     tag = _tag_name if tag_name is None else str(tag_name)

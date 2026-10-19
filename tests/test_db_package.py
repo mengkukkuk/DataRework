@@ -345,10 +345,10 @@ class TestSaveGridChangesSuccess(unittest.TestCase):
             call.args[1] for statement, call in zip(sqls, cur.execute.call_args_list)
             if "staging_serial_data" in statement and "UPDATE" in statement
         ]
-        # Deactivating writes a real NULL (not the string '<null>') to activate_at;
-        # activating stamps the current time.
+        # Deactivating clears is_use / activate_by / activate_at with real NULLs
+        # (never the string '<null>'); activating stamps the current time.
         self.assertEqual(len(serial_params), 2)
-        self.assertEqual(serial_params[0], (False, "false", "none", None, "OLD_SERIAL"))
+        self.assertEqual(serial_params[0], (False, None, None, None, "OLD_SERIAL"))
         self.assertEqual(serial_params[1][:3], (True, "rework", "TEST-OPERATOR"))
         self.assertIsInstance(serial_params[1][3], datetime.datetime)
         self.assertEqual(serial_params[1][4], "NEW_SERIAL")

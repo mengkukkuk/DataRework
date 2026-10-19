@@ -4,6 +4,7 @@ report_damage refuses while a serial is still active (SerialInUseError) or
 unknown to inventory (SerialInventoryError); serial_level is the best-effort
 lookup used to route an operator to the right editor when blocked.
 """
+import datetime
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -48,6 +49,7 @@ class ReportDamageTests(unittest.TestCase):
         self.assertEqual(cur.execute.call_count, 2)
         update_sql, update_params = cur.execute.call_args_list[1].args
         self.assertIn("is_damaged", str(update_sql))
+        self.assertIn("is_damaged_at = now()", str(update_sql))  # when it was reported
         self.assertIn("activate = false", str(update_sql))
         self.assertEqual(update_params, ("U1",))
         conn.commit.assert_called_once()
@@ -67,6 +69,45 @@ class ReportDamageTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 db.report_damage("   ")
         get_conn.assert_not_called()
+
+
+class ListDamagedTests(unittest.TestCase):
+    ROW = ("U1", "Qr Code", "R1", "B1", None, "VM001")
+
+    def _run(self, **kwargs):
+        conn, cur = _conn_cur(None)
+        cur.fetchall.return_value = [self.ROW]
+        with patch("db.connection.get_connection", return_value=conn):
+            result = db.list_damaged(**kwargs)
+        query, params = cur.execute.call_args.args
+        return result, repr(query), params
+
+    def test_rows_come_back_as_dicts(self):
+        result, _, _ = self._run()
+        self.assertEqual(result, [{
+            "serial_no": "U1", "level": "Qr Code", "roll_no": "R1", "box_no": "B1",
+            "damaged_at": None, "last_user": "VM001"}])
+
+    def test_no_range_means_every_damaged_serial(self):
+        _, text, params = self._run()
+        self.assertIn("is_damaged IS TRUE", text)
+        self.assertNotIn("is_damaged_at >=", text)
+        self.assertEqual(params, [])
+
+    def test_a_range_filters_on_is_damaged_at_with_both_ends_inclusive(self):
+        start, end = datetime.datetime(2026, 10, 1), datetime.datetime(2026, 10, 2)
+        _, text, params = self._run(start=start, end=end)
+        self.assertIn("is_damaged_at >=", text)
+        self.assertIn("is_damaged_at <=", text)
+        self.assertEqual(params, [start, end])
+
+    def test_it_only_reads_and_releases_the_transaction(self):
+        conn, cur = _conn_cur(None)
+        cur.fetchall.return_value = []
+        with patch("db.connection.get_connection", return_value=conn):
+            db.list_damaged()
+        conn.commit.assert_not_called()
+        conn.rollback.assert_called_once()
 
 
 class SerialLevelTests(unittest.TestCase):

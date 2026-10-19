@@ -17,11 +17,11 @@ _NOT_DAMAGED_OR_IN_USE = sql.SQL(
 
 
 def _set_serial_active(cur, schema, serial_no, active, tag_name=None, required=False):
-    is_use = "rework" if active else None
-    tag_name = tag_name if active else None
-    time = datetime.datetime.now(
-        datetime.timezone(datetime.timedelta(hours=7))
-        ) if active else None
+    if active:
+        is_use = "rework"
+        time = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=7)))
+    else:
+        is_use = tag_name = time = None
 
     if not serial_no:
         return 0
@@ -128,6 +128,7 @@ def report_damage(serial_no, schema="public"):
     *trimmed* serial, same convention as every other lookup against this
     table. Returns {"serial_no": ..., "roll_no": ...} on success.
     """
+    is_use = None
     if not serial_no or not str(serial_no).strip():
         raise ValueError("Type a serial number to report.")
     with contextlib.closing(connection.get_connection()) as conn:
@@ -153,10 +154,10 @@ def report_damage(serial_no, schema="public"):
 
             cur.execute(
                 sql.SQL(
-                    "UPDATE {schema}.{tbl} SET is_damaged = true "
+                    "UPDATE {schema}.{tbl} SET is_damaged = true, is_use = %s, is_damaged_at = now() "
                     "WHERE btrim(serial_no) = btrim(%s) AND activate = false"
                 ).format(schema=sql.Identifier(schema), tbl=sql.Identifier(SERIAL_DATA_TABLE)),
-                (serial_no,),
+                (is_use, serial_no),
             )
             if cur.rowcount != 1:
                 raise SerialInUseError(
@@ -166,3 +167,33 @@ def report_damage(serial_no, schema="public"):
 
         conn.commit()
     return {"serial_no": serial_no, "roll_no": roll_no}
+
+
+def list_damaged(start=None, end=None, schema="public"):
+    """Serials flagged damaged right now, most recently reported first.
+
+    `start` / `end` (datetimes, either optional, both inclusive) limit the list
+    to serials reported damaged in that range, by staging_serial_data.is_damaged_at.
+    With no range every damaged serial is returned, including those flagged
+    before is_damaged_at existed (their time is None); with a range those can't
+    be placed in it and are left out. Returns a list of dicts.
+    """
+    where = [sql.SQL("is_damaged IS TRUE")]
+    params = []
+    if start is not None:
+        where.append(sql.SQL("is_damaged_at >= %s"))
+        params.append(start)
+    if end is not None:
+        where.append(sql.SQL("is_damaged_at <= %s"))
+        params.append(end)
+    query = sql.SQL(
+        "SELECT btrim(serial_no), label_level_name, roll_no, box_no, "
+        "is_damaged_at, activate_by FROM {schema}.{tbl} WHERE "
+    ).format(schema=sql.Identifier(schema), tbl=sql.Identifier(SERIAL_DATA_TABLE))         + sql.SQL(" AND ").join(where)         + sql.SQL(" ORDER BY is_damaged_at DESC NULLS LAST, btrim(serial_no)")
+    with contextlib.closing(connection.get_connection()) as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            rows = cur.fetchall()
+        conn.rollback()  # read-only: don't leave the transaction open
+    keys = ("serial_no", "level", "roll_no", "box_no", "damaged_at", "last_user")
+    return [dict(zip(keys, row)) for row in rows]

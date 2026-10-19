@@ -5,14 +5,21 @@ might need first -- browsing, renaming, deleting -- already lives in the
 other tabs; this one only ever flips staging_serial_data.is_damaged, and
 only once the serial is confirmed out of active use (see db.report_damage).
 """
+import os
+
 import psycopg2
-from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout
+from PySide6.QtCore import QDate, QDateTime, QTime, Signal
+from PySide6.QtWidgets import (QDateTimeEdit, QFileDialog, QHBoxLayout, QSizePolicy,
+                               QVBoxLayout)
 
 import audit_log
+import damage_report_pdf
 import db
 from i18n import tr
-from i18n_widgets import QLabel, QLineEdit, QMessageBox, QPushButton, QWidget
+from i18n_widgets import (QCheckBox, QLabel, QLineEdit, QMessageBox, QPushButton,
+                          QWidget)
+
+DATETIME_FORMAT = "yyyy-MM-dd HH:mm"
 
 
 class DamageReportPanel(QWidget):
@@ -62,17 +69,152 @@ class DamageReportPanel(QWidget):
         self.result_label.setObjectName("statusLabel")
         self.result_label.setWordWrap(True)
         layout.addWidget(self.result_label)
+
+        # --- Export: a PDF of the serials that are damaged right now ----------
+        layout.addSpacing(18)
+        export_title = QLabel(tr("Export damage report"))
+        export_title.setObjectName("dialogTitle")
+        layout.addWidget(export_title)
+        export_hint = QLabel(tr(
+            "Save a PDF listing the serials that are damaged right now. Untick "
+            "Any time to list only those reported damaged within a time range."
+        ))
+        export_hint.setObjectName("dialogHint")
+        export_hint.setWordWrap(True)
+        layout.addWidget(export_hint)
+
+        export_row = QHBoxLayout()
+        export_row.setSpacing(8)
+        self.any_time_check = QCheckBox(tr("Any time"))
+        self.any_time_check.setChecked(True)
+        self.any_time_check.toggled.connect(self._on_any_time_toggled)
+        export_row.addWidget(self.any_time_check)
+        today = QDate.currentDate()
+        self.from_edit = self._datetime_edit(QDateTime(today, QTime(0, 0)))
+        self.to_edit = self._datetime_edit(QDateTime(today, QTime(23, 59)))
+        self.from_label = QLabel(tr("From"))
+        self.to_label = QLabel(tr("To"))
+        for widget in (self.from_label, self.from_edit, self.to_label, self.to_edit):
+            export_row.addWidget(widget)
+        export_row.addStretch(1)
+        layout.addLayout(export_row)
+        self._on_any_time_toggled(True)
+
+        columns_row = QHBoxLayout()
+        columns_row.setSpacing(8)
+        columns_row.addWidget(QLabel(tr("Columns")))
+        self.column_checks = {}
+        for key, heading in damage_report_pdf.OPTIONAL_COLUMNS:
+            check = QCheckBox(tr(heading))
+            check.setChecked(True)
+            self.column_checks[key] = check
+            columns_row.addWidget(check)
+        columns_row.addStretch(1)
+        layout.addLayout(columns_row)
+
+        # The folder starts at DAMAGE_REPORT_DIR (.env); the file name is dated.
+        folder_row = QHBoxLayout()
+        folder_row.setSpacing(8)
+        folder_row.addWidget(QLabel(tr("Save to")))
+        self.folder_edit = QLineEdit(damage_report_pdf.default_folder())
+        self.folder_edit.setObjectName("damageReportFolder")
+        self.folder_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        folder_row.addWidget(self.folder_edit, 1)
+        self.browse_btn = QPushButton(tr("Browse..."))
+        self.browse_btn.setObjectName("ghostBtn")
+        self.browse_btn.clicked.connect(self._on_browse)
+        folder_row.addWidget(self.browse_btn)
+        self.export_btn = QPushButton(tr("Export PDF"))
+        self.export_btn.setObjectName("ghostBtn")
+        self.export_btn.clicked.connect(self._on_export)
+        folder_row.addWidget(self.export_btn)
+        layout.addLayout(folder_row)
+
+        self.export_result_label = QLabel("")
+        self.export_result_label.setObjectName("statusLabel")
+        self.export_result_label.setWordWrap(True)
+        layout.addWidget(self.export_result_label)
         layout.addStretch(1)
+
+    @staticmethod
+    def _datetime_edit(value):
+        edit = QDateTimeEdit(value)
+        edit.setDisplayFormat(DATETIME_FORMAT)
+        edit.setCalendarPopup(True)
+        return edit
 
     def focus_input(self):
         self.serial_edit.setFocus()
         self.serial_edit.selectAll()
 
-    def _set_result(self, text, error=False):
-        self.result_label.setText(text)
-        self.result_label.setProperty("state", "error" if error else "ok")
-        self.result_label.style().unpolish(self.result_label)
-        self.result_label.style().polish(self.result_label)
+    def _set_result(self, text, error=False, label=None):
+        label = label or self.result_label
+        label.setText(text)
+        label.setProperty("state", "error" if error else "ok")
+        label.style().unpolish(label)
+        label.style().polish(label)
+
+    def _on_any_time_toggled(self, any_time):
+        for widget in (self.from_label, self.from_edit, self.to_label, self.to_edit):
+            widget.setEnabled(not any_time)
+
+    def _selected_range(self):
+        """(start, end) as timezone-aware datetimes, or (None, None) for any time."""
+        if self.any_time_check.isChecked():
+            return None, None
+        # The editors show local wall-clock time; astimezone() on a naive value
+        # reads it as local, so the database compares the same instant.
+        start = self.from_edit.dateTime().toPython().astimezone()
+        end = self.to_edit.dateTime().toPython().astimezone().replace(second=59)
+        return start, end
+
+    def selected_columns(self):
+        return {key for key, check in self.column_checks.items() if check.isChecked()}
+
+    def _on_browse(self):
+        folder = QFileDialog.getExistingDirectory(
+            self, str(tr("Choose where to save the report")), self.folder_edit.text().strip())
+        if folder:
+            self.folder_edit.setText(os.path.normpath(folder))
+
+    def _on_export(self):
+        label = self.export_result_label
+        start, end = self._selected_range()
+        if start is not None and start > end:
+            self._set_result(tr("The start of the range is after its end."), error=True, label=label)
+            return
+        folder = self.folder_edit.text().strip()
+        if not folder or not os.path.isdir(folder):
+            self._set_result(tr("Folder does not exist: {p0}", p0=folder), error=True, label=label)
+            return
+        self.export_btn.setEnabled(False)
+        try:
+            rows = db.list_damaged(start, end)
+        except psycopg2.OperationalError:
+            self._set_result(tr("Unable to reach the database"), error=True, label=label)
+            return
+        except Exception as exc:
+            self._set_result(tr("Export failed: {p0}", p0=exc), error=True, label=label)
+            return
+        finally:
+            self.export_btn.setEnabled(True)
+
+        if not rows:
+            self._set_result(tr("No damaged serials in this range."), label=label)
+            return
+        path = os.path.join(folder, damage_report_pdf.default_filename())
+        try:
+            damage_report_pdf.export_pdf(
+                path, rows, start, end, generated_by=audit_log.session_tag(),
+                vm_id=os.environ.get("VM_ID", "").strip(), columns=self.selected_columns())
+        except OSError as exc:
+            self._set_result(tr("Export failed: {p0}", p0=exc), error=True, label=label)
+            return
+        audit_log.record(
+            f"Export damage report - {len(rows)} serial(s), "
+            f"{damage_report_pdf.describe_range(start, end)}, file {os.path.basename(path)}")
+        self._set_result(
+            tr("Exported {p0} damaged serial(s) to {p1}", p0=len(rows), p1=path), label=label)
 
     def _on_report(self):
         serial = self.serial_edit.text().strip()

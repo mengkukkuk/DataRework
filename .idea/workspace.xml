@@ -4,46 +4,27 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add tests for `serial_guard_pg` and `edit_history` functionality&#10;&#10;- Introduced comprehensive test cases for renaming onto serials in PostgreSQL (`_test_serial_guard_pg.py`), ensuring inventory integrity and handling damaged or in-use rows.&#10;- Added `test_edit_history.py` to validate undo/redo functionality and handling of unsaved edits in grid views.&#10;- Updated `db` module with `SerialUnavailableError` definition for handling renamed damaged rows.&#10;- Adjusted test coverage to ensure controlled operations in temporary database tables.">
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Introduce audit logging, settings dialog, and corresponding tests&#10;&#10;- Added `audit_log.py` for maintaining an append-only audit trail of operator activities with VM details and timestamps.&#10;- Implemented `SettingsDialog` in `settings_dialog.py` to centralize user preferences like language and theme with immediate application.&#10;- Created `tests/test_audit_log.py` to validate audit logging functionality, including session-based and explicit tagging, file handling for date changes, and resilience against unwritable locations.&#10;- Updated Thai user manual to reflect the new settings dialogue functionality.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/audit_log.py" beforeDir="false" afterPath="$PROJECT_DIR$/audit_log.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/damage_report_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/damage_report_panel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/serial_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/serial_state.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/datarework-workflow.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/datarework-workflow.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/i18n.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/i18n.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual-src/manual_content.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/manual_content.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual-src/shoot.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shoot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_deep_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_deep_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_deep_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_deep_th.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_th.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_units_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_units_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_units_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_units_th.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/damage_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/damage_en.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/damage_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/damage_th.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/filters_folded_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/filters_folded_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/filters_folded_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/filters_folded_th.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/log_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/log_en.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/log_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/log_th.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/login_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/login_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/login_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/login_th.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/readonly_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/readonly_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/readonly_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/readonly_th.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_edit_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_edit_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_edit_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_edit_th.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_scope_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_scope_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_scope_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_scope_th.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_th.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.pdf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual.th.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.th.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual.th.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.th.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual.th.pdf" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_damage_report.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_damage_report.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_damage_report_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_damage_report_panel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_db_package.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_db_package.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -624,7 +605,15 @@
       <option name="project" value="LOCAL" />
       <updated>1792163975981</updated>
     </task>
-    <option name="localTasksCounter" value="42" />
+    <task id="LOCAL-00042" summary="Introduce audit logging, settings dialog, and corresponding tests&#10;&#10;- Added `audit_log.py` for maintaining an append-only audit trail of operator activities with VM details and timestamps.&#10;- Implemented `SettingsDialog` in `settings_dialog.py` to centralize user preferences like language and theme with immediate application.&#10;- Created `tests/test_audit_log.py` to validate audit logging functionality, including session-based and explicit tagging, file handling for date changes, and resilience against unwritable locations.&#10;- Updated Thai user manual to reflect the new settings dialogue functionality.">
+      <option name="closed" value="true" />
+      <created>1792391822965</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1792391822965</updated>
+    </task>
+    <option name="localTasksCounter" value="43" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -642,7 +631,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Add `ContainerPanel` UI and bulk delete feature; integrate with database and tests" />
     <MESSAGE value="Add product avatar support&#10;&#10;Introduce `AvatarCatalog` for normalized product images based on packaging levels. Add `avatars.json` and `product-avatars.md` for image mappings and documentation. Update `ContainerPanel` to display avatars alongside container info. Enhance database queries to include distinct product data. Add integration tests to validate product avatar functionality." />
     <MESSAGE value="Add non-modal product image preview&#10;&#10;Introduce `ImagePreview` for viewing product images without blocking the UI. Add `AvatarLabel` to make product avatars interactive. Update `ContainerPanel` to support preview functionality and ensure previews persist during container refresh. Add related tests and new translations for the feature." />
     <MESSAGE value="Add tests and improve UX for barcode rename dialog&#10;&#10;Introduce `test_barcode_rename.py` with new test cases to validate barcode renaming flow, including keyboard scanner behavior and prefill handling. Enhance `RenameContainerDialog` UX with auto-focus logic, event filtering, placeholder texts, and delayed preview updates. Update translations to include additional text for improved guidance." />
@@ -667,6 +655,7 @@
     <MESSAGE value="Enforce transfer lock handling across operations&#10;&#10;- Introduced `is_transfer` flag checks to prevent updates, deletions, renames, or grid saves on transferred rows.&#10;- Added `refuse_transferred` method in `db/transfer.py` to centralize transfer lock validation logic.&#10;- Adjusted `delete_container`, `rename_container`, and grid save logic to respect transfer locks, throwing `TransferLockedError` when applicable.&#10;- Enhanced `MainWindow` save functionality to notify users of skipped updates due to transfer locks.&#10;- Updated tests with comprehensive scenarios for handling transfer-locked rows during operations." />
     <MESSAGE value="Refactor `_set_serial_active` to handle damaged and in-use serials gracefully&#10;&#10;- Exclude rows marked as `is_damaged` or `is_use` when activating serials.&#10;- Add `_serial_row_count` helper for precise row existence checks.&#10;- Update tests to validate activation, deactivation, and skip logic for damaged/in-use rows." />
     <MESSAGE value="Add tests for `serial_guard_pg` and `edit_history` functionality&#10;&#10;- Introduced comprehensive test cases for renaming onto serials in PostgreSQL (`_test_serial_guard_pg.py`), ensuring inventory integrity and handling damaged or in-use rows.&#10;- Added `test_edit_history.py` to validate undo/redo functionality and handling of unsaved edits in grid views.&#10;- Updated `db` module with `SerialUnavailableError` definition for handling renamed damaged rows.&#10;- Adjusted test coverage to ensure controlled operations in temporary database tables." />
-    <option name="LAST_COMMIT_MESSAGE" value="Add tests for `serial_guard_pg` and `edit_history` functionality&#10;&#10;- Introduced comprehensive test cases for renaming onto serials in PostgreSQL (`_test_serial_guard_pg.py`), ensuring inventory integrity and handling damaged or in-use rows.&#10;- Added `test_edit_history.py` to validate undo/redo functionality and handling of unsaved edits in grid views.&#10;- Updated `db` module with `SerialUnavailableError` definition for handling renamed damaged rows.&#10;- Adjusted test coverage to ensure controlled operations in temporary database tables." />
+    <MESSAGE value="Introduce audit logging, settings dialog, and corresponding tests&#10;&#10;- Added `audit_log.py` for maintaining an append-only audit trail of operator activities with VM details and timestamps.&#10;- Implemented `SettingsDialog` in `settings_dialog.py` to centralize user preferences like language and theme with immediate application.&#10;- Created `tests/test_audit_log.py` to validate audit logging functionality, including session-based and explicit tagging, file handling for date changes, and resilience against unwritable locations.&#10;- Updated Thai user manual to reflect the new settings dialogue functionality." />
+    <option name="LAST_COMMIT_MESSAGE" value="Introduce audit logging, settings dialog, and corresponding tests&#10;&#10;- Added `audit_log.py` for maintaining an append-only audit trail of operator activities with VM details and timestamps.&#10;- Implemented `SettingsDialog` in `settings_dialog.py` to centralize user preferences like language and theme with immediate application.&#10;- Created `tests/test_audit_log.py` to validate audit logging functionality, including session-based and explicit tagging, file handling for date changes, and resilience against unwritable locations.&#10;- Updated Thai user manual to reflect the new settings dialogue functionality." />
   </component>
 </project>

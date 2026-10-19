@@ -14,7 +14,7 @@ from .edge_mirror import update_staging_serial_data, save_grid_changes
 from .containers import (container_serials, container_children, rename_children,
                          container_rename_preview, rename_container, serial_level)
 from .deletion import container_delete_preview, delete_container
-from .serial_state import report_damage
+from .serial_state import report_damage, list_damaged
 
 __all__ = [
     "connection",
@@ -54,4 +54,5 @@ __all__ = [
     "delete_container",
     "serial_level",
     "report_damage",
+    "list_damaged",
 ]
