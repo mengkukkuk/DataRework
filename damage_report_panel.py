@@ -9,6 +9,7 @@ import psycopg2
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout
 
+import audit_log
 import db
 from i18n import tr
 from i18n_widgets import QLabel, QLineEdit, QMessageBox, QPushButton, QWidget
@@ -89,6 +90,8 @@ class DamageReportPanel(QWidget):
         except Exception as exc:
             self._set_result(str(exc), error=True)
         else:
+            audit_log.record(
+                f'Report damage - serial "{result["serial_no"]}" (roll {result["roll_no"]})')
             self._set_result(tr('Reported "{p0}" damaged.', p0=result["serial_no"]))
             self.serial_edit.clear()
         finally:

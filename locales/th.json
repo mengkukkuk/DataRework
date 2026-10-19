@@ -221,5 +221,11 @@
   "Redo the edit you just undid (Ctrl+Y)": "ทำซ้ำการแก้ไขที่เพิ่งย้อนกลับ (Ctrl+Y)",
   "Undid {p0} change(s).": "ย้อนกลับแล้ว {p0} รายการ",
   "Redid {p0} change(s).": "ทำซ้ำแล้ว {p0} รายการ",
-  "Reverted to the saved values. Undo brings your edits back.": "คืนค่าเดิมที่บันทึกไว้แล้ว กดย้อนกลับเพื่อเรียกการแก้ไขของคุณคืน"
+  "Reverted to the saved values. Undo brings your edits back.": "คืนค่าเดิมที่บันทึกไว้แล้ว กดย้อนกลับเพื่อเรียกการแก้ไขของคุณคืน",
+  "Settings": "การตั้งค่า",
+  "Settings: language and appearance": "การตั้งค่า: ภาษาและรูปลักษณ์",
+  "Changes apply right away and are remembered on this computer.": "การเปลี่ยนแปลงมีผลทันทีและจะจำไว้ในเครื่องนี้",
+  "Language of menus, buttons and messages.": "ภาษาของเมนู ปุ่ม และข้อความ",
+  "Appearance": "รูปลักษณ์",
+  "Dark or light colours for the whole window.": "สีโทนมืดหรือสว่างสำหรับทั้งหน้าต่าง"
 }

@@ -9,7 +9,6 @@ from PySide6.QtCore import Qt, QSettings, QTimer
 from PySide6.QtGui import QBrush, QColor, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView,
-    QButtonGroup,
     QFrame,
     QHBoxLayout,
     QHeaderView,
@@ -22,18 +21,20 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
+import audit_log
 import db
 import db_worker
 from theme import THEMES, _render_stylesheet
 from i18n import tr, column_label, language
 from i18n_widgets import (QLabel, QPushButton, QCheckBox, QComboBox, QGroupBox,
-                          QLineEdit, QWidget, QMainWindow, QDialog, QMessageBox, LanguageToggle)
+                          QLineEdit, QWidget, QMainWindow, QDialog, QMessageBox)
 from rename_dialog import ChildRelabelDialog, RenameContainerDialog
 from delete_dialog import DeleteContainerDialog
 from container_panel import ContainerPanel, LEVELS as CONTAINER_ORDER
 from damage_report_panel import DamageReportPanel
 from level_marks import level_mark
 from debug_log import LOG, LogWindow
+from settings_dialog import SettingsDialog
 
 # --- Schema mapping --------------------------------------------------------
 STAGING_TABLE = os.environ.get("STAGING_TABLE", "filling_product_logs")
@@ -152,6 +153,7 @@ class MainWindow(QMainWindow):
         self._combo_refresh_timer.setInterval(280)
         self._combo_refresh_timer.timeout.connect(self._refresh_dependent_combos)
         self._theme = _get_settings().value("theme", "dark", type=str)
+        self._settings_dialog = None
         if self._theme not in THEMES:
             self._theme = "dark"
 
@@ -370,8 +372,15 @@ class MainWindow(QMainWindow):
         row.addLayout(title_box)
         row.addStretch(1)
 
-        row.addWidget(LanguageToggle(self))
-        row.addWidget(self._build_theme_toggle())
+        # Language and theme live behind one gear: they change rarely, and the
+        # dialog has room to name them in full.
+        self.settings_btn = QPushButton("")  # Settings glyph in the Segoe icon fonts
+        self.settings_btn.setObjectName("settingsBtn")
+        self.settings_btn.setCursor(Qt.PointingHandCursor)
+        self.settings_btn.setAccessibleName(str(tr('Settings')))
+        self.settings_btn.setToolTip(tr('Settings: language and appearance'))
+        self.settings_btn.clicked.connect(self._open_settings)
+        row.addWidget(self.settings_btn, alignment=Qt.AlignVCenter)
 
         badge = QLabel(tr('{p0}  ·  {p1}', p0=self.username, p1=tr(self.permission)))
         badge.setObjectName("userBadge")
@@ -379,35 +388,18 @@ class MainWindow(QMainWindow):
         row.addWidget(badge, alignment=Qt.AlignVCenter)
         return row
 
-    def _build_theme_toggle(self):
-        frame = QFrame()
-        frame.setObjectName("themeToggle")
-        layout = QHBoxLayout(frame)
-        layout.setContentsMargins(3, 3, 3, 3)
-        layout.setSpacing(2)
-
-        self.dark_theme_btn = QPushButton(tr('Dark'))
-        self.light_theme_btn = QPushButton(tr('Light'))
-        self._theme_buttons = {"dark": self.dark_theme_btn, "light": self.light_theme_btn}
-
-        self._theme_button_group = QButtonGroup(frame)
-        self._theme_button_group.setExclusive(True)
-        for name, btn in self._theme_buttons.items():
-            btn.setCheckable(True)
-            btn.setCursor(Qt.PointingHandCursor)
-            self._theme_button_group.addButton(btn)
-            btn.clicked.connect(lambda _checked=False, n=name: self._set_theme(n))
-            layout.addWidget(btn)
-
-        self._theme_buttons[self._theme].setChecked(True)
-        return frame
+    def _open_settings(self):
+        if self._settings_dialog is None:
+            self._settings_dialog = SettingsDialog(self, self._theme, self._set_theme)
+        self._settings_dialog.show()
+        self._settings_dialog.raise_()
+        self._settings_dialog.activateWindow()
 
     def _set_theme(self, name):
         if name not in THEMES:
             return
         self._theme = name
         self.setStyleSheet(_render_stylesheet(name))
-        self._theme_buttons[name].setChecked(True)
         _get_settings().setValue("theme", name)
 
     def _build_filter_bar(self):
@@ -1407,10 +1399,39 @@ class MainWindow(QMainWindow):
         else:
             message = tr('Changes saved.')
         self._show_status(message)
+        self._audit_save(updates, deletes, skipped)
         # Still the same view the user was in, one container's rows or all of them.
         # The reload would otherwise replace a skipped-rows notice with "N row(s) loaded.".
         self._on_search(container_path=self._record_scope,
                         success_message=message if skipped else None)
+
+    def _audit_save(self, updates, deletes, skipped):
+        """Audit-log a committed save: a summary, then one line per row touched.
+
+        Rows the database skipped (already transferred) were not written, so they
+        are left out. A container serial edit is also filed as "Change container",
+        since it re-parents the row rather than just correcting a value.
+        """
+        skipped = {tuple(pk) for pk in skipped}
+        updates = [(pk, ch) for pk, ch in updates if tuple(pk) not in skipped]
+        deletes = [pk for pk in deletes if tuple(pk) not in skipped]
+        audit_log.record(
+            f"Save - {len(updates)} update(s), {len(deletes)} delete(s) "
+            f"in {STAGING_TABLE}, {len(skipped)} skipped")
+        for pk, changes in updates:
+            container_edits = {col: val for col, val in changes.items()
+                               if col in CONTAINER_SERIAL_COLUMNS}
+            if container_edits:
+                audit_log.record(
+                    f"Change container - {STAGING_TABLE} {pk[0]}: "
+                    + ", ".join(f"{col} -> {val!r}" for col, val in container_edits.items()))
+            other = {col: val for col, val in changes.items() if col not in container_edits}
+            if other:
+                audit_log.record(
+                    f"Save update - {STAGING_TABLE} {pk[0]}: "
+                    + ", ".join(f"{col} -> {val!r}" for col, val in other.items()))
+        for pk in deletes:
+            audit_log.record(f"Save delete - {STAGING_TABLE} {pk[0]}")
 
     def _on_table_context_menu(self, pos):
         """Offer "Rename this <level>..." and "Delete this <level>..." on a container serial."""
@@ -1502,6 +1523,9 @@ class MainWindow(QMainWindow):
             tr('Renamed {p0} "{p1}" to "{p2}" — {p3} row(s), {p4} link(s).', p0=tr(level), p1=old_serial, p2=new_serial, p3=result["rows"], p4=result["edges"])
         )
         self._show_status(message)
+        audit_log.record(
+            f'Rename {level} "{old_serial}" -> "{new_serial}" '
+            f'({result["rows"]} row(s), {result["edges"]} link(s))')
         if level != "unit":
             self._show_status(message + self._relabel_children(level, old_serial, new_serial))
         self._on_search(container_path=self._record_scope)
@@ -1538,6 +1562,9 @@ class MainWindow(QMainWindow):
             LOG.add(f"Child rename failed: {exc}", exc)
             return tr(' Children unchanged: {p0}', p0=exc)
 
+        for child_level, child_old, child_new in renames:
+            audit_log.record(f'Rename {child_level} "{child_old}" -> "{child_new}" '
+                             f'(child of "{new_serial}")')
         return (
             tr(' Also renamed {p0} child serial(s), {p1} row(s).', p0=child_result["renamed"], p1=child_result["rows"])
         )
@@ -1608,6 +1635,9 @@ class MainWindow(QMainWindow):
             f'{result["units"]} unit serial(s) released ({self.tag_name}).{note}',
             level="INFO",
         )
+        audit_log.record(
+            f'Delete {level} "{serial}" ({result["rows"]} row(s), {result["edges"]} link(s), '
+            f'{result["units"]} unit serial(s) released)')
         # The reload runs off the UI thread now, so its own "N row(s) loaded."
         # message lands later than this call returns -- success_message asks it
         # to show the delete's own outcome instead, once it actually succeeds
@@ -1855,4 +1885,5 @@ class MainWindow(QMainWindow):
         # A search/container-refresh still in flight would otherwise deliver
         # its signal into a widget tree that is being torn down underneath it.
         db_worker.shutdown()
+        audit_log.record(f"Logout - user {self.username}")
         super().closeEvent(event)

@@ -153,6 +153,40 @@ QLabel {
     color: __badge_admin_text__;
     border: 1px solid __badge_admin_border__;
 }
+/* Header gear: opens the settings dialog (language, theme). Glyph comes from
+   Windows' icon fonts, like the undo/redo buttons. */
+#settingsBtn {
+    font-family: "Segoe Fluent Icons", "Segoe MDL2 Assets";
+    font-size: 16px;
+    color: __badge_text__;
+    background-color: __badge_bg__;
+    border: 1px solid __badge_border__;
+    border-radius: 11px;
+    min-width: 34px;
+    min-height: 22px;
+    padding: 3px 8px;
+}
+#settingsBtn:hover { color: __header_text__; border-color: __subtitle__; }
+/* Settings dialog choices: wider than the old header toggles, full names. */
+#settingsSeg {
+    background-color: __badge_bg__;
+    border: 1px solid __badge_border__;
+    border-radius: 8px;
+}
+#settingsSeg QPushButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-size: __font_body__px;
+    font-weight: 600;
+    color: __subtitle__;
+}
+#settingsSeg QPushButton:hover:!checked { color: __header_text__; }
+#settingsSeg QPushButton:checked {
+    background-color: #5b9bd5;
+    color: #06131f;
+}
 #themeToggle {
     background-color: __badge_bg__;
     border: 1px solid __badge_border__;

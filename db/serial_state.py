@@ -1,4 +1,5 @@
 import contextlib
+import datetime
 
 from psycopg2 import sql
 
@@ -16,20 +17,25 @@ _NOT_DAMAGED_OR_IN_USE = sql.SQL(
 
 
 def _set_serial_active(cur, schema, serial_no, active, tag_name=None, required=False):
-    is_use = "true" if active else "false"
+    is_use = "rework" if active else None
+    tag_name = tag_name if active else None
+    time = datetime.datetime.now(
+        datetime.timezone(datetime.timedelta(hours=7))
+        ) if active else None
 
     if not serial_no:
         return 0
     cur.execute(
         sql.SQL(
             "UPDATE {schema}.{tbl} SET activate = %s, is_use = %s, "
-            "activate_by = COALESCE(%s, activate_by) "
+            "activate_by = %s , "
+            "activate_at = %s "
             "WHERE btrim(serial_no) = btrim(%s)"
         ).format(
             schema=sql.Identifier(schema),
             tbl=sql.Identifier(SERIAL_DATA_TABLE),
         ) + (_NOT_DAMAGED_OR_IN_USE if active else sql.SQL("")),
-        (active, is_use, tag_name, serial_no),
+        (active, is_use, tag_name, time, serial_no),
     )
     updated = cur.rowcount
     if required and updated != 1:

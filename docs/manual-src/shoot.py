@@ -20,7 +20,8 @@ from PySide6.QtWidgets import QApplication
 
 app = QApplication([])
 from PySide6.QtGui import QFontDatabase
-for f in ("LeelawUI.ttf","leelawdb.ttf","segoeui.ttf","segoeuib.ttf","seguisym.ttf","tahoma.ttf","tahomabd.ttf"):
+for f in ("LeelawUI.ttf","leelawdb.ttf","segoeui.ttf","segoeuib.ttf","seguisym.ttf","tahoma.ttf","tahomabd.ttf",
+          "SegoeIcons.ttf","segmdl2.ttf"):  # gear and undo/redo glyphs
     print(f, QFontDatabase.addApplicationFont(r"C:\Windows\Fonts\\"+f))
 
 import db, db.connection, db_worker
@@ -132,6 +133,8 @@ def shoot(lang):
     # read-only role
     ro = MainWindow("viewer01", "user", "VW01"); ro._set_theme("light"); ro.resize(1300, 760); ro.show()
     ro._on_search(); ro.job_combo.setCurrentText(""); grab(ro, "readonly", lang); ro.close()
+    # settings (gear)
+    win._open_settings(); grab(win._settings_dialog, "settings", lang); win._settings_dialog.close()
     # dialogs
     d = RenameContainerDialog(win, level="inner", serial="I26080011", scan_ready=False)
     d.new_edit.setText("I26089011"); d.show(); grab(d, "rename", lang); d.close()

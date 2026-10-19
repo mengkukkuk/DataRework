@@ -50,7 +50,7 @@ LABELS = {
     "rename_children": ("Rename children", "เปลี่ยนรหัสรายการภายใน"),
 }
 
-BUILD_INFO = "commit 56d0739 · 2026-10-08"
+BUILD_INFO = "commit 9c4cb78 · 2026-10-19"
 
 
 def build(lang):
@@ -169,29 +169,29 @@ def build(lang):
 """)
 
     # ------------------------------------------------------------------ 4
-    marks = [(1, 902, 18), (2, 992, 18), (3, 1112, 18), (4, 20, 72), (5, 20, 233), (6, 22, 286),
-             (7, 22, 350), (8, 12, 702), (9, 138, 702), (10, 702, 702), (11, 876, 702), (12, 1036, 702),
-             (13, 1124, 702), (14, 1206, 702)]
+    marks = [(1, 1058, 18), (2, 1124, 18), (3, 20, 72), (4, 20, 233), (5, 22, 286),
+             (6, 22, 350), (7, 12, 702), (8, 138, 702), (9, 702, 702), (10, 876, 702), (11, 1036, 702),
+             (12, 1124, 702), (13, 1206, 702)]
     chapter("tour", "A tour of the main window", "ทำความรู้จักหน้าต่างหลัก", f"""
 {figure("records_%s.png" % lang, t("The main window on the Records tab. Numbers are explained below.", "หน้าต่างหลักที่แท็บ รายการข้อมูล ตัวเลขอธิบายอยู่ด้านล่าง"), marks=marks)}
 {table(["#", t("Part", "ส่วน"), t("What it does", "หน้าที่")], [
-    ["1", t("Language", "ภาษา"), t("<b>EN / TH</b> switches the whole program between English and Thai instantly.", "<b>EN / TH</b> สลับภาษาของโปรแกรมทั้งหมดระหว่างอังกฤษและไทยทันที")],
-    ["2", t("Theme", "ธีมสี"), t(f"{U('dark')} / {U('light')} colour theme.", f"ธีมสี {U('dark')} / {U('light')}")],
-    ["3", t("Signed-in user", "ผู้ใช้ที่เข้าสู่ระบบ"), t("Your username and role.", "ชื่อผู้ใช้และบทบาทของคุณ")],
-    ["4", U("filters"), t("Chooses which records to load. Applies to the Records and Container manager tabs.", "เลือกข้อมูลที่ต้องการโหลด ใช้กับแท็บรายการข้อมูลและแท็บจัดการบรรจุภัณฑ์")],
-    ["5", t("Tabs", "แท็บ"), t(f"{TAB('records')}, {TAB('containers')} and {TAB('damage')}.", f"{TAB('records')} {TAB('containers')} และ {TAB('damage')}")],
-    ["6", U("columns"), t("Tick or untick to show or hide grid columns.", "ติ๊กหรือเอาออกเพื่อแสดงหรือซ่อนคอลัมน์ในตาราง")],
-    ["7", t("Record grid", "ตารางข้อมูล"), t("One row per unit. Click a header to sort, double-click a cell to edit (admins).", "หนึ่งแถวต่อหนึ่งหน่วยสินค้า คลิกหัวคอลัมน์เพื่อจัดเรียง ดับเบิลคลิกเซลล์เพื่อแก้ไข (ผู้ดูแลระบบ)")],
-    ["8", t("Status line", "บรรทัดสถานะ"), t("The latest result, in green (OK) or red (error).", "ผลลัพธ์ล่าสุด สีเขียว (สำเร็จ) หรือสีแดง (ผิดพลาด)")],
-    ["9", B("log", "light"), t("Opens the error log with full details.", "เปิดบันทึกข้อผิดพลาดแบบละเอียด")],
-    ["10", B("rename_c"), t("Rename a container (admins).", "เปลี่ยนรหัสบรรจุภัณฑ์ (ผู้ดูแลระบบ)")],
-    ["11", B("delete_c"), t("Delete a container with everything inside (admins).", "ลบบรรจุภัณฑ์พร้อมทุกอย่างที่อยู่ภายใน (ผู้ดูแลระบบ)")],
-    ["12", B("delete", "light"), t("Marks the selected rows for deletion. Visible on the Records tab only.", "ทำเครื่องหมายลบแถวที่เลือก แสดงเฉพาะแท็บรายการข้อมูล")],
-    ["13", B("save", "green"), t("Writes pending edits and deletions to the database after you confirm (admins).", "บันทึกการแก้ไขและการลบที่ค้างอยู่ลงฐานข้อมูลหลังยืนยัน (ผู้ดูแลระบบ)")],
-    ["14", B("cancel", "red"), t("Clears the filters and empties the grid, discarding unsaved edits.", "ล้างตัวกรองและเคลียร์ตาราง พร้อมทิ้งการแก้ไขที่ยังไม่บันทึก")],
+    ["1", t("Settings", "การตั้งค่า"), t("The gear button opens the settings window: language (English / ไทย) and colour theme (Dark / Light).", "ปุ่มรูปเฟืองเปิดหน้าต่างการตั้งค่า: ภาษา (English / ไทย) และธีมสี (มืด / สว่าง)")],
+    ["2", t("Signed-in user", "ผู้ใช้ที่เข้าสู่ระบบ"), t("Your username and role.", "ชื่อผู้ใช้และบทบาทของคุณ")],
+    ["3", U("filters"), t("Chooses which records to load. Applies to the Records and Container manager tabs.", "เลือกข้อมูลที่ต้องการโหลด ใช้กับแท็บรายการข้อมูลและแท็บจัดการบรรจุภัณฑ์")],
+    ["4", t("Tabs", "แท็บ"), t(f"{TAB('records')}, {TAB('containers')} and {TAB('damage')}.", f"{TAB('records')} {TAB('containers')} และ {TAB('damage')}")],
+    ["5", U("columns"), t("Tick or untick to show or hide grid columns.", "ติ๊กหรือเอาออกเพื่อแสดงหรือซ่อนคอลัมน์ในตาราง")],
+    ["6", t("Record grid", "ตารางข้อมูล"), t("One row per unit. Click a header to sort, double-click a cell to edit (admins).", "หนึ่งแถวต่อหนึ่งหน่วยสินค้า คลิกหัวคอลัมน์เพื่อจัดเรียง ดับเบิลคลิกเซลล์เพื่อแก้ไข (ผู้ดูแลระบบ)")],
+    ["7", t("Status line", "บรรทัดสถานะ"), t("The latest result, in green (OK) or red (error).", "ผลลัพธ์ล่าสุด สีเขียว (สำเร็จ) หรือสีแดง (ผิดพลาด)")],
+    ["8", B("log", "light"), t("Opens the error log with full details.", "เปิดบันทึกข้อผิดพลาดแบบละเอียด")],
+    ["9", B("rename_c"), t("Rename a container (admins).", "เปลี่ยนรหัสบรรจุภัณฑ์ (ผู้ดูแลระบบ)")],
+    ["10", B("delete_c"), t("Delete a container with everything inside (admins).", "ลบบรรจุภัณฑ์พร้อมทุกอย่างที่อยู่ภายใน (ผู้ดูแลระบบ)")],
+    ["11", B("delete", "light"), t("Marks the selected rows for deletion. Visible on the Records tab only.", "ทำเครื่องหมายลบแถวที่เลือก แสดงเฉพาะแท็บรายการข้อมูล")],
+    ["12", B("save", "green"), t("Writes pending edits and deletions to the database after you confirm (admins).", "บันทึกการแก้ไขและการลบที่ค้างอยู่ลงฐานข้อมูลหลังยืนยัน (ผู้ดูแลระบบ)")],
+    ["13", B("cancel", "red"), t("Clears the filters and empties the grid, discarding unsaved edits.", "ล้างตัวกรองและเคลียร์ตาราง พร้อมทิ้งการแก้ไขที่ยังไม่บันทึก")],
 ])}
 <h3>{t("Language and theme", "ภาษาและธีมสี")}</h3>
-<p>{t("Both choices take effect immediately and are remembered the next time you open DataRework.", "ทั้งสองตัวเลือกมีผลทันทีและโปรแกรมจะจำไว้ในครั้งถัดไป")}</p>
+<p>{t("Click the gear button at the top right to open <b>Settings</b>. Pick a language and a colour theme; each choice takes effect immediately and is remembered the next time you open DataRework. Click <b>Close</b> when done.", "คลิกปุ่มรูปเฟืองที่มุมขวาบนเพื่อเปิด<b>การตั้งค่า</b> เลือกภาษาและธีมสี แต่ละตัวเลือกมีผลทันทีและโปรแกรมจะจำไว้ในครั้งถัดไป คลิก<b>ปิด</b>เมื่อเสร็จ")}</p>
+{figure("settings_%s.png" % lang, t("The settings window.", "หน้าต่างการตั้งค่า"), narrow=True)}
 {callout("note", t("A few texts are always in English", "ข้อความบางส่วนเป็นภาษาอังกฤษเสมอ"), f"<p>{t('The Report damage tab, the <b>← Previous</b> / <b>Next →</b> card pager and the “Loading…” text have no Thai translation yet, so they stay in English even when TH is selected.', 'แท็บ Report damage ปุ่มเลื่อนหน้า <b>← Previous</b> / <b>Next →</b> ของการ์ด และข้อความ “Loading…” ยังไม่มีคำแปลภาษาไทย จึงแสดงเป็นภาษาอังกฤษแม้เลือก TH')}</p>")}
 {figure("readonly_%s.png" % lang, t("What a non-admin sees: the Del column is gone and Save, Rename container and Delete container are greyed out.", "สิ่งที่ผู้ใช้ที่ไม่ใช่ผู้ดูแลระบบเห็น: ไม่มีคอลัมน์ ลบ และปุ่มบันทึก เปลี่ยนรหัสบรรจุภัณฑ์ ลบบรรจุภัณฑ์ เป็นสีเทา"))}
 """)
@@ -394,7 +394,7 @@ def build(lang):
 """)
 
     # ------------------------------------------------------------------ 11
-    chapter("status", "Status line and error log", "บรรทัดสถานะและบันทึกข้อผิดพลาด", f"""
+    chapter("status", "Status line and logs", "บรรทัดสถานะและบันทึก", f"""
 <p>{t("The line at the bottom left is the status line. <b style='color:#1f7a4d'>Green</b> means the last action worked; <b style='color:#b23b35'>red</b> means it did not. It shows one short sentence. Search warnings (for example a filter that was skipped) are appended after the row count.", "บรรทัดที่มุมซ้ายล่างคือบรรทัดสถานะ <b style='color:#1f7a4d'>สีเขียว</b>หมายถึงการทำงานล่าสุดสำเร็จ <b style='color:#b23b35'>สีแดง</b>หมายถึงไม่สำเร็จ แสดงเป็นประโยคสั้น ๆ คำเตือนจากการค้นหา (เช่น ตัวกรองที่ถูกข้าม) จะต่อท้ายจำนวนแถว")}</p>
 <h3>{t("The error log", "บันทึกข้อผิดพลาด")}</h3>
 <p>{t(f"Click {B('log', 'light')} to open the <b>{lvl('error_log')}</b> window. It lists the most recent errors with the time and the message, newest last. Tick <b>Show technical details</b> to add the technical detail behind each error; <b>Copy</b> always includes it. It stays open while you keep working.", f"คลิก {B('log', 'light')} เพื่อเปิดหน้าต่าง<b>{lvl('error_log')}</b> แสดงข้อผิดพลาดล่าสุดพร้อมเวลาและข้อความ โดยรายการใหม่สุดอยู่ท้าย ติ๊ก<b>แสดงรายละเอียดทางเทคนิค</b>เพื่อดูรายละเอียดทางเทคนิคของแต่ละข้อผิดพลาด ส่วนปุ่ม<b>คัดลอก</b>จะคัดลอกรายละเอียดทั้งหมดเสมอ หน้าต่างนี้เปิดค้างไว้ได้ขณะทำงานต่อ")}</p>
@@ -404,6 +404,21 @@ def build(lang):
     t(f"{B('clear', 'light')} empties the log; {B('close', 'light')} closes the window.", f"{B('clear', 'light')} ล้างบันทึก; {B('close', 'light')} ปิดหน้าต่าง"),
     t("The log holds the last 500 entries in memory only. It is <b>never saved to disk</b> and is lost when you close DataRework, so copy it before you quit.", "บันทึกเก็บ 500 รายการล่าสุดในหน่วยความจำเท่านั้น <b>ไม่เคยบันทึกลงดิสก์</b> และจะหายเมื่อปิด DataRework ดังนั้นให้คัดลอกก่อนปิดโปรแกรม"),
 ])}
+<h3>{t("The activity log (audit trail)", "บันทึกกิจกรรม (audit log)")}</h3>
+<p>{t("Separately from the error log, DataRework writes a permanent record of what was done, so it can later be checked who changed what and from which computer. You do not have to do anything — it is written automatically. It is a plain text file, not a window in the program.", "นอกจากบันทึกข้อผิดพลาดแล้ว DataRework ยังเขียนบันทึกถาวรว่ามีการทำอะไรไปบ้าง เพื่อให้ตรวจสอบย้อนหลังได้ว่าใครเปลี่ยนอะไรจากเครื่องไหน ไม่ต้องทำอะไรเพิ่ม ระบบเขียนให้อัตโนมัติ เป็นไฟล์ข้อความธรรมดา ไม่ใช่หน้าต่างในโปรแกรม")}</p>
+{bullets([
+    t("<b>Where:</b> the <code>logs</code> folder next to <code>DataRework.exe</code>. A new file is started every day, named <code>audit-YYYY-MM-DD.log</code> (for example <code>audit-2026-10-19.log</code>). Old days are kept; nothing is deleted automatically.", "<b>อยู่ที่ไหน:</b> โฟลเดอร์ <code>logs</code> ข้างไฟล์ <code>DataRework.exe</code> ระบบสร้างไฟล์ใหม่ทุกวัน ตั้งชื่อเป็น <code>audit-YYYY-MM-DD.log</code> (เช่น <code>audit-2026-10-19.log</code>) ไฟล์ของวันก่อน ๆ จะเก็บไว้ ไม่มีการลบอัตโนมัติ"),
+    t("<b>What is recorded:</b> signing in, signing out (closing the main window), saving, changing a container, renaming, deleting and reporting damage. Only actions that <b>succeeded</b> are recorded; refused or failed ones appear in the error log instead.", "<b>บันทึกอะไรบ้าง:</b> การเข้าสู่ระบบ การออกจากระบบ (ปิดหน้าต่างหลัก) การบันทึก การเปลี่ยนบรรจุภัณฑ์ การเปลี่ยนรหัส การลบ และการแจ้งความเสียหาย บันทึกเฉพาะการกระทำที่ <b>สำเร็จ</b> ส่วนที่ถูกปฏิเสธหรือล้มเหลวจะอยู่ในบันทึกข้อผิดพลาดแทน"),
+    t("<b>Save</b> writes a summary line (how many rows were updated, deleted or skipped because they were already transferred) and then one line per row. If a save edits a container serial (display, inner or carton), that row also gets a <b>Change container</b> line.", "<b>การบันทึก</b>จะเขียนบรรทัดสรุป (จำนวนแถวที่แก้ไข ลบ หรือข้ามเพราะถูกโอนแล้ว) แล้วตามด้วยหนึ่งบรรทัดต่อหนึ่งแถว หากการบันทึกแก้ไขรหัสบรรจุภัณฑ์ (display, inner หรือ carton) แถวนั้นจะมีบรรทัด <b>Change container</b> เพิ่มด้วย"),
+])}
+{table([t("Part of each line", "ส่วนของแต่ละบรรทัด"), t("Meaning", "ความหมาย")], [
+    ["<code>time</code>", t("Date and time on this computer", "วันที่และเวลาของเครื่องนี้")],
+    ["<code>VM_ID</code>", t("Which computer wrote the line (the <code>VM_ID</code> value in <code>.env</code>)", "เครื่องที่เขียนบรรทัดนี้ (ค่า <code>VM_ID</code> ใน <code>.env</code>)")],
+    ["<code>tag_name</code>", t("The tag of the person signed in", "แท็กของผู้ที่เข้าสู่ระบบ")],
+    ["<code>Activities</code>", t("What was done, with the serials involved", "สิ่งที่ทำ พร้อมรหัสซีเรียลที่เกี่ยวข้อง")],
+])}
+<p>{t("Example:", "ตัวอย่าง:")} <code>[time: 2026-10-19 13:00:48, VM_ID: 1, tag_name: ADMIN, Activities: Rename display "D26080011" -&gt; "D26089011" (12 row(s), 15 link(s))]</code></p>
+{callout("note", t("Keep it private", "เก็บเป็นความลับ"), f"<p>{t('The activity log contains serial numbers and user tags. It is a record for supervisors and IT — do not edit it, and do not send it outside the company.', 'บันทึกกิจกรรมมีรหัสซีเรียลและแท็กผู้ใช้ เป็นบันทึกสำหรับหัวหน้างานและ IT — อย่าแก้ไข และอย่าส่งออกนอกบริษัท')}</p>")}
 """)
 
     # ------------------------------------------------------------------ 12
@@ -494,6 +509,7 @@ def build(lang):
     [t("Values offered in Job / Product lists", "ค่าในรายการใบสั่งงาน/ผลิตภัณฑ์"), t("300 (you can still type any value)", "300 ค่า (ยังพิมพ์ค่าใดก็ได้)")],
     [t("Container cards per page", "การ์ดต่อหน้า"), t("up to 20, fewer on a small window", "สูงสุด 20 น้อยกว่านั้นหากหน้าต่างเล็ก")],
     [t("Error log", "บันทึกข้อผิดพลาด"), t("last 500 entries, memory only", "500 รายการล่าสุด เก็บในหน่วยความจำเท่านั้น")],
+    [t("Activity log", "บันทึกกิจกรรม"), t("one file per day in the <code>logs</code> folder; never deleted automatically", "หนึ่งไฟล์ต่อวันในโฟลเดอร์ <code>logs</code> ไม่ถูกลบอัตโนมัติ")],
     [t("Serial totals refresh", "การอัปเดตยอดรหัสซีเรียล"), t("about every 10 seconds", "ประมาณทุก 10 วินาที")],
 ])}
 <h3>{t("Keys", "แป้นพิมพ์")}</h3>

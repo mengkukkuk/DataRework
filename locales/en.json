@@ -221,5 +221,11 @@
   "Redo the edit you just undid (Ctrl+Y)": "Redo the edit you just undid (Ctrl+Y)",
   "Undid {p0} change(s).": "Undid {p0} change(s).",
   "Redid {p0} change(s).": "Redid {p0} change(s).",
-  "Reverted to the saved values. Undo brings your edits back.": "Reverted to the saved values. Undo brings your edits back."
+  "Reverted to the saved values. Undo brings your edits back.": "Reverted to the saved values. Undo brings your edits back.",
+  "Settings": "Settings",
+  "Settings: language and appearance": "Settings: language and appearance",
+  "Changes apply right away and are remembered on this computer.": "Changes apply right away and are remembered on this computer.",
+  "Language of menus, buttons and messages.": "Language of menus, buttons and messages.",
+  "Appearance": "Appearance",
+  "Dark or light colours for the whole window.": "Dark or light colours for the whole window."
 }

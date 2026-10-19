@@ -11,6 +11,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
+import audit_log
 from login_window import LoginWindow
 from main_window import MainWindow
 import service_manager
@@ -39,6 +40,8 @@ class App:
             self.login_window.show()
 
     def _on_login_succeeded(self, username, permission, tag_name):
+        audit_log.set_session(tag_name)
+        audit_log.record(f"Login - user {username} ({permission})")
         self.main_window = MainWindow(username, permission,tag_name)
         self.main_window.show()
         if self.login_window:

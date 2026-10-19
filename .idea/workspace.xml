@@ -4,20 +4,46 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Enforce transfer lock handling across operations&#10;&#10;- Introduced `is_transfer` flag checks to prevent updates, deletions, renames, or grid saves on transferred rows.&#10;- Added `refuse_transferred` method in `db/transfer.py` to centralize transfer lock validation logic.&#10;- Adjusted `delete_container`, `rename_container`, and grid save logic to respect transfer locks, throwing `TransferLockedError` when applicable.&#10;- Enhanced `MainWindow` save functionality to notify users of skipped updates due to transfer locks.&#10;- Updated tests with comprehensive scenarios for handling transfer-locked rows during operations.">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add tests for `serial_guard_pg` and `edit_history` functionality&#10;&#10;- Introduced comprehensive test cases for renaming onto serials in PostgreSQL (`_test_serial_guard_pg.py`), ensuring inventory integrity and handling damaged or in-use rows.&#10;- Added `test_edit_history.py` to validate undo/redo functionality and handling of unsaved edits in grid views.&#10;- Updated `db` module with `SerialUnavailableError` definition for handling renamed damaged rows.&#10;- Adjusted test coverage to ensure controlled operations in temporary database tables.">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/hierarchy.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/hierarchy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/damage_report_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/damage_report_panel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/serial_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/serial_state.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/debug_log.py" beforeDir="false" afterPath="$PROJECT_DIR$/debug_log.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/datarework-workflow.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/datarework-workflow.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/i18n.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/i18n.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual-src/manual_content.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/manual_content.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shoot.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shoot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_deep_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_deep_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_deep_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_deep_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_units_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_units_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/containers_units_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/containers_units_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/damage_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/damage_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/damage_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/damage_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/filters_folded_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/filters_folded_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/filters_folded_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/filters_folded_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/log_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/log_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/log_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/log_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/login_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/login_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/login_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/login_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/readonly_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/readonly_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/readonly_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/readonly_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_edit_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_edit_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_edit_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_edit_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_scope_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_scope_en.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_scope_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_scope_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/records_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/records_th.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.pdf" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual.th.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.th.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/manual.th.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.th.pdf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/style.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_container_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_container_rename.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_container_rename.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_db_package.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_db_package.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -60,12 +86,12 @@
     &quot;assignee&quot;: &quot;mengkukkuk&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/mengkukkuk/DataRework.git",
-    "accountId": "f331b1d4-f616-4210-930b-7eafd752559a"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mengkukkuk/DataRework.git&quot;,
+    &quot;accountId&quot;: &quot;f331b1d4-f616-4210-930b-7eafd752559a&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/main_window.py" root0="SKIP_INSPECTION" />
   </component>
@@ -159,42 +185,43 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;PowerShell.build.ps1.executor&quot;: &quot;Run&quot;,
-    &quot;Python tests.Python tests in tests.executor&quot;: &quot;Run&quot;,
-    &quot;Python._test_highlight.executor&quot;: &quot;Run&quot;,
-    &quot;Python.db.executor&quot;: &quot;Run&quot;,
-    &quot;Python.encrypt_password.executor&quot;: &quot;Run&quot;,
-    &quot;Python.login_window.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.rcvpass.executor&quot;: &quot;Run&quot;,
-    &quot;Python.serial_store_aio.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/milln/CWN Work/mille/DataRework/dist&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "PowerShell.build.ps1.executor": "Run",
+    "Python tests.Python tests in tests.executor": "Run",
+    "Python._test_highlight.executor": "Run",
+    "Python.db.executor": "Run",
+    "Python.encrypt_password.executor": "Run",
+    "Python.login_window.executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.rcvpass.executor": "Run",
+    "Python.serial_store_aio.executor": "Run",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "master",
+    "junie.onboarding.icon.badge.shown": "true",
+    "last_opened_file_path": "G:/Code/DataRework/dist",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "to.speed.mode.migration.done": "true",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="G:\Code\DataRework\dist" />
       <recent name="C:\Users\milln\CWN Work\mille\DataRework\dist" />
       <recent name="C:\Users\milln\CWN Work\mille\DataRework" />
       <recent name="G:\Code\DataRework\.claude" />
@@ -589,7 +616,15 @@
       <option name="project" value="LOCAL" />
       <updated>1791364466524</updated>
     </task>
-    <option name="localTasksCounter" value="41" />
+    <task id="LOCAL-00041" summary="Add tests for `serial_guard_pg` and `edit_history` functionality&#10;&#10;- Introduced comprehensive test cases for renaming onto serials in PostgreSQL (`_test_serial_guard_pg.py`), ensuring inventory integrity and handling damaged or in-use rows.&#10;- Added `test_edit_history.py` to validate undo/redo functionality and handling of unsaved edits in grid views.&#10;- Updated `db` module with `SerialUnavailableError` definition for handling renamed damaged rows.&#10;- Adjusted test coverage to ensure controlled operations in temporary database tables.">
+      <option name="closed" value="true" />
+      <created>1792163975981</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1792163975981</updated>
+    </task>
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -607,8 +642,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Enhance login UI and streamline theme handling&#10;&#10;Introduce a responsive login window with improved styling via `login.css` and QSS updates. Consolidate theme-related logic into `theme.py`, retiring duplicate code from `main_window.py`. Enable server-side distinct value fetching for enhanced tag filtering and update filters UI behavior accordingly. Add new translations to support login-related text in EN/TH (`locales/en.json`, `locales/th.json`)." />
-    <MESSAGE value="Split `db.py` into a structured `db/` package&#10;&#10;Refactor `db.py` into an organized package with modular submodules: `connection.py`, `auth.py`, `schema.py`, `queries.py`, `hierarchy.py`, `serial_state.py`, `edge_mirror.py`, and `containers.py`. Introduce three new helper functions (`_save_changes`, `_update_staging_serial_data`, `save_grid_changes`) to unify grid-save into a single transaction. Update `db/__init__.py` for proper re-exports while preserving API compatibility." />
     <MESSAGE value="Add `ContainerPanel` UI and bulk delete feature; integrate with database and tests" />
     <MESSAGE value="Add product avatar support&#10;&#10;Introduce `AvatarCatalog` for normalized product images based on packaging levels. Add `avatars.json` and `product-avatars.md` for image mappings and documentation. Update `ContainerPanel` to display avatars alongside container info. Enhance database queries to include distinct product data. Add integration tests to validate product avatar functionality." />
     <MESSAGE value="Add non-modal product image preview&#10;&#10;Introduce `ImagePreview` for viewing product images without blocking the UI. Add `AvatarLabel` to make product avatars interactive. Update `ContainerPanel` to support preview functionality and ensure previews persist during container refresh. Add related tests and new translations for the feature." />
@@ -632,6 +665,8 @@
     <MESSAGE value="Auth adjustment + user management" />
     <MESSAGE value="Refactor admin role logic and add robust tests&#10;&#10;Implement `is_admin_role` to handle normalized admin role checks, supporting variations like &quot;super admin&quot; and its variants. Apply the function within `MainWindow` for accurate permissions. Update EN/TH translations with &quot;super admin&quot; labels. Add unit tests to validate role handling and admin functionality across components." />
     <MESSAGE value="Enforce transfer lock handling across operations&#10;&#10;- Introduced `is_transfer` flag checks to prevent updates, deletions, renames, or grid saves on transferred rows.&#10;- Added `refuse_transferred` method in `db/transfer.py` to centralize transfer lock validation logic.&#10;- Adjusted `delete_container`, `rename_container`, and grid save logic to respect transfer locks, throwing `TransferLockedError` when applicable.&#10;- Enhanced `MainWindow` save functionality to notify users of skipped updates due to transfer locks.&#10;- Updated tests with comprehensive scenarios for handling transfer-locked rows during operations." />
-    <option name="LAST_COMMIT_MESSAGE" value="Enforce transfer lock handling across operations&#10;&#10;- Introduced `is_transfer` flag checks to prevent updates, deletions, renames, or grid saves on transferred rows.&#10;- Added `refuse_transferred` method in `db/transfer.py` to centralize transfer lock validation logic.&#10;- Adjusted `delete_container`, `rename_container`, and grid save logic to respect transfer locks, throwing `TransferLockedError` when applicable.&#10;- Enhanced `MainWindow` save functionality to notify users of skipped updates due to transfer locks.&#10;- Updated tests with comprehensive scenarios for handling transfer-locked rows during operations." />
+    <MESSAGE value="Refactor `_set_serial_active` to handle damaged and in-use serials gracefully&#10;&#10;- Exclude rows marked as `is_damaged` or `is_use` when activating serials.&#10;- Add `_serial_row_count` helper for precise row existence checks.&#10;- Update tests to validate activation, deactivation, and skip logic for damaged/in-use rows." />
+    <MESSAGE value="Add tests for `serial_guard_pg` and `edit_history` functionality&#10;&#10;- Introduced comprehensive test cases for renaming onto serials in PostgreSQL (`_test_serial_guard_pg.py`), ensuring inventory integrity and handling damaged or in-use rows.&#10;- Added `test_edit_history.py` to validate undo/redo functionality and handling of unsaved edits in grid views.&#10;- Updated `db` module with `SerialUnavailableError` definition for handling renamed damaged rows.&#10;- Adjusted test coverage to ensure controlled operations in temporary database tables." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add tests for `serial_guard_pg` and `edit_history` functionality&#10;&#10;- Introduced comprehensive test cases for renaming onto serials in PostgreSQL (`_test_serial_guard_pg.py`), ensuring inventory integrity and handling damaged or in-use rows.&#10;- Added `test_edit_history.py` to validate undo/redo functionality and handling of unsaved edits in grid views.&#10;- Updated `db` module with `SerialUnavailableError` definition for handling renamed damaged rows.&#10;- Adjusted test coverage to ensure controlled operations in temporary database tables." />
   </component>
 </project>

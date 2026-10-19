@@ -1,3 +1,4 @@
+import datetime
 import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -344,10 +345,13 @@ class TestSaveGridChangesSuccess(unittest.TestCase):
             call.args[1] for statement, call in zip(sqls, cur.execute.call_args_list)
             if "staging_serial_data" in statement and "UPDATE" in statement
         ]
-        self.assertEqual(serial_params, [
-            (False, "false", "TEST-OPERATOR", "OLD_SERIAL"),
-            (True, "true", "TEST-OPERATOR", "NEW_SERIAL"),
-        ])
+        # Deactivating writes a real NULL (not the string '<null>') to activate_at;
+        # activating stamps the current time.
+        self.assertEqual(len(serial_params), 2)
+        self.assertEqual(serial_params[0], (False, "false", "none", None, "OLD_SERIAL"))
+        self.assertEqual(serial_params[1][:3], (True, "rework", "TEST-OPERATOR"))
+        self.assertIsInstance(serial_params[1][3], datetime.datetime)
+        self.assertEqual(serial_params[1][4], "NEW_SERIAL")
         self.assertTrue(all("activate_by" in statement for statement in serial_data_writes))
         # Matched on the trimmed serial: staging_serial_data stores a trailing space.
         self.assertTrue(all("btrim" in statement for statement in serial_data_writes))
