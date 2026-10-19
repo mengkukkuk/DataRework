@@ -23,11 +23,6 @@ CONTAINER_LEVELS = ("display", "inner", "carton")
 STAGING_EDGE_TABLE = "staging_product_logs"
 SERIAL_DATA_TABLE = "staging_serial_data"
 
-# A filling_product_logs row with this flag set has already been transferred and
-# is frozen: grid saves skip it, and a container delete/rename that would reach it
-# is refused (see db/transfer.py).
-TRANSFER_COLUMN = "is_transfer"
-
 
 class SharedEdgeError(Exception):
     """A serial/roll edit would rewrite container rows the user never saw.
@@ -83,15 +78,4 @@ class ContainerDeleteError(Exception):
     the user confirmed and the moment of deletion, or when the database refused
     a statement and the transaction was rolled back. Nothing is deleted, and the
     message says which of those happened -- it is shown to the user as it is.
-    """
-
-
-class TransferLockedError(ContainerDeleteError):
-    """A whole-container delete or rename would touch rows already transferred.
-
-    A grid save can skip a transferred row and carry on, but a container operation
-    cannot: the link table and the serial inventory are rewritten for the whole
-    container, so leaving some of its rows behind would leave the tables
-    disagreeing. The operation is refused outright and nothing is written.
-    Subclasses ContainerDeleteError so the delete path already shows it as it is.
     """

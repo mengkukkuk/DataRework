@@ -213,8 +213,6 @@
   "Show all": "Show all",
   "Clear these filters and show every container": "Clear these filters and show every container",
   "{p0} {p1}": "{p0} {p1}",
-  "Nothing was saved: {p0} row(s) are already transferred.": "Nothing was saved: {p0} row(s) are already transferred.",
-  "Changes saved. {p0} row(s) skipped: already transferred.": "Changes saved. {p0} row(s) skipped: already transferred.",
   "Undo": "Undo",
   "Redo": "Redo",
   "Undo the last unsaved edit (Ctrl+Z)": "Undo the last unsaved edit (Ctrl+Z)",

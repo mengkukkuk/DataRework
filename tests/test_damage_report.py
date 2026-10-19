@@ -51,7 +51,8 @@ class ReportDamageTests(unittest.TestCase):
         self.assertIn("is_damaged", str(update_sql))
         self.assertIn("is_damaged_at = now()", str(update_sql))  # when it was reported
         self.assertIn("activate = false", str(update_sql))
-        self.assertEqual(update_params, ("U1",))
+        self.assertIn("is_use = %s", str(update_sql))  # a damaged serial is no longer "in use"
+        self.assertEqual(update_params, (None, "U1"))
         conn.commit.assert_called_once()
 
     def test_going_active_between_the_read_and_the_write_is_refused_not_reported(self):

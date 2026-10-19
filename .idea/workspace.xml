@@ -4,28 +4,24 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Introduce audit logging, settings dialog, and corresponding tests&#10;&#10;- Added `audit_log.py` for maintaining an append-only audit trail of operator activities with VM details and timestamps.&#10;- Implemented `SettingsDialog` in `settings_dialog.py` to centralize user preferences like language and theme with immediate application.&#10;- Created `tests/test_audit_log.py` to validate audit logging functionality, including session-based and explicit tagging, file handling for date changes, and resilience against unwritable locations.&#10;- Updated Thai user manual to reflect the new settings dialogue functionality.">
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Add damage reporting capabilities and corresponding documentation&#10;&#10;- Introduced `damage_report_pdf.py` to generate and export damage reports as PDFs using `QPdfWriter` and `QTextDocument`.&#10;- Added SQL migration `add_is_damaged_at.sql` to include `is_damaged_at` column in `staging_serial_data` for tracking when damage is reported.&#10;- Created `tests/test_damage_report_pdf.py` to ensure accurate layout, pagination, and file export for the damage report PDFs.&#10;- Updated Thai user manual to clarify untranslated damage reporting interface elements.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/audit_log.py" beforeDir="false" afterPath="$PROJECT_DIR$/audit_log.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/damage_report_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/damage_report_panel.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/serial_state.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/serial_state.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/containers.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/containers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/deletion.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/deletion.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/edge_mirror.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/edge_mirror.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/hierarchy.py" beforeDir="false" afterPath="$PROJECT_DIR$/db/hierarchy.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/transfer.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/datarework-workflow.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/datarework-workflow.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual-src/manual_content.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/manual_content.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shoot.py" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shoot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/damage_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/damage_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/damage_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/damage_th.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/log_en.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/log_en.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual-src/shots/log_th.png" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual-src/shots/log_th.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.pdf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/manual.th.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/manual.th.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/manual.th.pdf" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/locales/th.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/th.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_window.py" beforeDir="false" afterPath="$PROJECT_DIR$/main_window.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_damage_report.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_damage_report.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_damage_report_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_damage_report_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_db_package.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_db_package.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_transfer_lock.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -211,7 +207,7 @@
       <recent name="G:\Code\DataRework\tests" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.main">
+  <component name="RunManager" selected="PowerShell.build.ps1">
     <configuration name="build.ps1" type="PowerShellRunType" factoryName="PowerShell" temporary="true" scriptUrl="$PROJECT_DIR$/build.ps1" executablePath="$PROJECT_DIR$/../../../../../windows/System32/WindowsPowerShell/v1.0/powershell.exe">
       <envs />
       <method v="2" />
@@ -255,8 +251,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main" />
         <item itemvalue="PowerShell.build.ps1" />
+        <item itemvalue="Python.main" />
         <item itemvalue="Python tests.Python tests in tests" />
       </list>
     </recent_temporary>
@@ -613,7 +609,15 @@
       <option name="project" value="LOCAL" />
       <updated>1792391822965</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="Add damage reporting capabilities and corresponding documentation&#10;&#10;- Introduced `damage_report_pdf.py` to generate and export damage reports as PDFs using `QPdfWriter` and `QTextDocument`.&#10;- Added SQL migration `add_is_damaged_at.sql` to include `is_damaged_at` column in `staging_serial_data` for tracking when damage is reported.&#10;- Created `tests/test_damage_report_pdf.py` to ensure accurate layout, pagination, and file export for the damage report PDFs.&#10;- Updated Thai user manual to clarify untranslated damage reporting interface elements.">
+      <option name="closed" value="true" />
+      <created>1792400058428</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1792400058428</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -631,7 +635,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Add product avatar support&#10;&#10;Introduce `AvatarCatalog` for normalized product images based on packaging levels. Add `avatars.json` and `product-avatars.md` for image mappings and documentation. Update `ContainerPanel` to display avatars alongside container info. Enhance database queries to include distinct product data. Add integration tests to validate product avatar functionality." />
     <MESSAGE value="Add non-modal product image preview&#10;&#10;Introduce `ImagePreview` for viewing product images without blocking the UI. Add `AvatarLabel` to make product avatars interactive. Update `ContainerPanel` to support preview functionality and ensure previews persist during container refresh. Add related tests and new translations for the feature." />
     <MESSAGE value="Add tests and improve UX for barcode rename dialog&#10;&#10;Introduce `test_barcode_rename.py` with new test cases to validate barcode renaming flow, including keyboard scanner behavior and prefill handling. Enhance `RenameContainerDialog` UX with auto-focus logic, event filtering, placeholder texts, and delayed preview updates. Update translations to include additional text for improved guidance." />
     <MESSAGE value="Add comprehensive DataRework workflow guide&#10;&#10;Introduce a detailed HTML documentation covering DataRework's architecture, workflows, data contracts, queries, and proposed development extensions. Designed for developers and operators, this guide emphasizes system understanding and scalability paths. Includes responsive design, print-friendly styling, and organized sections for usability." />
@@ -656,6 +659,7 @@
     <MESSAGE value="Refactor `_set_serial_active` to handle damaged and in-use serials gracefully&#10;&#10;- Exclude rows marked as `is_damaged` or `is_use` when activating serials.&#10;- Add `_serial_row_count` helper for precise row existence checks.&#10;- Update tests to validate activation, deactivation, and skip logic for damaged/in-use rows." />
     <MESSAGE value="Add tests for `serial_guard_pg` and `edit_history` functionality&#10;&#10;- Introduced comprehensive test cases for renaming onto serials in PostgreSQL (`_test_serial_guard_pg.py`), ensuring inventory integrity and handling damaged or in-use rows.&#10;- Added `test_edit_history.py` to validate undo/redo functionality and handling of unsaved edits in grid views.&#10;- Updated `db` module with `SerialUnavailableError` definition for handling renamed damaged rows.&#10;- Adjusted test coverage to ensure controlled operations in temporary database tables." />
     <MESSAGE value="Introduce audit logging, settings dialog, and corresponding tests&#10;&#10;- Added `audit_log.py` for maintaining an append-only audit trail of operator activities with VM details and timestamps.&#10;- Implemented `SettingsDialog` in `settings_dialog.py` to centralize user preferences like language and theme with immediate application.&#10;- Created `tests/test_audit_log.py` to validate audit logging functionality, including session-based and explicit tagging, file handling for date changes, and resilience against unwritable locations.&#10;- Updated Thai user manual to reflect the new settings dialogue functionality." />
-    <option name="LAST_COMMIT_MESSAGE" value="Introduce audit logging, settings dialog, and corresponding tests&#10;&#10;- Added `audit_log.py` for maintaining an append-only audit trail of operator activities with VM details and timestamps.&#10;- Implemented `SettingsDialog` in `settings_dialog.py` to centralize user preferences like language and theme with immediate application.&#10;- Created `tests/test_audit_log.py` to validate audit logging functionality, including session-based and explicit tagging, file handling for date changes, and resilience against unwritable locations.&#10;- Updated Thai user manual to reflect the new settings dialogue functionality." />
+    <MESSAGE value="Add damage reporting capabilities and corresponding documentation&#10;&#10;- Introduced `damage_report_pdf.py` to generate and export damage reports as PDFs using `QPdfWriter` and `QTextDocument`.&#10;- Added SQL migration `add_is_damaged_at.sql` to include `is_damaged_at` column in `staging_serial_data` for tracking when damage is reported.&#10;- Created `tests/test_damage_report_pdf.py` to ensure accurate layout, pagination, and file export for the damage report PDFs.&#10;- Updated Thai user manual to clarify untranslated damage reporting interface elements." />
+    <option name="LAST_COMMIT_MESSAGE" value="Add damage reporting capabilities and corresponding documentation&#10;&#10;- Introduced `damage_report_pdf.py` to generate and export damage reports as PDFs using `QPdfWriter` and `QTextDocument`.&#10;- Added SQL migration `add_is_damaged_at.sql` to include `is_damaged_at` column in `staging_serial_data` for tracking when damage is reported.&#10;- Created `tests/test_damage_report_pdf.py` to ensure accurate layout, pagination, and file export for the damage report PDFs.&#10;- Updated Thai user manual to clarify untranslated damage reporting interface elements." />
   </component>
 </project>

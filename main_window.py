@@ -1368,12 +1368,10 @@ class MainWindow(QMainWindow):
         try:
             # One transaction: the mirror refuses a shared container before
             # filling_product_logs is touched, and a later failure rolls both back.
-            # Rows already transferred are skipped by the database layer, which
-            # hands back their keys so the user is told what was not saved.
-            skipped = list(db.save_grid_changes(
+            db.save_grid_changes(
                 STAGING_TABLE, self._pk_columns, updates, deletes,
                 tag_name=self.tag_name,
-            ) or [])
+            )
         except psycopg2.OperationalError as exc:
             self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
             return
@@ -1392,32 +1390,20 @@ class MainWindow(QMainWindow):
             self._show_status(tr('Save failed: {p0}', p0=exc), error=True, exc=exc)
             return
 
-        if len(skipped) >= len(updates) + len(deletes):
-            message = tr('Nothing was saved: {p0} row(s) are already transferred.', p0=len(skipped))
-        elif skipped:
-            message = tr('Changes saved. {p0} row(s) skipped: already transferred.', p0=len(skipped))
-        else:
-            message = tr('Changes saved.')
-        self._show_status(message)
-        self._audit_save(updates, deletes, skipped)
+        self._show_status(tr('Changes saved.'))
+        self._audit_save(updates, deletes)
         # Still the same view the user was in, one container's rows or all of them.
-        # The reload would otherwise replace a skipped-rows notice with "N row(s) loaded.".
-        self._on_search(container_path=self._record_scope,
-                        success_message=message if skipped else None)
+        self._on_search(container_path=self._record_scope)
 
-    def _audit_save(self, updates, deletes, skipped):
+    def _audit_save(self, updates, deletes):
         """Audit-log a committed save: a summary, then one line per row touched.
 
-        Rows the database skipped (already transferred) were not written, so they
-        are left out. A container serial edit is also filed as "Change container",
-        since it re-parents the row rather than just correcting a value.
+        A container serial edit is also filed as "Change container", since it
+        re-parents the row rather than just correcting a value.
         """
-        skipped = {tuple(pk) for pk in skipped}
-        updates = [(pk, ch) for pk, ch in updates if tuple(pk) not in skipped]
-        deletes = [pk for pk in deletes if tuple(pk) not in skipped]
         audit_log.record(
             f"Save - {len(updates)} update(s), {len(deletes)} delete(s) "
-            f"in {STAGING_TABLE}, {len(skipped)} skipped")
+            f"in {STAGING_TABLE}")
         for pk, changes in updates:
             container_edits = {col: val for col, val in changes.items()
                                if col in CONTAINER_SERIAL_COLUMNS}
@@ -1511,8 +1497,7 @@ class MainWindow(QMainWindow):
         except psycopg2.OperationalError as exc:
             self._show_status(tr('Unable to reach the database'), error=True, exc=exc)
             return
-        except (db.SerialConflictError, db.SerialInventoryError,
-                db.TransferLockedError) as exc:
+        except (db.SerialConflictError, db.SerialInventoryError) as exc:
             self._show_status(str(exc), error=True, exc=exc)
             return
         except Exception as exc:

@@ -19,9 +19,8 @@ from psycopg2 import sql
 
 from . import connection
 from .hierarchy import (LEVELS, CONTAINER_LEVELS, STAGING_EDGE_TABLE,
-                        ContainerDeleteError, TransferLockedError)
+                        ContainerDeleteError)
 from .serial_state import _set_serials_inactive
-from .transfer import is_transferred
 
 # The links nest at most carton > inner > display > unit, so a chain longer than
 # this is a loop in bad data, not a deeper hierarchy.
@@ -283,15 +282,6 @@ def _plan(cur, schema, table, level, serial_no):
     )
     names = [description[0] for description in cur.description]
     saved = [dict(zip(names, values)) for values in cur.fetchall()]
-
-    # Rows already transferred are frozen. The links and serials are removed for the
-    # whole container, so deleting around them would leave the tables disagreeing.
-    transferred = sum(1 for row in saved if is_transferred(row))
-    if transferred:
-        raise TransferLockedError(
-            f'Cannot delete {level} "{serial_no}": {transferred} of its {len(saved)} '
-            "row(s) are already transferred. Nothing was deleted."
-        )
 
     above = LEVELS[LEVELS.index(level) + 1:]
     for ancestor in above:
