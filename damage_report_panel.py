@@ -134,10 +134,10 @@ class DamageReportPanel(QWidget):
         self.open_folder_btn.setObjectName("ghostBtn")
         self.open_folder_btn.clicked.connect(self._on_open_browse_folder)
         folder_row.addWidget(self.open_folder_btn)
-        self.export_btn = QPushButton(tr("Export PDF"))
+        """self.export_btn = QPushButton(tr("Export PDF"))
         self.export_btn.setObjectName("ghostBtn")
         self.export_btn.clicked.connect(self._on_export)
-        folder_row.addWidget(self.export_btn)
+        folder_row.addWidget(self.export_btn)"""
         self.export_txt_btn = QPushButton(tr("Export TXT"))
         self.export_txt_btn.setObjectName("ghostBtn")
         self.export_txt_btn.clicked.connect(self._on_export_txt)
