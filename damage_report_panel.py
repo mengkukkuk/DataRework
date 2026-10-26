@@ -100,6 +100,9 @@ class DamageReportPanel(QWidget):
         layout.addLayout(export_row)
         self._on_any_time_toggled(True)
 
+        # --- Export: as datetime-damage-report.txt (Only serial no. in selected time range in report) -----------------------------
+        
+        
         columns_row = QHBoxLayout()
         columns_row.setSpacing(8)
         columns_row.addWidget(QLabel(tr("Columns")))
@@ -120,14 +123,25 @@ class DamageReportPanel(QWidget):
         self.folder_edit.setObjectName("damageReportFolder")
         self.folder_edit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         folder_row.addWidget(self.folder_edit, 1)
+
+        #section button
         self.browse_btn = QPushButton(tr("Browse..."))
         self.browse_btn.setObjectName("ghostBtn")
         self.browse_btn.clicked.connect(self._on_browse)
         folder_row.addWidget(self.browse_btn)
+        #open folder button open_browse_folder
+        self.open_folder_btn = QPushButton(tr("Open folder"))
+        self.open_folder_btn.setObjectName("ghostBtn")
+        self.open_folder_btn.clicked.connect(self._on_open_browse_folder)
+        folder_row.addWidget(self.open_folder_btn)
         self.export_btn = QPushButton(tr("Export PDF"))
         self.export_btn.setObjectName("ghostBtn")
         self.export_btn.clicked.connect(self._on_export)
         folder_row.addWidget(self.export_btn)
+        self.export_txt_btn = QPushButton(tr("Export TXT"))
+        self.export_txt_btn.setObjectName("ghostBtn")
+        self.export_txt_btn.clicked.connect(self._on_export_txt)
+        folder_row.addWidget(self.export_txt_btn)
         layout.addLayout(folder_row)
 
         self.export_result_label = QLabel("")
@@ -213,6 +227,45 @@ class DamageReportPanel(QWidget):
         audit_log.record(
             f"Export damage report - {len(rows)} serial(s), "
             f"{damage_report_pdf.describe_range(start, end)}, file {os.path.basename(path)}")
+
+    def _on_export_txt(self):
+        label = self.export_result_label
+        start, end = self._selected_range()
+        if start is not None and start > end:
+            self._set_result(tr("The start of the range is after its end."), error=True, label=label)
+            return
+        folder = self.folder_edit.text().strip()
+        if not folder or not os.path.isdir(folder):
+            self._set_result(tr("Folder does not exist: {p0}", p0=folder), error=True, label=label)
+            return
+        self.export_txt_btn.setEnabled(False)
+        try:
+            rows = db.list_damaged(start, end)
+        except psycopg2.OperationalError:
+            self._set_result(tr("Unable to reach the database"), error=True, label=label)
+            return
+        except Exception as exc:
+            self._set_result(tr("Export failed: {p0}", p0=exc), error=True, label=label)
+            return
+        finally:
+            self.export_txt_btn.setEnabled(True)
+
+        if not rows:
+            self._set_result(tr("No damaged serials in this range."), label=label)
+            return
+        path = os.path.join(folder,
+                            f"datetime-damage-report-{QDateTime.currentDateTime().toString('yyyyMMddHHmmss')}.txt")
+        try:
+            with open(path, "w", encoding="utf-8") as txt_file:
+                txt_file.writelines(f"{row['serial_no']}\n" for row in rows)
+        except OSError as exc:
+            self._set_result(tr("Export failed: {p0}", p0=exc), error=True, label=label)
+            return
+        audit_log.record(
+            f"Export TXT damage report - {len(rows)} serial(s), "
+            f"{damage_report_pdf.describe_range(start, end)}, file {os.path.basename(path)}")
+        self._set_result(
+            tr("Exported {p0} damaged serial(s) to {p1}", p0=len(rows), p1=path), label=label)
         self._set_result(
             tr("Exported {p0} damaged serial(s) to {p1}", p0=len(rows), p1=path), label=label)
 
@@ -239,6 +292,12 @@ class DamageReportPanel(QWidget):
         finally:
             self.report_btn.setEnabled(True)
             self.focus_input()
+
+    def _on_open_browse_folder(self):
+        folder = self.folder_edit.text().strip()
+        if not folder or not os.path.isdir(folder):
+            return
+        os.startfile(folder)
 
     def _offer_route(self, serial):
         reply = QMessageBox.question(
