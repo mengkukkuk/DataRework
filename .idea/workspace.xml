@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Remove transfer lock restrictions and update documentation&#10;&#10;- Removed `is_transfer` flag checks throughout grid save, delete, and rename operations.&#10;- Deleted `db/transfer.py` and `TransferLockedError` references to simplify validation logic.&#10;- Updated test suite to reflect the removal of transfer lock logic and ensure consistent functionality across all cases.&#10;- Clarified documentation to align with the updated behavior.">
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_10_14_2026_10_35_AM_[Changes]/manual.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_10_14_2026_10_35_AM_[Changes]/manual.th.pdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_10_14_2026_10_35_AM_[Changes]/shelved.patch" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_10_14_2026_10_35_AM__Changes_.xml" beforeDir="false" />
+    <list default="true" id="3319ebd8-8962-403d-841c-b66b5cd8af0e" name="Changes" comment="Hide export pdf">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/damage_report_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/damage_report_panel.py" afterDir="false" />
     </list>
@@ -152,41 +148,41 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "PowerShell.build.ps1.executor": "Run",
-    "Python tests.Python tests in tests.executor": "Run",
-    "Python._test_highlight.executor": "Run",
-    "Python.db.executor": "Run",
-    "Python.encrypt_password.executor": "Run",
-    "Python.login_window.executor": "Run",
-    "Python.main.executor": "Run",
-    "Python.rcvpass.executor": "Run",
-    "Python.serial_store_aio.executor": "Run",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "master",
-    "junie.onboarding.icon.badge.shown": "true",
-    "last_opened_file_path": "G:/Code/DataRework/docs",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "run.code.analysis.last.selected.profile": "pProject Default",
-    "settings.editor.selected.configurable": "preferences.externalTools",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_MARK_IGNORED_FILES_AS_EXCLUDED&quot;: &quot;true&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;PowerShell.build.ps1.executor&quot;: &quot;Run&quot;,
+    &quot;Python tests.Python tests in tests.executor&quot;: &quot;Run&quot;,
+    &quot;Python._test_highlight.executor&quot;: &quot;Run&quot;,
+    &quot;Python.db.executor&quot;: &quot;Run&quot;,
+    &quot;Python.encrypt_password.executor&quot;: &quot;Run&quot;,
+    &quot;Python.login_window.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.rcvpass.executor&quot;: &quot;Run&quot;,
+    &quot;Python.serial_store_aio.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;G:/Code/DataRework/docs&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.externalTools&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="G:\Code\DataRework\docs" />
@@ -617,7 +613,23 @@
       <option name="project" value="LOCAL" />
       <updated>1792401836989</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="Remove shelved Thai manual file&#10;&#10;- Deleted `.idea/shelf/Uncommitted_changes_before_Update_at_10_14_2026_10_35_AM_[Changes]/shelved.patch` containing an untracked Thai version of the user manual.&#10;- Cleared unintended shelved metadata.">
+      <option name="closed" value="true" />
+      <created>1793038191836</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1793038191836</updated>
+    </task>
+    <task id="LOCAL-00046" summary="Hide export pdf">
+      <option name="closed" value="true" />
+      <created>1793038417155</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1793038417155</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -635,8 +647,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Add tests and improve UX for barcode rename dialog&#10;&#10;Introduce `test_barcode_rename.py` with new test cases to validate barcode renaming flow, including keyboard scanner behavior and prefill handling. Enhance `RenameContainerDialog` UX with auto-focus logic, event filtering, placeholder texts, and delayed preview updates. Update translations to include additional text for improved guidance." />
-    <MESSAGE value="Add comprehensive DataRework workflow guide&#10;&#10;Introduce a detailed HTML documentation covering DataRework's architecture, workflows, data contracts, queries, and proposed development extensions. Designed for developers and operators, this guide emphasizes system understanding and scalability paths. Includes responsive design, print-friendly styling, and organized sections for usability." />
     <MESSAGE value="Add user tag propagation and tests&#10;&#10;Extend login and main window logic to include user `tag_name` propagation. Update database changes to include operator tags, ensuring robust data tracking. Add associated tests to validate user tag integration in workflows and save operations." />
     <MESSAGE value="Add in-memory error logging and non-modal log viewer&#10;&#10;Introduce `debug_log.py` with an in-memory log for error tracking, featuring a non-modal `LogWindow` for viewing detailed messages and tracebacks. Update `main_window.py` to integrate error logging, replacing `print` statements with structured log entries. Enhance status updates to include traceback logs and improve error visibility. Add minor UI and style updates for the new log functionality." />
     <MESSAGE value="Implement shared English/Thai typography and UI font scaling&#10;&#10;Add `typography.py` to resolve a single installed font covering English and Thai text, ensuring consistent font selection across language switches without downloads. Integrate typography with `theme.py` to propagate font families and log pixel sizes into stylesheets. Update UI components and tests to reflect natural Thai shaping, button size stability, and glyph coverage validation. Adjust layouts and styles for improved multilingual text rendering adaptability." />
@@ -660,6 +670,8 @@
     <MESSAGE value="Introduce audit logging, settings dialog, and corresponding tests&#10;&#10;- Added `audit_log.py` for maintaining an append-only audit trail of operator activities with VM details and timestamps.&#10;- Implemented `SettingsDialog` in `settings_dialog.py` to centralize user preferences like language and theme with immediate application.&#10;- Created `tests/test_audit_log.py` to validate audit logging functionality, including session-based and explicit tagging, file handling for date changes, and resilience against unwritable locations.&#10;- Updated Thai user manual to reflect the new settings dialogue functionality." />
     <MESSAGE value="Add damage reporting capabilities and corresponding documentation&#10;&#10;- Introduced `damage_report_pdf.py` to generate and export damage reports as PDFs using `QPdfWriter` and `QTextDocument`.&#10;- Added SQL migration `add_is_damaged_at.sql` to include `is_damaged_at` column in `staging_serial_data` for tracking when damage is reported.&#10;- Created `tests/test_damage_report_pdf.py` to ensure accurate layout, pagination, and file export for the damage report PDFs.&#10;- Updated Thai user manual to clarify untranslated damage reporting interface elements." />
     <MESSAGE value="Remove transfer lock restrictions and update documentation&#10;&#10;- Removed `is_transfer` flag checks throughout grid save, delete, and rename operations.&#10;- Deleted `db/transfer.py` and `TransferLockedError` references to simplify validation logic.&#10;- Updated test suite to reflect the removal of transfer lock logic and ensure consistent functionality across all cases.&#10;- Clarified documentation to align with the updated behavior." />
-    <option name="LAST_COMMIT_MESSAGE" value="Remove transfer lock restrictions and update documentation&#10;&#10;- Removed `is_transfer` flag checks throughout grid save, delete, and rename operations.&#10;- Deleted `db/transfer.py` and `TransferLockedError` references to simplify validation logic.&#10;- Updated test suite to reflect the removal of transfer lock logic and ensure consistent functionality across all cases.&#10;- Clarified documentation to align with the updated behavior." />
+    <MESSAGE value="Remove shelved Thai manual file&#10;&#10;- Deleted `.idea/shelf/Uncommitted_changes_before_Update_at_10_14_2026_10_35_AM_[Changes]/shelved.patch` containing an untracked Thai version of the user manual.&#10;- Cleared unintended shelved metadata." />
+    <MESSAGE value="Hide export pdf" />
+    <option name="LAST_COMMIT_MESSAGE" value="Hide export pdf" />
   </component>
 </project>

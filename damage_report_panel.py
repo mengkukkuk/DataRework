@@ -136,7 +136,7 @@ class DamageReportPanel(QWidget):
         folder_row.addWidget(self.open_folder_btn)
         """self.export_btn = QPushButton(tr("Export PDF"))
         self.export_btn.setObjectName("ghostBtn")
-        self.export_btn.clicked.connect(self._on_export)
+        self.export_btn.clicked.connect(self._on_export_pdf)
         folder_row.addWidget(self.export_btn)"""
         self.export_txt_btn = QPushButton(tr("Export TXT"))
         self.export_txt_btn.setObjectName("ghostBtn")
@@ -191,7 +191,7 @@ class DamageReportPanel(QWidget):
         if folder:
             self.folder_edit.setText(os.path.normpath(folder))
 
-    def _on_export(self):
+    """def _on_export_pdf(self):
         label = self.export_result_label
         start, end = self._selected_range()
         if start is not None and start > end:
@@ -226,7 +226,7 @@ class DamageReportPanel(QWidget):
             return
         audit_log.record(
             f"Export damage report - {len(rows)} serial(s), "
-            f"{damage_report_pdf.describe_range(start, end)}, file {os.path.basename(path)}")
+            f"{damage_report_pdf.describe_range(start, end)}, file {os.path.basename(path)}")"""
 
     def _on_export_txt(self):
         label = self.export_result_label
